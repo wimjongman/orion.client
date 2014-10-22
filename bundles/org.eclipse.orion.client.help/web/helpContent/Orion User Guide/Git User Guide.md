@@ -42,7 +42,7 @@ The context bar controls what gets displayed in the changes sections. Let's take
 
 ### Repository
 
-The repository dropdown displays all of the git repos that you currently have in your workspace.
+The repository dropdown displays all of the git repos that you currently have in your workspace. If you have a number of repos listed, you can make use of the filter field to cut down on scrolling. Simply type in the name you are lookiing for and hit Enter (see Filtering for more info)
 
 The repository dropdown lets you:
 
@@ -63,7 +63,25 @@ Fig 3. Git repository dropdown menu
 
 To clone a new repo, click on the ***Clone Repository*** button.
 
+#### Create a New Repo
+
+You can create a new repo by clicking on the ***Init Repository*** button.
+
+#### Select an Existing Repo
+
+To switch which repo you are working with, simply select another repo listed there. The dropdown will close automatically and the page will refresh to show the new repo.
+
+#### Delete an Existing Repo
+
+To delete an existing repo, click on the trash can next to the repo.
+
 ### References
+
+The References section lets you select which references to work with in the page.
+
+The dropdown box for the reference displays the name of your active local branch as well as the name of the reference that is currently being used as a target.
+
+This can 
 
 ### Config section
 
@@ -132,6 +150,15 @@ The changes detail
 
 
 # Common Git Tasks
+
+## General Filtering
+
+Throughout the Git page UI there are several places where you are able to filter results. Just type in your filter term and hit Enter or the filter button to start filtering.
+You can tell if results are filtered when the filter icon has a dot next to it.
+
+<pic>
+
+Note that in order to clear the filter, you can just clear the filter field and hit Enter again.
 
 ## Cloning a Repo
 
