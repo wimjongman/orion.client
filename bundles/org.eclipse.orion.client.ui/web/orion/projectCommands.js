@@ -118,7 +118,7 @@ define(['require', 'i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 
 		
 		
 		if(status.ToSave){
-			progress.showWhile(context.projectClient.saveProjectLaunchConfiguration(context.project, status.ToSave.ConfigurationName, context.deployService.id, status.ToSave.Parameters, status.ToSave.Url, status.ToSave.ManageUrl, status.ToSave.Path, status.ToSave.Type), "Saving configuration").then(
+			progress.showWhile(context.projectClient.saveProjectLaunchConfiguration(context.project, status.ToSave.ConfigurationName, context.deployService.id, status.ToSave.Parameters, status.ToSave.Url, status.ToSave.ManageUrl, status.ToSave.Path, status.ToSave.Type, status.ToSave.AdditionalConfiguration), "Saving configuration").then(
 				function(configuration){
 					storeLastDeployment(context.project.Name, context.deployService, configuration);
 					if(sharedLaunchConfigurationDispatcher){
@@ -237,7 +237,7 @@ define(['require', 'i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 
 					}
 					
 					if(result.ToSave){
-						progress.showWhile(context.projectClient.saveProjectLaunchConfiguration(context.project, result.ToSave.ConfigurationName, context.deployService.id, result.ToSave.Parameters, result.ToSave.Url, result.ToSave.ManageUrl, result.ToSave.Path, result.ToSave.Type), "Saving configuration").then(
+						progress.showWhile(context.projectClient.saveProjectLaunchConfiguration(context.project, result.ToSave.ConfigurationName, context.deployService.id, result.ToSave.Parameters, result.ToSave.Url, result.ToSave.ManageUrl, result.ToSave.Path, result.ToSave.Type, result.ToSave.AdditionalConfiguration), "Saving configuration").then(
 							function(configuration){
 								storeLastDeployment(context.project.Name, context.deployService, configuration);
 								if(sharedLaunchConfigurationDispatcher){
@@ -552,7 +552,7 @@ define(['require', 'i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 
 									sharedLaunchConfigurationDispatcher.dispatchEvent({type: "changeState", newValue: item });
 								}
 								if(result.ToSave){
-									progress.showWhile(projectClient.saveProjectLaunchConfiguration(item.project, result.ToSave.ConfigurationName, service.id, result.ToSave.Parameters, result.ToSave.Url, result.ToSave.ManageUrl, result.ToSave.Path, result.ToSave.Type), "Saving configuration").then(
+									progress.showWhile(projectClient.saveProjectLaunchConfiguration(item.project, result.ToSave.ConfigurationName, service.id, result.ToSave.Parameters, result.ToSave.Url, result.ToSave.ManageUrl, result.ToSave.Path, result.ToSave.Type, result.ToSave.AdditionalConfiguration), "Saving configuration").then(
 										function(configuration){
 											storeLastDeployment(item.project.Name, service, configuration);
 											if(sharedLaunchConfigurationDispatcher){
