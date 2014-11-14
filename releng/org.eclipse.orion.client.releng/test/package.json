@@ -24,32 +24,13 @@
   },
   "results": "./target/test-reports/",
   "urls": [
-    "js-tests/javascript/JsMochaSuite.html",
-    "js-tests/webtools/webtoolsMochaTests.html",
-    "js-tests/core/coreTests.html",
-    "js-tests/ui/uiTests.html",
-    "js-tests/editor/editorTests.html"
+    "js-tests/javascript/JsMochaSuite.html"
   ],
   "browsers": [
     {
       "browserName": "chrome",
       "platform": "Windows 7",
       "version": "26"
-    },
-    {
-      "browserName": "internet explorer",
-      "platform": "Windows 7",
-      "version": "10"
-    },
-    {
-      "browserName": "safari",
-      "version": "7",
-      "platform": "OS X 10.9"
-    },
-    {
-      "browserName": "firefox",
-      "version": "24",
-      "platform": "linux"
     }
   ]
 }
