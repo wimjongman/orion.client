@@ -340,18 +340,198 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 	}
 	DOMSelection.prototype = /** @lends orion.editor.DOMSelection.prototype */ {
 		/** @private */
-		setBackgroundColor: function(rgb) {
-			this._divs.forEach(function(div) {
-				div.style.backgroundColor = rgb;
-			});
-		},
-		/** @private */
 		destroy: function() {
 			if (!this._divs) return;
 			this._divs.forEach(function(div) {
 				div.parentNode.removeChild(div);
 			});
 			this._divs = null;
+		},
+		/** @private */
+		setFullSelection: function(enabled) {
+			this._fullSelection = enabled;
+		},
+		/** @private */
+		setBackgroundColor: function(rgb) {
+			this._divs.forEach(function(div) {
+				div.style.backgroundColor = rgb;
+			});
+		},
+		/** @private */
+		setSelection: function (selection) {
+			var view = this._view;
+			var model = view._model;
+			var startLine = model.getLineAtOffset(selection.start);
+			var endLine = model.getLineAtOffset(selection.end);
+			var firstNode = view._getLineNext();
+			/*
+			* Bug in Firefox. For some reason, after a update page sometimes the 
+			* firstChild returns null incorrectly. The fix is to ignore show selection.
+			*/
+			if (!firstNode) { return; }
+			var lastNode = view._getLinePrevious();
+			
+			var topNode, bottomNode, topOffset, bottomOffset;
+			if (startLine < firstNode.lineIndex) {
+				topNode = firstNode;
+				topOffset = model.getLineStart(firstNode.lineIndex);
+			} else if (startLine > lastNode.lineIndex) {
+				topNode = lastNode;
+				topOffset = model.getLineStart(lastNode.lineIndex);
+			} else {
+				topNode = view._getLineNode(startLine);
+				topOffset = selection.start;
+			}
+
+			if (endLine < firstNode.lineIndex) {
+				bottomNode = firstNode;
+				bottomOffset = model.getLineStart(firstNode.lineIndex);
+			} else if (endLine > lastNode.lineIndex) {
+				bottomNode = lastNode;
+				bottomOffset = model.getLineStart(lastNode.lineIndex);
+			} else {
+				bottomNode = view._getLineNode(endLine);
+				bottomOffset = selection.end;
+			}
+			this._setDOMSelection(topNode, topOffset, bottomNode, bottomOffset, selection.caret);
+		},
+		/** @private */
+		_setDOMSelection: function (startNode, startOffset, endNode, endOffset, startCaret) {
+			this._setDOMFullSelection(startNode, startOffset, endNode, endOffset);
+			var view = this._view;
+			var start = startNode._line.getNodeOffset(startOffset);
+			var end = endNode._line.getNodeOffset(endOffset);
+			var range;
+			var window = view._getWindow();
+			var document = view._parent.ownerDocument;
+			if (window.getSelection) {
+				//W3C
+				var sel = window.getSelection();
+				range = document.createRange();
+				range.setStart(start.node, start.offset);
+				range.setEnd(end.node, end.offset);
+				if (view._hasFocus && (
+					sel.anchorNode !== start.node || sel.anchorOffset !== start.offset ||
+					sel.focusNode !== end.node || sel.focusOffset !== end.offset ||
+					sel.anchorNode !== end.node || sel.anchorOffset !== end.offset ||
+					sel.focusNode !== start.node || sel.focusOffset !== start.offset))
+				{
+					view._anchorNode = start.node;
+					view._anchorOffset = start.offset;
+					view._focusNode = end.node;
+					view._focusOffset = end.offset;
+					view._ignoreSelect = false;
+					if (sel.rangeCount > 0) { sel.removeAllRanges(); }
+					sel.addRange(range);
+					view._ignoreSelect = true;
+				}
+				if (view._cursorDiv) {
+					range = document.createRange();
+					if (startCaret) {
+						range.setStart(start.node, start.offset);
+						range.setEnd(start.node, start.offset);
+					} else {
+						range.setStart(end.node, end.offset);
+						range.setEnd(end.node, end.offset);
+					}
+					var rect = range.getClientRects()[0];
+					var cursorParent = view._cursorDiv.parentNode;
+					var clientRect = cursorParent.getBoundingClientRect();
+					if (rect && clientRect) {
+						view._cursorDiv.style.top = (rect.top - clientRect.top + cursorParent.scrollTop) + "px"; //$NON-NLS-0$
+						view._cursorDiv.style.left = (rect.left - clientRect.left + cursorParent.scrollLeft) + "px"; //$NON-NLS-0$
+					}
+				}
+			} else if (document.selection) {
+				if (!view._hasFocus) { return; }
+				//IE < 9
+				var body = document.body;
+
+				/*
+				* Bug in IE. For some reason when text is deselected the overflow
+				* selection at the end of some lines does not get redrawn.  The
+				* fix is to create a DOM element in the body to force a redraw.
+				*/
+				var child = util.createElement(document, "div"); //$NON-NLS-0$
+				body.appendChild(child);
+				body.removeChild(child);
+				
+				range = body.createTextRange();
+				range.moveToElementText(start.node.parentNode);
+				range.moveStart("character", start.offset); //$NON-NLS-0$
+				var endRange = body.createTextRange();
+				endRange.moveToElementText(end.node.parentNode);
+				endRange.moveStart("character", end.offset); //$NON-NLS-0$
+				range.setEndPoint("EndToStart", endRange); //$NON-NLS-0$
+				view._ignoreSelect = false;
+				range.select();
+				view._ignoreSelect = true;
+			}
+		},
+		/** @private */
+		_setDOMFullSelection: function(startNode, startOffset, endNode, endOffset) {
+			this._divs.forEach(function(div) {
+				div.style.width = div.style.height = "0px"; //$NON-NLS-0$
+			});
+			if (!this._fullSelection) { return; }
+			if (util.isIOS) { return; }
+			if (startNode === endNode && startOffset === endOffset) { return; }
+			var view = this._view;
+			var viewPad = view._getViewPadding();
+			var clientRect = view._clientDiv.getBoundingClientRect();
+			var viewRect = view._viewDiv.getBoundingClientRect();
+			var left = viewRect.left + viewPad.left;
+			var right = clientRect.right;
+			var top = viewRect.top + viewPad.top;
+			var bottom = clientRect.bottom;
+			var hd = 0, vd = 0;
+			if (view._clipDiv) {
+				var clipRect = view._clipDiv.getBoundingClientRect();
+				hd = clipRect.left - view._clipDiv.scrollLeft;
+				vd = clipRect.top;
+			} else {
+				var rootpRect = view._rootDiv.getBoundingClientRect();
+				hd = rootpRect.left;
+				vd = rootpRect.top;
+			}
+			view._ignoreDOMSelection = true;
+			var startLine = new TextLine(view, startNode.lineIndex, startNode);
+			var startRect = startLine.getBoundingClientRect(startOffset, false);
+			var l = startRect.left;
+			var endLine = new TextLine(view, endNode.lineIndex, endNode);
+			var endRect = endLine.getBoundingClientRect(endOffset, false);
+			var r = endRect.left;
+			view._ignoreDOMSelection = false;
+			var sel1Div = this._divs[0];
+			var sel1Left = Math.min(right, Math.max(left, l));
+			var sel1Top = Math.min(bottom, Math.max(top, startRect.top));
+			var sel1Right = right;
+			var sel1Bottom = Math.min(bottom, Math.max(top, startRect.bottom));
+			sel1Div.style.left = (sel1Left - hd) + "px"; //$NON-NLS-0$
+			sel1Div.style.top = (sel1Top - vd) + "px"; //$NON-NLS-0$
+			sel1Div.style.width = Math.max(0, sel1Right - sel1Left) + "px"; //$NON-NLS-0$
+			sel1Div.style.height = Math.max(0, sel1Bottom - sel1Top) + "px"; //$NON-NLS-0$
+			if (startNode.lineIndex === endNode.lineIndex) {
+				sel1Right = Math.min(r, right);
+				sel1Div.style.width = Math.max(0, sel1Right - sel1Left) + "px"; //$NON-NLS-0$
+			} else {
+				var sel3Left = left;
+				var sel3Top = Math.min(bottom, Math.max(top, endRect.top));
+				var sel3Right = Math.min(right, Math.max(left, r));
+				var sel3Bottom = Math.min(bottom, Math.max(top, endRect.bottom));
+				var sel3Div = this._divs[2];
+				sel3Div.style.left = (sel3Left - hd) + "px"; //$NON-NLS-0$
+				sel3Div.style.top = (sel3Top - vd) + "px"; //$NON-NLS-0$
+				sel3Div.style.width = Math.max(0, sel3Right - sel3Left) + "px"; //$NON-NLS-0$
+				sel3Div.style.height = Math.max(0, sel3Bottom - sel3Top) + "px"; //$NON-NLS-0$
+				if (Math.abs(startNode.lineIndex - endNode.lineIndex) > 1) {
+					var sel2Div = this._divs[1];
+					sel2Div.style.left = (left - hd)  + "px"; //$NON-NLS-0$
+					sel2Div.style.top = (sel1Bottom - vd) + "px"; //$NON-NLS-0$
+					sel2Div.style.width = Math.max(0, right - left) + "px"; //$NON-NLS-0$
+					sel2Div.style.height = Math.max(0, sel3Top - sel1Bottom) + "px"; //$NON-NLS-0$
+				}
+			}
 		}
 	};
 	/** @private */
@@ -6334,139 +6514,6 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			cleanup();
 			return true;
 		},
-		_setDOMSelection: function (startNode, startOffset, endNode, endOffset, startCaret) {
-			this._setDOMFullSelection(startNode, startOffset, endNode, endOffset);
-			var start = startNode._line.getNodeOffset(startOffset);
-			var end = endNode._line.getNodeOffset(endOffset);
-			var range;
-			var window = this._getWindow();
-			var document = this._parent.ownerDocument;
-			if (window.getSelection) {
-				//W3C
-				var sel = window.getSelection();
-				range = document.createRange();
-				range.setStart(start.node, start.offset);
-				range.setEnd(end.node, end.offset);
-				if (this._hasFocus && (
-					sel.anchorNode !== start.node || sel.anchorOffset !== start.offset ||
-					sel.focusNode !== end.node || sel.focusOffset !== end.offset ||
-					sel.anchorNode !== end.node || sel.anchorOffset !== end.offset ||
-					sel.focusNode !== start.node || sel.focusOffset !== start.offset))
-				{
-					this._anchorNode = start.node;
-					this._anchorOffset = start.offset;
-					this._focusNode = end.node;
-					this._focusOffset = end.offset;
-					this._ignoreSelect = false;
-					if (sel.rangeCount > 0) { sel.removeAllRanges(); }
-					sel.addRange(range);
-					this._ignoreSelect = true;
-				}
-				if (this._cursorDiv) {
-					range = document.createRange();
-					if (startCaret) {
-						range.setStart(start.node, start.offset);
-						range.setEnd(start.node, start.offset);
-					} else {
-						range.setStart(end.node, end.offset);
-						range.setEnd(end.node, end.offset);
-					}
-					var rect = range.getClientRects()[0];
-					var cursorParent = this._cursorDiv.parentNode;
-					var clientRect = cursorParent.getBoundingClientRect();
-					if (rect && clientRect) {
-						this._cursorDiv.style.top = (rect.top - clientRect.top + cursorParent.scrollTop) + "px"; //$NON-NLS-0$
-						this._cursorDiv.style.left = (rect.left - clientRect.left + cursorParent.scrollLeft) + "px"; //$NON-NLS-0$
-					}
-				}
-			} else if (document.selection) {
-				if (!this._hasFocus) { return; }
-				//IE < 9
-				var body = document.body;
-
-				/*
-				* Bug in IE. For some reason when text is deselected the overflow
-				* selection at the end of some lines does not get redrawn.  The
-				* fix is to create a DOM element in the body to force a redraw.
-				*/
-				var child = util.createElement(document, "div"); //$NON-NLS-0$
-				body.appendChild(child);
-				body.removeChild(child);
-				
-				range = body.createTextRange();
-				range.moveToElementText(start.node.parentNode);
-				range.moveStart("character", start.offset); //$NON-NLS-0$
-				var endRange = body.createTextRange();
-				endRange.moveToElementText(end.node.parentNode);
-				endRange.moveStart("character", end.offset); //$NON-NLS-0$
-				range.setEndPoint("EndToStart", endRange); //$NON-NLS-0$
-				this._ignoreSelect = false;
-				range.select();
-				this._ignoreSelect = true;
-			}
-		},
-		_setDOMFullSelection: function(startNode, startOffset, endNode, endOffset) {
-			if (!this._domSelection) { return; }
-			this._domSelection._divs.forEach(function(div) {
-				div.style.width = div.style.height = "0px"; //$NON-NLS-0$
-			});
-			if (startNode === endNode && startOffset === endOffset) { return; }
-			var viewPad = this._getViewPadding();
-			var clientRect = this._clientDiv.getBoundingClientRect();
-			var viewRect = this._viewDiv.getBoundingClientRect();
-			var left = viewRect.left + viewPad.left;
-			var right = clientRect.right;
-			var top = viewRect.top + viewPad.top;
-			var bottom = clientRect.bottom;
-			var hd = 0, vd = 0;
-			if (this._clipDiv) {
-				var clipRect = this._clipDiv.getBoundingClientRect();
-				hd = clipRect.left - this._clipDiv.scrollLeft;
-				vd = clipRect.top;
-			} else {
-				var rootpRect = this._rootDiv.getBoundingClientRect();
-				hd = rootpRect.left;
-				vd = rootpRect.top;
-			}
-			this._ignoreDOMSelection = true;
-			var startLine = new TextLine(this, startNode.lineIndex, startNode);
-			var startRect = startLine.getBoundingClientRect(startOffset, false);
-			var l = startRect.left;
-			var endLine = new TextLine(this, endNode.lineIndex, endNode);
-			var endRect = endLine.getBoundingClientRect(endOffset, false);
-			var r = endRect.left;
-			this._ignoreDOMSelection = false;
-			var sel1Div = this._domSelection._divs[0];
-			var sel1Left = Math.min(right, Math.max(left, l));
-			var sel1Top = Math.min(bottom, Math.max(top, startRect.top));
-			var sel1Right = right;
-			var sel1Bottom = Math.min(bottom, Math.max(top, startRect.bottom));
-			sel1Div.style.left = (sel1Left - hd) + "px"; //$NON-NLS-0$
-			sel1Div.style.top = (sel1Top - vd) + "px"; //$NON-NLS-0$
-			sel1Div.style.width = Math.max(0, sel1Right - sel1Left) + "px"; //$NON-NLS-0$
-			sel1Div.style.height = Math.max(0, sel1Bottom - sel1Top) + "px"; //$NON-NLS-0$
-			if (startNode.lineIndex === endNode.lineIndex) {
-				sel1Right = Math.min(r, right);
-				sel1Div.style.width = Math.max(0, sel1Right - sel1Left) + "px"; //$NON-NLS-0$
-			} else {
-				var sel3Left = left;
-				var sel3Top = Math.min(bottom, Math.max(top, endRect.top));
-				var sel3Right = Math.min(right, Math.max(left, r));
-				var sel3Bottom = Math.min(bottom, Math.max(top, endRect.bottom));
-				var sel3Div = this._domSelection._divs[2];
-				sel3Div.style.left = (sel3Left - hd) + "px"; //$NON-NLS-0$
-				sel3Div.style.top = (sel3Top - vd) + "px"; //$NON-NLS-0$
-				sel3Div.style.width = Math.max(0, sel3Right - sel3Left) + "px"; //$NON-NLS-0$
-				sel3Div.style.height = Math.max(0, sel3Bottom - sel3Top) + "px"; //$NON-NLS-0$
-				if (Math.abs(startNode.lineIndex - endNode.lineIndex) > 1) {
-					var sel2Div = this._domSelection._divs[1];
-					sel2Div.style.left = (left - hd)  + "px"; //$NON-NLS-0$
-					sel2Div.style.top = (sel1Bottom - vd) + "px"; //$NON-NLS-0$
-					sel2Div.style.width = Math.max(0, right - left) + "px"; //$NON-NLS-0$
-					sel2Div.style.height = Math.max(0, sel3Top - sel1Bottom) + "px"; //$NON-NLS-0$
-				}
-			}
-		},
 		_setGrab: function (target) {
 			if (target === this._grabControl) { return; }
 			if (target) {
@@ -6603,19 +6650,12 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			if (!parent) {
 				return;
 			}
-			if (!this._fullSelection) {
-				if (this._domSelection) {
-					this._domSelection.destroy();
-					this._domSelection = null;
-				}
-				return;
-			}
-			
-			if (!this._domSelection && (this._fullSelection && !util.isIOS)) {
+			if (!this._domSelection) {
 				this._domSelection = new DOMSelection(this, parent);
-				if (!init) {
-					this._updateDOMSelection();
-				}
+			}
+			this._domSelection.setFullSelection(this._fullSelection);
+			if (!init) {
+				this._updateDOMSelection();
 			}
 		},
 		_setBlockCursor: function (visible) {
@@ -6881,41 +6921,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			if (this._redrawCount > 0) { return; }
 			if (this._ignoreDOMSelection) { return; }
 			if (!this._clientDiv) { return; }
-			var selection = this._getSelection();
-			var model = this._model;
-			var startLine = model.getLineAtOffset(selection.start);
-			var endLine = model.getLineAtOffset(selection.end);
-			var firstNode = this._getLineNext();
-			/*
-			* Bug in Firefox. For some reason, after a update page sometimes the 
-			* firstChild returns null incorrectly. The fix is to ignore show selection.
-			*/
-			if (!firstNode) { return; }
-			var lastNode = this._getLinePrevious();
-			
-			var topNode, bottomNode, topOffset, bottomOffset;
-			if (startLine < firstNode.lineIndex) {
-				topNode = firstNode;
-				topOffset = model.getLineStart(firstNode.lineIndex);
-			} else if (startLine > lastNode.lineIndex) {
-				topNode = lastNode;
-				topOffset = model.getLineStart(lastNode.lineIndex);
-			} else {
-				topNode = this._getLineNode(startLine);
-				topOffset = selection.start;
-			}
-
-			if (endLine < firstNode.lineIndex) {
-				bottomNode = firstNode;
-				bottomOffset = model.getLineStart(firstNode.lineIndex);
-			} else if (endLine > lastNode.lineIndex) {
-				bottomNode = lastNode;
-				bottomOffset = model.getLineStart(lastNode.lineIndex);
-			} else {
-				bottomNode = this._getLineNode(endLine);
-				bottomOffset = selection.end;
-			}
-			this._setDOMSelection(topNode, topOffset, bottomNode, bottomOffset, selection.caret);
+			this._domSelection.setSelection(this._getSelection());
 		},
 		_update: function(hScrollOnly) {
 			if (this._redrawCount > 0) { return; }
