@@ -4932,6 +4932,37 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			line.destroy();
 			return Math.max(1, rect.bottom - rect.top);
 		},
+		_calculateHighlightRGB: function() {
+			var document = this._clientDiv.ownerDocument;
+			var highlightRGB = /*util.isWebkit ? "transparent" : */"Highlight"; //$NON-NLS-1$ //$NON-NLS-0$
+			/*
+			* Bug in Firefox. The Highlight color is mapped to list selection
+			* background instead of the text selection background.  The fix
+			* is to map known colors using a table or fallback to light blue.
+			*/
+			if (util.isFirefox && util.isMac) {
+				var window = this._getWindow();
+				var div = util.createElement(document, "div"); //$NON-NLS-0$
+				div.style.backgroundColor = highlightRGB; //$NON-NLS-0$
+				parent.appendChild(div);
+				var style = window.getComputedStyle(div, null);
+				var rgb = style.getPropertyValue("background-color"); //$NON-NLS-0$
+				switch (rgb) {
+					case "rgb(119, 141, 168)": rgb = "rgb(199, 208, 218)"; break; //$NON-NLS-1$ //$NON-NLS-0$
+					case "rgb(127, 127, 127)": rgb = "rgb(198, 198, 198)"; break; //$NON-NLS-1$ //$NON-NLS-0$
+					case "rgb(255, 193, 31)": rgb = "rgb(250, 236, 115)"; break; //$NON-NLS-1$ //$NON-NLS-0$
+					case "rgb(243, 70, 72)": rgb = "rgb(255, 176, 139)"; break; //$NON-NLS-1$ //$NON-NLS-0$
+					case "rgb(255, 138, 34)": rgb = "rgb(255, 209, 129)"; break; //$NON-NLS-1$ //$NON-NLS-0$
+					case "rgb(102, 197, 71)": rgb = "rgb(194, 249, 144)"; break; //$NON-NLS-1$ //$NON-NLS-0$
+					case "rgb(140, 78, 184)": rgb = "rgb(232, 184, 255)"; break; //$NON-NLS-1$ //$NON-NLS-0$
+					case "rgb(140, 78, 184)": rgb = "rgb(232, 184, 255)"; break; //$NON-NLS-1$ //$NON-NLS-0$
+					default: rgb = "rgb(180, 213, 255)"; break; //$NON-NLS-0$
+				}
+				parent.removeChild(div);
+				highlightRGB = rgb;
+			}
+			this._highlightRGB = highlightRGB;
+		},
 		_calculateMetrics: function() {
 			var parent = this._clientDiv;
 			var document = parent.ownerDocument;
@@ -5216,6 +5247,19 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				rulerParent.insertBefore(div, sibling);
 			}
 		},
+		_createSelectionDiv: function(document) {
+			var div = util.createElement(document, "div"); //$NON-NLS-0$
+			div.style.position = "absolute"; //$NON-NLS-0$
+			div.style.borderWidth = "0px"; //$NON-NLS-0$
+			div.style.margin = "0px"; //$NON-NLS-0$
+			div.style.padding = "0px"; //$NON-NLS-0$
+			div.style.outline = "none"; //$NON-NLS-0$
+			div.style.background = this._highlightRGB;
+			div.style.width = "0px"; //$NON-NLS-0$
+			div.style.height = "0px"; //$NON-NLS-0$
+			div.style.zIndex = "0"; //$NON-NLS-0$
+			return div;
+		},
 		_createView: function() {
 			if (this._clientDiv) { return; }
 			var parent = this._parent;
@@ -5287,8 +5331,6 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				clipScrollDiv.style.background = "transparent"; //$NON-NLS-0$
 				clipDiv.appendChild(clipScrollDiv);
 			}
-			
-			this._setFullSelection(this._fullSelection, true);
 
 			var clientDiv = util.createElement(document, "div"); //$NON-NLS-0$
 			clientDiv.className = "textviewContent"; //$NON-NLS-0$
@@ -5306,6 +5348,10 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				clientDiv.style.WebkitTapHighlightColor = "transparent"; //$NON-NLS-0$
 			}
 			(this._clipDiv || rootDiv).appendChild(clientDiv);
+			
+			this._calculateHighlightRGB();
+			
+			this._setFullSelection(this._fullSelection, true);
 			
 			if (util.isIOS || util.isAndroid) {
 				var vScrollDiv = util.createElement(document, "div"); //$NON-NLS-0$
@@ -6563,68 +6609,12 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			
 			if (!this._selDiv1 && (this._fullSelection && !util.isIOS)) {
 				var document = parent.ownerDocument;
-				this._highlightRGB = util.isWebkit ? "transparent" : "Highlight"; //$NON-NLS-1$ //$NON-NLS-0$
-				var selDiv1 = util.createElement(document, "div"); //$NON-NLS-0$
-				this._selDiv1 = selDiv1;
-				selDiv1.style.position = "absolute"; //$NON-NLS-0$
-				selDiv1.style.borderWidth = "0px"; //$NON-NLS-0$
-				selDiv1.style.margin = "0px"; //$NON-NLS-0$
-				selDiv1.style.padding = "0px"; //$NON-NLS-0$
-				selDiv1.style.outline = "none"; //$NON-NLS-0$
-				selDiv1.style.background = this._highlightRGB;
-				selDiv1.style.width = "0px"; //$NON-NLS-0$
-				selDiv1.style.height = "0px"; //$NON-NLS-0$
-				selDiv1.style.zIndex = "0"; //$NON-NLS-0$
+				var selDiv1 = this._selDiv1 = this._createSelectionDiv(document);
 				parent.appendChild(selDiv1);
-				var selDiv2 = util.createElement(document, "div"); //$NON-NLS-0$
-				this._selDiv2 = selDiv2;
-				selDiv2.style.position = "absolute"; //$NON-NLS-0$
-				selDiv2.style.borderWidth = "0px"; //$NON-NLS-0$
-				selDiv2.style.margin = "0px"; //$NON-NLS-0$
-				selDiv2.style.padding = "0px"; //$NON-NLS-0$
-				selDiv2.style.outline = "none"; //$NON-NLS-0$
-				selDiv2.style.background = this._highlightRGB;
-				selDiv2.style.width = "0px"; //$NON-NLS-0$
-				selDiv2.style.height = "0px"; //$NON-NLS-0$
-				selDiv2.style.zIndex = "0"; //$NON-NLS-0$
+				var selDiv2 = this._selDiv2 = this._createSelectionDiv(document);
 				parent.appendChild(selDiv2);
-				var selDiv3 = util.createElement(document, "div"); //$NON-NLS-0$
-				this._selDiv3 = selDiv3;
-				selDiv3.style.position = "absolute"; //$NON-NLS-0$
-				selDiv3.style.borderWidth = "0px"; //$NON-NLS-0$
-				selDiv3.style.margin = "0px"; //$NON-NLS-0$
-				selDiv3.style.padding = "0px"; //$NON-NLS-0$
-				selDiv3.style.outline = "none"; //$NON-NLS-0$
-				selDiv3.style.background = this._highlightRGB;
-				selDiv3.style.width = "0px"; //$NON-NLS-0$
-				selDiv3.style.height = "0px"; //$NON-NLS-0$
-				selDiv3.style.zIndex = "0"; //$NON-NLS-0$
+				var selDiv3 = this._selDiv3 = this._createSelectionDiv(document);
 				parent.appendChild(selDiv3);
-				
-				/*
-				* Bug in Firefox. The Highlight color is mapped to list selection
-				* background instead of the text selection background.  The fix
-				* is to map known colors using a table or fallback to light blue.
-				*/
-				if (util.isFirefox && util.isMac) {
-					var window = this._getWindow();
-					var style = window.getComputedStyle(selDiv3, null);
-					var rgb = style.getPropertyValue("background-color"); //$NON-NLS-0$
-					switch (rgb) {
-						case "rgb(119, 141, 168)": rgb = "rgb(199, 208, 218)"; break; //$NON-NLS-1$ //$NON-NLS-0$
-						case "rgb(127, 127, 127)": rgb = "rgb(198, 198, 198)"; break; //$NON-NLS-1$ //$NON-NLS-0$
-						case "rgb(255, 193, 31)": rgb = "rgb(250, 236, 115)"; break; //$NON-NLS-1$ //$NON-NLS-0$
-						case "rgb(243, 70, 72)": rgb = "rgb(255, 176, 139)"; break; //$NON-NLS-1$ //$NON-NLS-0$
-						case "rgb(255, 138, 34)": rgb = "rgb(255, 209, 129)"; break; //$NON-NLS-1$ //$NON-NLS-0$
-						case "rgb(102, 197, 71)": rgb = "rgb(194, 249, 144)"; break; //$NON-NLS-1$ //$NON-NLS-0$
-						case "rgb(140, 78, 184)": rgb = "rgb(232, 184, 255)"; break; //$NON-NLS-1$ //$NON-NLS-0$
-						default: rgb = "rgb(180, 213, 255)"; break; //$NON-NLS-0$
-					}
-					this._highlightRGB = rgb;
-					selDiv1.style.background = rgb;
-					selDiv2.style.background = rgb;
-					selDiv3.style.background = rgb;
-				}
 				if (!init) {
 					this._updateDOMSelection();
 				}
