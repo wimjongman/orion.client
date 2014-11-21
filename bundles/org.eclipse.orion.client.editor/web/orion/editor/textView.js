@@ -329,9 +329,10 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		}
 	};
 	/** @private */
-	function DOMSelection (view, parent) {
+	function DOMSelection (view) {
 		this._view = view;
 		this._divs = [];
+		var parent = view._clipDiv || view._rootDiv;
 		for (var i=0; i<3; i++) {
 			var div = view._createSelectionDiv();
 			parent.appendChild(div);
@@ -348,17 +349,31 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			this._divs = null;
 		},
 		/** @private */
-		setFullSelection: function(enabled) {
-			this._fullSelection = enabled;
+		setPrimary: function(enabled) {
+			this.primary = enabled;
 		},
 		/** @private */
-		setBackgroundColor: function(rgb) {
+		update: function() {
+			var view = this._view;
+			var focused = view._hasFocus;
+			var visible = view._cursorVisible;
+			var cursor = !this.primary && this._selection && this._selection.isEmpty();
+			var color;
+			if (cursor) {
+				color = "#000000";// need foreground color here
+			} else {
+				color = focused ? view._highlightRGB : "lightgray"; //$NON-NLS-0$
+			}
+			this._divs[0].style.visibility = (cursor && visible && focused) || !cursor ? "visible" : "hidden"; //$NON-NLS-1$ //$NON-NLS-0$
+			this._divs[0].style.zIndex = visible && cursor ? "2" : "0"; //$NON-NLS-1$ //$NON-NLS-0$
 			this._divs.forEach(function(div) {
-				div.style.backgroundColor = rgb;
+				div.style.backgroundColor = color;
 			});
 		},
 		/** @private */
 		setSelection: function (selection) {
+			this._selection = selection;
+			this.update();
 			var view = this._view;
 			var model = view._model;
 			var startLine = model.getLineAtOffset(selection.start);
@@ -398,6 +413,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		/** @private */
 		_setDOMSelection: function (startNode, startOffset, endNode, endOffset, startCaret) {
 			this._setDOMFullSelection(startNode, startOffset, endNode, endOffset);
+			if (!this.primary) { return; }
 			var view = this._view;
 			var start = startNode._line.getNodeOffset(startOffset);
 			var end = endNode._line.getNodeOffset(endOffset);
@@ -473,10 +489,10 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			this._divs.forEach(function(div) {
 				div.style.width = div.style.height = "0px"; //$NON-NLS-0$
 			});
-			if (!this._fullSelection) { return; }
-			if (util.isIOS) { return; }
-			if (startNode === endNode && startOffset === endOffset) { return; }
 			var view = this._view;
+			if (!view._fullSelection) { return; }
+			if (util.isIOS) { return; }
+//			if (startNode === endNode && startOffset === endOffset) { return; }
 			var viewPad = view._getViewPadding();
 			var clientRect = view._clientDiv.getBoundingClientRect();
 			var viewRect = view._viewDiv.getBoundingClientRect();
@@ -513,7 +529,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			sel1Div.style.height = Math.max(0, sel1Bottom - sel1Top) + "px"; //$NON-NLS-0$
 			if (startNode.lineIndex === endNode.lineIndex) {
 				sel1Right = Math.min(r, right);
-				sel1Div.style.width = Math.max(0, sel1Right - sel1Left) + "px"; //$NON-NLS-0$
+				sel1Div.style.width = Math.max(this.primary ? 0 : 1, sel1Right - sel1Left) + "px"; //$NON-NLS-0$
 			} else {
 				var sel3Left = left;
 				var sel3Top = Math.min(bottom, Math.max(top, endRect.top));
@@ -3301,7 +3317,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				this._cursorDiv.style.display = "none"; //$NON-NLS-0$
 			}
 			if (this._domSelection) {
-				this._domSelection.setBackgroundColor("lightgray"); //$NON-NLS-0$
+				this._domSelection.forEach(function(domSelection) { domSelection.update(); });
 				/* Clear browser selection if selection is within clientDiv */
 				var temp;
 				var window = this._getWindow();
@@ -3521,7 +3537,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				this._cursorDiv.style.display = "block"; //$NON-NLS-0$
 			}
 			if (this._domSelection) {
-				this._domSelection.setBackgroundColor(this._highlightRGB);
+				this._domSelection.forEach(function(domSelection) { domSelection.update(); });
 			}
 			if (!this._ignoreFocus) {
 				this.onFocus({type: "Focus"}); //$NON-NLS-0$
@@ -3745,7 +3761,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				}, 0);
 			}
 			if (this._clickCount === 1) {
-				result = this._setSelectionTo(e.clientX, e.clientY, e.shiftKey, (!util.isOpera || util.isOpera >= 12.16) && this._hasFocus && this.isListening("DragStart")); //$NON-NLS-0$
+				result = this._setSelectionTo(e.clientX, e.clientY, e.shiftKey, (!util.isOpera || util.isOpera >= 12.16) && this._hasFocus && this.isListening("DragStart"), e.ctrlKey); //$NON-NLS-0$
 				if (result) { this._setGrab(target); }
 			} else {
 				/*
@@ -3871,7 +3887,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var changed = this._linksVisible || this._lastMouseMoveX !== e.clientX || this._lastMouseMoveY !== e.clientY;
 			this._lastMouseMoveX = e.clientX;
 			this._lastMouseMoveY = e.clientY;
-			this._setLinksVisible(changed && !this._isMouseDown && (util.isMac ? e.metaKey : e.ctrlKey));
+			this._setLinksVisible(changed && !this._isMouseDown && e.altKey && (util.isMac ? e.metaKey : e.ctrlKey));
 
 			this._checkOverlayScroll();
 
@@ -5686,6 +5702,10 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				window.clearTimeout(this._calculateLHTimer);
 				this._calculateLHTimer = null;
 			}
+			if (this._cursorTimer) {
+				window.clearInterval(this._cursorTimer);
+				this._cursorTimer = null;
+			}
 			
 			var rootDiv = this._rootDiv;
 			rootDiv.parentNode.removeChild(rootDiv);
@@ -6008,7 +6028,13 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			return {x: viewDiv.scrollLeft, y: viewDiv.scrollTop};
 		},
 		_getSelection: function () {
-			return this._selection.clone();
+			//HACK old code working for now
+			return (Array.isArray(this._selection) ? this._selection[0] : this._selection).clone();
+		},
+		_getSelections: function () {
+			return (Array.isArray(this._selection) ? this._selection : [this._selection]).map(function(s) {
+				return s.clone();
+			});
 		},
 		_getTopIndex: function (fullyVisible) {
 			var child = this._topChild;
@@ -6551,11 +6577,18 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			}
 			this._updateDOMSelection();
 		},
-		_setSelection: function (selection, scroll, update, callback, pageScroll) {
+		_setSelection: function (selection, scroll, update, callback, pageScroll, add) {
 			if (selection) {
 				this._columnX = -1;
 				if (update === undefined) { update = true; }
-				var oldSelection = this._selection; 
+				var oldSelection = this._selection;
+				if (add) {
+					if (!Array.isArray(oldSelection)) {
+						oldSelection = [oldSelection];
+					}
+					oldSelection.push(selection);
+					selection = oldSelection;
+				}
 				this._selection = selection;
 
 				/* 
@@ -6574,17 +6607,17 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				*/
 				if (update) { this._updateDOMSelection(); }
 				
-				if (!oldSelection.equals(selection)) {
-					var e = {
-						type: "Selection", //$NON-NLS-0$
-						oldValue: {start:oldSelection.start, end:oldSelection.end},
-						newValue: {start:selection.start, end:selection.end}
-					};
-					this.onSelection(e);
-				}
+//				if (!oldSelection.equals(selection)) {
+//					var e = {
+//						type: "Selection", //$NON-NLS-0$
+//						oldValue: {start:oldSelection.start, end:oldSelection.end},
+//						newValue: {start:selection.start, end:selection.end}
+//					};
+//					this.onSelection(e);
+//				}
 			}
 		},
-		_setSelectionTo: function (x, y, extent, drag) {
+		_setSelectionTo: function (x, y, extent, drag, add) {
 			var model = this._model, offset;
 			var selection = this._getSelection();
 			var pt = this.convert({x: x, y: y}, "page", "document"); //$NON-NLS-1$ //$NON-NLS-0$
@@ -6638,22 +6671,24 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				selection.setCaret(start);
 				selection.extend(end);
 			} 
-			this._setSelection(selection, true, true);
+			this._setSelection(selection, true, true, null, false, add);
 			return true;
 		},
 		_setFullSelection: function(fullSelection, init) {
 			this._fullSelection = fullSelection;
 			if (util.isWebkit) {
-				this._fullSelection = true;
-			}
-			var parent = this._clipDiv || this._rootDiv;
-			if (!parent) {
-				return;
+				this._fullSelection = fullSelection = true;
 			}
 			if (!this._domSelection) {
-				this._domSelection = new DOMSelection(this, parent);
+				this._domSelection = [];
+				var window = this._getWindow();
+				var self = this;
+				this._cursorVisible = true;
+				this._cursorTimer = window.setInterval(function() {
+					self._cursorVisible = !self._cursorVisible;
+					self._domSelection.forEach(function(domSelection) { domSelection.update(); });
+				}, 500);
 			}
-			this._domSelection.setFullSelection(this._fullSelection);
 			if (!init) {
 				this._updateDOMSelection();
 			}
@@ -6914,14 +6949,27 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			this._handlers = null;
 			if (this._mutationObserver) {
 				this._mutationObserver.disconnect();
-				this._mutationObserver = null;
 			}
 		},
 		_updateDOMSelection: function () {
 			if (this._redrawCount > 0) { return; }
 			if (this._ignoreDOMSelection) { return; }
 			if (!this._clientDiv) { return; }
-			this._domSelection.setSelection(this._getSelection());
+			var selection = this._getSelections();
+			var domSelection = this._domSelection, i;
+			if (domSelection.length < selection.length) {
+				for (i=domSelection.length; i<selection.length; i++) {
+					domSelection.push(new DOMSelection(this));
+				}
+			} else if (domSelection.length > selection.length) {
+				domSelection.splice(selection.length).forEach(function(s) {
+					s.destroy();
+				});
+			}
+			for (i=0; i<domSelection.length; i++) {
+				domSelection[i].setPrimary(i === 0);
+				domSelection[i].setSelection(selection[i]);
+			}
 		},
 		_update: function(hScrollOnly) {
 			if (this._redrawCount > 0) { return; }
