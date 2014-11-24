@@ -289,11 +289,30 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		return true;
 	};
 	/** @private */
-	Selection.convert = function(selection) {
-		if (selection.length === 1) return selection[0].convert();
-		return selection.map(function(sel) {
+	Selection.convert = function(selections) {
+		if (selections.length === 1) return selections[0].convert();
+		return selections.map(function(sel) {
 			return sel.convert();
 		});
+	};
+	/** @private */
+	Selection.merge = function(selections) {
+		if (selections.length <= 1) return selections;
+		selections.sort(function(a, b) {
+			return a.start - b.start;
+		});
+		var result = [];
+		var current = selections[0];
+		for (var i = 1; i < selections.length; i++) {
+			if (selections[i].start > current.end) {
+				result.push(current);
+				current = selections[i];
+			} else {
+				current.end = Math.max(current.end, selections[i].end);
+			}
+		}
+		result.push(current);
+		return result;
 	};
 	Selection.prototype = /** @lends orion.editor.Selection.prototype */ {
 		/** @private */
@@ -6617,7 +6636,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				} else {
 					newSelection = [selection];
 				}
-				this._selection = newSelection;
+				this._selection = Selection.merge(newSelection);
 				
 				if (!preserveCursorX) {
 					newSelection.forEach(function(sel) {
