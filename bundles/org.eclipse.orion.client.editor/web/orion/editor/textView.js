@@ -4924,7 +4924,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var clientHeight = this._getClientHeight();
 			var lineHeight = this._getLineHeight();
 			var lines = Math.floor(clientHeight / lineHeight);
-			var x, line, pageScroll = 0;
+			var x, line, pageScroll;
 			selections.forEach(function(selection) {
 				var caret = selection.getCaret();
 				var caretLine = model.getLineAtOffset(caret);
@@ -4943,7 +4943,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 					line.destroy();
 					selection.extend(caret);
 					if (!args.select) { selection.collapse(); }
-					pageScroll = Math.min(pageScroll, rect.top + linePixel - caretRect.top);
+					pageScroll = pageScroll !== undefined ? Math.min(pageScroll, rect.top + linePixel - caretRect.top) : rect.top + linePixel - caretRect.top;
 				} else {
 					if (caretLine < lineCount - 1) {
 						var scrollLines = Math.min(lineCount - caretLine - 1, lines);
@@ -4963,11 +4963,10 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 						if (scrollOffset + clientHeight > verticalMaximum) {
 							scrollOffset = verticalMaximum - clientHeight;
 						}
-						pageScroll = Math.min(pageScroll, scrollOffset - scroll.y);
+						pageScroll = pageScroll !== undefined ? Math.min(pageScroll, scrollOffset - scroll.y) : scrollOffset - scroll.y;
 					}
 				}
 			});
-			log(pageScroll)
 			this._setSelection(selections, true, true, function() {}, pageScroll, false, true);
 			return true;
 		},
@@ -4979,7 +4978,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var clientHeight = this._getClientHeight();
 			var lineHeight = this._getLineHeight();
 			var lines = Math.floor(clientHeight / lineHeight);
-			var x, line, pageScroll = 0;
+			var x, line, pageScroll;
 			selections.forEach(function(selection) {
 				var caret = selection.getCaret();
 				var caretLine = model.getLineAtOffset(caret);
@@ -4998,7 +4997,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 					line.destroy();
 					selection.extend(caret);
 					if (!args.select) { selection.collapse(); }
-					pageScroll = Math.min(pageScroll, rect.top + linePixel - caretRect.top);
+					pageScroll = pageScroll !== undefined ? Math.max(pageScroll, rect.top + linePixel - caretRect.top) : rect.top + linePixel - caretRect.top;
 				} else {
 					if (caretLine > 0) {
 						var scrollLines = Math.max(1, Math.min(caretLine, lines));
@@ -5013,7 +5012,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 						line.destroy();
 						if (!args.select) { selection.collapse(); }
 						var scrollOffset = Math.max(0, scroll.y - scrollLines * lineHeight);
-						pageScroll = Math.min(pageScroll, scrollOffset - scroll.y);
+						pageScroll = pageScroll !== undefined  ? Math.max(pageScroll, scrollOffset - scroll.y) : scrollOffset - scroll.y;
 					}
 				}
 			});
