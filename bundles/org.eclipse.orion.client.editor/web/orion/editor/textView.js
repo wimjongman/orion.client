@@ -304,7 +304,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		var result = [];
 		var current = selections[0];
 		for (var i = 1; i < selections.length; i++) {
-			if (selections[i].start > current.end) {
+			if (selections[i].start >= current.end) {
 				result.push(current);
 				current = selections[i];
 			} else {
@@ -4713,10 +4713,16 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			return this._modifyContent({text: text, start: selection.start, end: selection.end, _ignoreDOMSelection: true}, true);
 		},
 		_doCopy: function (e) {
-			var selection = this._getSelection();
-			if (!selection.isEmpty()) {
-				var text = this._getBaseText(selection.start, selection.end);
-				return this._setClipboardText(text, e);
+			var self = this;
+			var text = [];
+			var selections = this._getSelections();
+			selections.forEach(function(selection) {
+				if (!selection.isEmpty()) {
+					text.push(self._getBaseText(selection.start, selection.end));
+				}
+			});
+			if (text.length) {
+				return this._setClipboardText(text.join(this._model.getLineDelimiter()), e);
 			}
 			return true;
 		},
