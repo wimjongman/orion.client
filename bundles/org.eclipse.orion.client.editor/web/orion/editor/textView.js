@@ -277,6 +277,8 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		this.end = end;
 		/** @private */
 		this.caret = caret; //true if the start, false if the caret is at end
+		/** @private */
+		this._columnX = -1;
 	}
 	/** @private */
 	Selection.compare = function(s1, s2) {
@@ -296,7 +298,9 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 	Selection.prototype = /** @lends orion.editor.Selection.prototype */ {
 		/** @private */
 		clone: function() {
-			return new Selection(this.start, this.end, this.caret);
+			var result = new Selection(this.start, this.end, this.caret);
+			result._columnX = this._columnX;
+			return result;
 		},
 		/** @private */
 		convert: function() {
@@ -3173,7 +3177,6 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			}
 			this._modifyContent({text: text, start: start, end: end, _code: true}, !reset);
 			if (reset) {
-				this._columnX = -1;
 				this._setSelection(new Selection(0, 0, false), true);
 				
 				/*
@@ -4748,34 +4751,35 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			return true;
 		},
 		_doEnd: function (args) {
-			var selection = this._getSelection();
 			var model = this._model;
-			var callback;
-			if (args.ctrl) {
-				selection.extend(model.getCharCount());
-				callback = function() {};
-			} else {
-				var offset = selection.getCaret();
-				var lineIndex = model.getLineAtOffset(offset);
-				if (this._wrapMode) {
-					var line = this._getLine(lineIndex);
-					var visualIndex = line.getLineIndex(offset);
-					if (visualIndex === line.getLineCount() - 1) {
-						offset = model.getLineEnd(lineIndex);
-					} else {
-						offset = line.getLineStart(visualIndex + 1) - 1;
-					}
-					line.destroy();
+			var self = this;
+			var selections = this._getSelections();
+			selections.forEach(function(selection) {
+				if (args.ctrl) {
+					selection.extend(model.getCharCount());
 				} else {
-					if (args.count && args.count > 0) {
-						lineIndex = Math.min (lineIndex  + args.count - 1, model.getLineCount() - 1);
+					var offset = selection.getCaret();
+					var lineIndex = model.getLineAtOffset(offset);
+					if (self._wrapMode) {
+						var line = self._getLine(lineIndex);
+						var visualIndex = line.getLineIndex(offset);
+						if (visualIndex === line.getLineCount() - 1) {
+							offset = model.getLineEnd(lineIndex);
+						} else {
+							offset = line.getLineStart(visualIndex + 1) - 1;
+						}
+						line.destroy();
+					} else {
+						if (args.count && args.count > 0) {
+							lineIndex = Math.min (lineIndex  + args.count - 1, model.getLineCount() - 1);
+						}
+						offset = model.getLineEnd(lineIndex);
 					}
-					offset = model.getLineEnd(lineIndex);
+					selection.extend(offset);
 				}
-				selection.extend(offset);
-			}
-			if (!args.select) { selection.collapse(); }
-			this._setSelection(selection, true, true, callback);
+				if (!args.select) { selection.collapse(); }
+			});
+			this._setSelection(selections, true, true, args.ctrl ? function() {} : null);
 			return true;
 		},
 		_doEnter: function (args) {
@@ -4790,117 +4794,122 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			return true;
 		},
 		_doHome: function (args) {
-			var selection = this._getSelection();
 			var model = this._model;
-			var callback;
-			if (args.ctrl) {
-				selection.extend(0);
-				callback = function() {};
-			} else {
-				var offset = selection.getCaret();
-				var lineIndex = model.getLineAtOffset(offset);
-				if (this._wrapMode) {
-					var line = this._getLine(lineIndex);
-					var visualIndex = line.getLineIndex(offset);
-					offset = line.getLineStart(visualIndex);
-					line.destroy();
+			var self = this;
+			var selections = this._getSelections();
+			selections.forEach(function(selection) {
+				if (args.ctrl) {
+					selection.extend(0);
 				} else {
-					offset = model.getLineStart(lineIndex);
+					var offset = selection.getCaret();
+					var lineIndex = model.getLineAtOffset(offset);
+					if (self._wrapMode) {
+						var line = self._getLine(lineIndex);
+						var visualIndex = line.getLineIndex(offset);
+						offset = line.getLineStart(visualIndex);
+						line.destroy();
+					} else {
+						offset = model.getLineStart(lineIndex);
+					}
+					selection.extend(offset); 
 				}
-				selection.extend(offset); 
-			}
-			if (!args.select) { selection.collapse(); }
-			this._setSelection(selection, true, true, callback);
+				if (!args.select) { selection.collapse(); }
+			});
+			this._setSelection(selections, true, true, args.ctrl ? function() {} : null);
 			return true;
 		},
 		_doLineDown: function (args) {
 			var model = this._model;
-			var selection = this._getSelection();
-			var caret = selection.getCaret();
-			var lineIndex = model.getLineAtOffset(caret), visualIndex;
-			var line = this._getLine(lineIndex);
-			var x = this._columnX, y = 1, lastLine = false;
-			if (x === -1 || args.wholeLine || (args.select && util.isIE)) {
-				var offset = args.wholeLine ? model.getLineEnd(lineIndex + 1) : caret;
-				x = line.getBoundingClientRect(offset).left;
-			}
-			if ((visualIndex = line.getLineIndex(caret)) < line.getLineCount() - 1) {
-				y = line.getClientRects(visualIndex + 1).top + 1;
-			} else {
-				var lastLineCount = model.getLineCount() - 1;
-				lastLine = lineIndex === lastLineCount;
-				if (args.count && args.count > 0) {
-					lineIndex = Math.min (lineIndex + args.count, lastLineCount);
-				} else {
-					lineIndex++;
+			var self = this;
+			var selections = this._getSelections();
+			selections.forEach(function(selection) {
+				var caret = selection.getCaret();
+				var lineIndex = model.getLineAtOffset(caret), visualIndex;
+				var line = self._getLine(lineIndex);
+				var x = selection._columnX, y = 1, lastLine = false;
+				if (x === -1 || args.wholeLine || (args.select && util.isIE)) {
+					var offset = args.wholeLine ? model.getLineEnd(lineIndex + 1) : caret;
+					x = selection._columnX = line.getBoundingClientRect(offset).left;
 				}
-			}
-			var select = false;
-			if (lastLine) {
-				if (args.select || (util.isMac || util.isLinux)) {
-					selection.extend(model.getCharCount());
+				if ((visualIndex = line.getLineIndex(caret)) < line.getLineCount() - 1) {
+					y = line.getClientRects(visualIndex + 1).top + 1;
+				} else {
+					var lastLineCount = model.getLineCount() - 1;
+					lastLine = lineIndex === lastLineCount;
+					if (args.count && args.count > 0) {
+						lineIndex = Math.min (lineIndex + args.count, lastLineCount);
+					} else {
+						lineIndex++;
+					}
+				}
+				var select = false;
+				if (lastLine) {
+					if (args.select || (util.isMac || util.isLinux)) {
+						selection.extend(model.getCharCount());
+						select = true;
+					}
+				} else {
+					if (line.lineIndex !== lineIndex) {
+						line.destroy();
+						line = self._getLine(lineIndex);
+					}
+					selection.extend(line.getOffset(x, y));
 					select = true;
 				}
-			} else {
-				if (line.lineIndex !== lineIndex) {
-					line.destroy();
-					line = this._getLine(lineIndex);
+				if (select) {
+					if (!args.select) { selection.collapse(); }
 				}
-				selection.extend(line.getOffset(x, y));
-				select = true;
-			}
-			if (select) {
-				if (!args.select) { selection.collapse(); }
-				this._setSelection(selection, true, true);
-			}
-			this._columnX = x;
-			line.destroy();
+				line.destroy();
+			});
+			self._setSelection(selections, true, true, null, 0, false, true);
 			return true;
 		},
 		_doLineUp: function (args) {
 			var model = this._model;
-			var selection = this._getSelection();
-			var caret = selection.getCaret();
-			var lineIndex = model.getLineAtOffset(caret), visualIndex;
-			var line = this._getLine(lineIndex);
-			var x = this._columnX, firstLine = false, y;
-			if (x === -1 || args.wholeLine || (args.select && util.isIE)) {
-				var offset = args.wholeLine ? model.getLineStart(lineIndex - 1) : caret;
-				x = line.getBoundingClientRect(offset).left;
-			}
-			if ((visualIndex = line.getLineIndex(caret)) > 0) {
-				y = line.getClientRects(visualIndex - 1).top + 1;
-			} else {
-				firstLine = lineIndex === 0;
-				if (!firstLine) {
-					if (args.count && args.count > 0) {
-						lineIndex = Math.max (lineIndex - args.count, 0);
-					} else {
-						lineIndex--;
-					}
-					y = this._getLineHeight(lineIndex) - 1;
+			var self = this;
+			var selections = this._getSelections();
+			selections.forEach(function(selection) {
+				var caret = selection.getCaret();
+				var lineIndex = model.getLineAtOffset(caret), visualIndex;
+				var line = self._getLine(lineIndex);
+				var x = selection._columnX, firstLine = false, y;
+				if (x === -1 || args.wholeLine || (args.select && util.isIE)) {
+					var offset = args.wholeLine ? model.getLineStart(lineIndex - 1) : caret;
+					x = selection._columnX = line.getBoundingClientRect(offset).left;
 				}
-			}
-			var select = false;
-			if (firstLine) {
-				if (args.select || (util.isMac || util.isLinux)) {
-					selection.extend(0);
+				if ((visualIndex = line.getLineIndex(caret)) > 0) {
+					y = line.getClientRects(visualIndex - 1).top + 1;
+				} else {
+					firstLine = lineIndex === 0;
+					if (!firstLine) {
+						if (args.count && args.count > 0) {
+							lineIndex = Math.max (lineIndex - args.count, 0);
+						} else {
+							lineIndex--;
+						}
+						y = self._getLineHeight(lineIndex) - 1;
+					}
+				}
+				var select = false;
+				if (firstLine) {
+					if (args.select || (util.isMac || util.isLinux)) {
+						selection.extend(0);
+						select = true;
+					}
+				} else {
+					if (line.lineIndex !== lineIndex) {
+						line.destroy();
+						line = self._getLine(lineIndex);
+					}
+					selection.extend(line.getOffset(x, y));
 					select = true;
 				}
-			} else {
-				if (line.lineIndex !== lineIndex) {
-					line.destroy();
-					line = this._getLine(lineIndex);
+				if (select) {
+					if (!args.select) { selection.collapse(); }
 				}
-				selection.extend(line.getOffset(x, y));
-				select = true;
-			}
-			if (select) {
-				if (!args.select) { selection.collapse(); }
-				this._setSelection(selection, true, true);
-			}
-			this._columnX = x;
-			line.destroy();
+				line.destroy();
+			});
+			self._setSelection(selections, true, true, null, 0, false, true);
 			return true;
 		},
 		_doNoop: function () {
@@ -4909,105 +4918,106 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		_doPageDown: function (args) {
 			var self = this;
 			var model = this._model;
-			var selection = this._getSelection();
-			var caret = selection.getCaret();
-			var caretLine = model.getLineAtOffset(caret);
+			var selections = this._getSelections();
 			var lineCount = model.getLineCount();
 			var scroll = this._getScroll();
-			var clientHeight = this._getClientHeight(), x, line;
-			if (this._lineHeight) {
-				x = this._columnX;
-				var caretRect = this._getBoundsAtOffset(caret);
-				if (x === -1 || (args.select && util.isIE)) {
-					x = caretRect.left;
-				}
-				var lineIndex = this._getLineIndex(caretRect.top + clientHeight);
-				line = this._getLine(lineIndex);
-				var linePixel = this._getLinePixel(lineIndex);
-				var y = caretRect.top + clientHeight - linePixel;
-				caret = line.getOffset(x, y);
-				var rect = line.getBoundingClientRect(caret);
-				line.destroy();
-				selection.extend(caret);
-				if (!args.select) { selection.collapse(); }
-				this._setSelection(selection, true, true, function() {
-					self._columnX = x;
-				}, rect.top + linePixel - caretRect.top);
-				return true;
-			}
-			if (caretLine < lineCount - 1) {
-				var lineHeight = this._getLineHeight();
-				var lines = Math.floor(clientHeight / lineHeight);
-				var scrollLines = Math.min(lineCount - caretLine - 1, lines);
-				scrollLines = Math.max(1, scrollLines);
-				x = this._columnX;
-				if (x === -1 || (args.select && util.isIE)) {
-					line = this._getLine(caretLine);
-					x = line.getBoundingClientRect(caret).left;
+			var clientHeight = this._getClientHeight();
+			var lineHeight = this._getLineHeight();
+			var lines = Math.floor(clientHeight / lineHeight);
+			var x, line, pageScroll = 0;
+			selections.forEach(function(selection) {
+				var caret = selection.getCaret();
+				var caretLine = model.getLineAtOffset(caret);
+				if (self._lineHeight) {
+					x = selection._columnX;
+					var caretRect = self._getBoundsAtOffset(caret);
+					if (x === -1 || (args.select && util.isIE)) {
+						x = selection._columnX = caretRect.left;
+					}
+					var lineIndex = self._getLineIndex(caretRect.top + clientHeight);
+					line = self._getLine(lineIndex);
+					var linePixel = self._getLinePixel(lineIndex);
+					var y = caretRect.top + clientHeight - linePixel;
+					caret = line.getOffset(x, y);
+					var rect = line.getBoundingClientRect(caret);
 					line.destroy();
+					selection.extend(caret);
+					if (!args.select) { selection.collapse(); }
+					pageScroll = Math.min(pageScroll, rect.top + linePixel - caretRect.top);
+				} else {
+					if (caretLine < lineCount - 1) {
+						var scrollLines = Math.min(lineCount - caretLine - 1, lines);
+						scrollLines = Math.max(1, scrollLines);
+						x = selection._columnX;
+						if (x === -1 || (args.select && util.isIE)) {
+							line = self._getLine(caretLine);
+							x = selection._columnX = line.getBoundingClientRect(caret).left;
+							line.destroy();
+						}
+						line = self._getLine(caretLine + scrollLines);
+						selection.extend(line.getOffset(x, 0));
+						line.destroy();
+						if (!args.select) { selection.collapse(); }
+						var verticalMaximum = lineCount * lineHeight;
+						var scrollOffset = scroll.y + scrollLines * lineHeight;
+						if (scrollOffset + clientHeight > verticalMaximum) {
+							scrollOffset = verticalMaximum - clientHeight;
+						}
+						pageScroll = Math.min(pageScroll, scrollOffset - scroll.y);
+					}
 				}
-				line = this._getLine(caretLine + scrollLines);
-				selection.extend(line.getOffset(x, 0));
-				line.destroy();
-				if (!args.select) { selection.collapse(); }
-				var verticalMaximum = lineCount * lineHeight;
-				var scrollOffset = scroll.y + scrollLines * lineHeight;
-				if (scrollOffset + clientHeight > verticalMaximum) {
-					scrollOffset = verticalMaximum - clientHeight;
-				}
-				this._setSelection(selection, true, true, function() {
-					self._columnX = x;
-				}, scrollOffset - scroll.y);
-			}
+			});
+			log(pageScroll)
+			this._setSelection(selections, true, true, function() {}, pageScroll, false, true);
 			return true;
 		},
 		_doPageUp: function (args) {
 			var self = this;
 			var model = this._model;
-			var selection = this._getSelection();
-			var caret = selection.getCaret();
-			var caretLine = model.getLineAtOffset(caret);
+			var selections = this._getSelections();
 			var scroll = this._getScroll();
-			var clientHeight = this._getClientHeight(), x, line;
-			if (this._lineHeight) {
-				x = this._columnX;
-				var caretRect = this._getBoundsAtOffset(caret);
-				if (x === -1 || (args.select && util.isIE)) {
-					x = caretRect.left;
-				}
-				var lineIndex = this._getLineIndex(caretRect.bottom - clientHeight);
-				line = this._getLine(lineIndex);
-				var linePixel = this._getLinePixel(lineIndex);
-				var y = (caretRect.bottom - clientHeight) - linePixel;
-				caret = line.getOffset(x, y);
-				var rect = line.getBoundingClientRect(caret);
-				line.destroy();
-				selection.extend(caret);
-				if (!args.select) { selection.collapse(); }
-				this._setSelection(selection, true, true, function() {
-					self._columnX = x;
-				}, rect.top + linePixel - caretRect.top);
-				return true;
-			}
-			if (caretLine > 0) {
-				var lineHeight = this._getLineHeight();
-				var lines = Math.floor(clientHeight / lineHeight);
-				var scrollLines = Math.max(1, Math.min(caretLine, lines));
-				x = this._columnX;
-				if (x === -1 || (args.select && util.isIE)) {
-					line = this._getLine(caretLine);
-					x = line.getBoundingClientRect(caret).left;
+			var clientHeight = this._getClientHeight();
+			var lineHeight = this._getLineHeight();
+			var lines = Math.floor(clientHeight / lineHeight);
+			var x, line, pageScroll = 0;
+			selections.forEach(function(selection) {
+				var caret = selection.getCaret();
+				var caretLine = model.getLineAtOffset(caret);
+				if (self._lineHeight) {
+					x = selection._columnX;
+					var caretRect = self._getBoundsAtOffset(caret);
+					if (x === -1 || (args.select && util.isIE)) {
+						x = selection._columnX = caretRect.left;
+					}
+					var lineIndex = self._getLineIndex(caretRect.bottom - clientHeight);
+					line = self._getLine(lineIndex);
+					var linePixel = self._getLinePixel(lineIndex);
+					var y = (caretRect.bottom - clientHeight) - linePixel;
+					caret = line.getOffset(x, y);
+					var rect = line.getBoundingClientRect(caret);
 					line.destroy();
+					selection.extend(caret);
+					if (!args.select) { selection.collapse(); }
+					pageScroll = Math.min(pageScroll, rect.top + linePixel - caretRect.top);
+				} else {
+					if (caretLine > 0) {
+						var scrollLines = Math.max(1, Math.min(caretLine, lines));
+						x = selection._columnX;
+						if (x === -1 || (args.select && util.isIE)) {
+							line = self._getLine(caretLine);
+							x = selection._columnX = line.getBoundingClientRect(caret).left;
+							line.destroy();
+						}
+						line = self._getLine(caretLine - scrollLines);
+						selection.extend(line.getOffset(x, self._getLineHeight(caretLine - scrollLines) - 1));
+						line.destroy();
+						if (!args.select) { selection.collapse(); }
+						var scrollOffset = Math.max(0, scroll.y - scrollLines * lineHeight);
+						pageScroll = Math.min(pageScroll, scrollOffset - scroll.y);
+					}
 				}
-				line = this._getLine(caretLine - scrollLines);
-				selection.extend(line.getOffset(x, this._getLineHeight(caretLine - scrollLines) - 1));
-				line.destroy();
-				if (!args.select) { selection.collapse(); }
-				var scrollOffset = Math.max(0, scroll.y - scrollLines * lineHeight);
-				this._setSelection(selection, true, true, function() {
-					self._columnX = x;
-				}, scrollOffset - scroll.y);
-			}
+			});
+			this._setSelection(selections, true, true, function() {}, pageScroll, false, true);
 			return true;
 		},
 		_doPaste: function(e) {
@@ -5057,10 +5067,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		},
 		_doSelectAll: function () {
 			var model = this._model;
-			var selection = this._getSelection();
-			selection.setCaret(0);
-			selection.extend(model.getCharCount());
-			this._setSelection(selection, false);
+			this._setSelection(new Selection(0, model.getCharCount()), false);
 			return true;
 		},
 		_doTab: function () {
@@ -6231,7 +6238,6 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			this._ignoreSelect = true;
 			this._ignoreFocus = false;
 			this._hasFocus = false;
-			this._columnX = -1;
 			this._dragOffset = -1;
 			this._isRangeRects = (!util.isIE || util.isIE >= 9) && typeof parent.ownerDocument.createRange().getBoundingClientRect === "function"; //$NON-NLS-0$
 			this._isW3CEvents = parent.addEventListener;
@@ -6420,7 +6426,6 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		_reset: function() {
 			this._maxLineIndex = -1;
 			this._maxLineWidth = 0;
-			this._columnX = -1;
 			this._topChild = null;
 			this._bottomChild = null;
 			this._topIndexY = 0;
@@ -6602,9 +6607,8 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			}
 			this._updateDOMSelection();
 		},
-		_setSelection: function (selection, scroll, update, callback, pageScroll, add) {
+		_setSelection: function (selection, scroll, update, callback, pageScroll, add, preserveCursorX) {
 			if (selection) {
-				this._columnX = -1;
 				if (update === undefined) { update = true; }
 				var oldSelection = this._getSelections(), newSelection;
 				if (Array.isArray(selection)) {
@@ -6615,6 +6619,12 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 					newSelection = [selection];
 				}
 				this._selection = newSelection;
+				
+				if (!preserveCursorX) {
+					newSelection.forEach(function(sel) {
+						sel._columnX = -1;
+					});
+				}
 
 				/* 
 				* Always showCaret(), even when the selection is not changing, to ensure the
