@@ -3194,7 +3194,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			if (reset) {
 				this._variableLineHeight = false;
 			}
-			this._modifyContent({text: text, start: start, end: end, _code: true}, !reset);
+			this._modifyContent({text: text, selection: [new Selection(start, end, false)], _code: true}, !reset);
 			if (reset) {
 				this._setSelection(new Selection(0, 0, false), true);
 				
@@ -4472,6 +4472,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 					end += lineStart;
 					
 					this._ignoreQueueUpdate = util.isSafari;
+					//TODO multi
 					this._modifyContent({text: deltaText, start: start, end: end, _ignoreDOMSelection: true, _ignoreDOMSelection1: util.isChrome}, true);
 					this._ignoreQueueUpdate = false;
 				}
@@ -4660,21 +4661,25 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			return selection;
 		},
 		_doBackspace: function (args) {
-			var selection = this._getSelection();
-			if (selection.isEmpty()) {
-				if (!args.count) {
-					args.count = 1;
+			var self = this;
+			var selections = this._getSelections();
+			selections.forEach(function(selection) {
+				if (selection.isEmpty()) {
+					if (!args.count) {
+						args.count = 1;
+					}
+					args.count *= -1;
+					args.expandTab = self._expandTab;
+					self._doMove(args, selection);
 				}
-				args.count *= -1;
-				args.expandTab = this._expandTab;
-				this._doMove(args, selection);
-			}
-			this._modifyContent({text: "", start: selection.start, end: selection.end}, true);
+			});
+			this._modifyContent({text: "", selection: selections}, true);
 			return true;
 		},
 		_doCase: function (args) {
 			var selection = this._getSelection();
 			this._doMove(args, selection);
+			//TODO multi text
 			var text = this.getText(selection.start, selection.end);
 			this._setSelection(selection, true);
 			switch (args.type) {
@@ -4700,17 +4705,20 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			return true;
 		},
 		_doContent: function (text) {
-			var selection = this._getSelection();
-			if (this._overwriteMode && selection.isEmpty()) {
-				var model = this._model;
-				var lineIndex = model.getLineAtOffset(selection.end);
-				if (selection.end < model.getLineEnd(lineIndex)) {
-					var line = this._getLine(lineIndex);
-					selection.extend(line.getNextOffset(selection.getCaret(), {unit:"character", count:1})); //$NON-NLS-0$
-					line.destroy();
+			var self = this;
+			var selections = this._getSelections();
+			selections.forEach(function(selection) {
+				if (self._overwriteMode && selection.isEmpty()) {
+					var model = self._model;
+					var lineIndex = model.getLineAtOffset(selection.end);
+					if (selection.end < model.getLineEnd(lineIndex)) {
+						var line = self._getLine(lineIndex);
+						selection.extend(line.getNextOffset(selection.getCaret(), {unit:"character", count:1})); //$NON-NLS-0$
+						line.destroy();
+					}
 				}
-			}
-			return this._modifyContent({text: text, start: selection.start, end: selection.end, _ignoreDOMSelection: true}, true);
+			});
+			return this._modifyContent({text: text, selection: selections, _ignoreDOMSelection: true}, true);
 		},
 		_doCopy: function (e) {
 			var self = this;
@@ -4759,20 +4767,29 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			return true;
 		},
 		_doCut: function (e) {
-			var selection = this._getSelection();
-			if (!selection.isEmpty()) {
-				var text = this._getBaseText(selection.start, selection.end);
+			var self = this;
+			var text = [];
+			var selections = this._getSelections();
+			selections.forEach(function(selection) {
+				if (!selection.isEmpty()) {
+					text.push(self._getBaseText(selection.start, selection.end));
+				}
+			});
+			if (text.length) {
 				this._doContent("");
-				return this._setClipboardText(text, e);
+				return this._setClipboardText(text.join(this._model.getLineDelimiter()), e);
 			}
 			return true;
 		},
 		_doDelete: function (args) {
-			var selection = this._getSelection();
-			if (selection.isEmpty()) {
-				this._doMove(args, selection);
-			}
-			this._modifyContent({text: "", start: selection.start, end: selection.end}, true);
+			var self = this;
+			var selections = this._getSelections();
+			selections.forEach(function(selection) {
+				if (selection.isEmpty()) {
+					self._doMove(args, selection);
+				}
+			});
+			this._modifyContent({text: "", selection: selections}, true);
 			return true;
 		},
 		_doEnd: function (args) {
@@ -4810,11 +4827,20 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		_doEnter: function (args) {
 			if (this._singleMode) return true;
 			var model = this._model;
+			//TODO multi
 			var selection = this._getSelection();
 			this._doContent(model.getLineDelimiter()); 
 			if (args && args.noCursor) {
 				selection.end = selection.start;
 				this._setSelection(selection, true);
+			}
+			return true;
+		},
+		_doEscape: function (args) {
+			var model = this._model;
+			var selections = this._getSelections();
+			if (selections.length > 1) {
+				this._setSelection(selections[0], true);
 			}
 			return true;
 		},
@@ -5098,6 +5124,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			if (!this._tabMode || this._readonly) { return; }
 			var text = "\t"; //$NON-NLS-0$
 			if (this._expandTab) {
+				//TODO multi text
 				var model = this._model;
 				var caret = this._getSelection().getCaret();
 				var lineIndex = model.getLineAtOffset(caret);
@@ -5371,13 +5398,15 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			}
 		},
 		_clearSelection: function (direction) {
-			var selection = this._getSelection();
-			if (selection.isEmpty()) { return false; }
-			if (direction === "next") { //$NON-NLS-0$
-				selection.start = selection.end;
-			} else {
-				selection.end = selection.start;
-			}
+			var self = this;
+			var selections = this._getSelections();
+			selections.forEach(function(selection) {
+				if (direction === "next") { //$NON-NLS-0$
+					selection.start = selection.end;
+				} else {
+					selection.end = selection.start;
+				}
+			});
 			this._setSelection(selection, true);
 			return true;
 		},
@@ -5462,6 +5491,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				"shiftTab": {defaultHandler: function(data) {return self._doShiftTab(merge(data,{}));}, actionDescription: {name: messages.shiftTab}}, //$NON-NLS-0$
 				"enter": {defaultHandler: function(data) {return self._doEnter(merge(data,{}));}, actionDescription: {name: messages.enter}}, //$NON-NLS-0$
 				"enterNoCursor": {defaultHandler: function(data) {return self._doEnter(merge(data,{noCursor:true}));}, actionDescription: {name: messages.enterNoCursor}}, //$NON-NLS-0$
+				"escape": {defaultHandler: function(data) {return self._doEscape(merge(data,{}));}, actionDescription: {name: messages.escape}}, //$NON-NLS-0$
 				"selectAll": {defaultHandler: function(data) {return self._doSelectAll(merge(data,{}));}, actionDescription: {name: messages.selectAll}}, //$NON-NLS-0$
 				"copy": {defaultHandler: function(data) {return self._doCopy(merge(data,{}));}, actionDescription: {name: messages.copy}}, //$NON-NLS-0$
 				"cut": {defaultHandler: function(data) {return self._doCut(merge(data,{}));}, actionDescription: {name: messages.cut}}, //$NON-NLS-0$
@@ -6328,6 +6358,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				return false;
 			}
 			e.type = "Verify"; //$NON-NLS-0$
+			//TODO multi
 			this.onVerify(e);
 
 			if (e.text === null || e.text === undefined) { return false; }
@@ -6335,17 +6366,21 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var model = this._model;
 			try {
 				if (e._ignoreDOMSelection) { this._ignoreDOMSelection = true; }
-				model.setText(e.text, e.start, e.end);
+				var offset = 0;
+				e.selection.forEach(function(selection) {
+					model.setText(e.text, selection.start + offset, selection.end + offset);
+					var newCaret = selection.start + offset + e.text.length;
+					offset += (selection.start - selection.end) + e.text.length;
+					selection.setCaret(newCaret);
+				});
 			} finally {
 				if (e._ignoreDOMSelection) { this._ignoreDOMSelection = false; }
 			}
 
 			if (updateCaret) {
-				var selection = this._getSelection ();
-				selection.setCaret(e.start + e.text.length);
 				try {
 					if (e._ignoreDOMSelection1) { this._ignoreDOMSelection = true; }
-					this._setSelection(selection, true);
+					this._setSelection(e.selection, true);
 				} finally {
 					if (e._ignoreDOMSelection1) { this._ignoreDOMSelection = false; }
 				}
@@ -6362,18 +6397,19 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var removedCharCount = modelChangedEvent.removedCharCount;
 			var addedLineCount = modelChangedEvent.addedLineCount;
 			var removedLineCount = modelChangedEvent.removedLineCount;
-			var selection = this._getSelection();
-			if (selection.end > start) {
-				if (selection.end > start && selection.start < start + removedCharCount) {
-					// selection intersects replaced text. set caret behind text change
-					selection.setCaret(start + addedCharCount);
-				} else {
-					// move selection to keep same text selected
-					selection.start +=  addedCharCount - removedCharCount;
-					selection.end +=  addedCharCount - removedCharCount;
-				}
-				this._setSelection(selection, false, false);
-			}
+			
+//			var selection = this._getSelection();
+//			if (selection.end > start) {
+//				if (selection.end > start && selection.start < start + removedCharCount) {
+//					// selection intersects replaced text. set caret behind text change
+//					selection.setCaret(start + addedCharCount);
+//				} else {
+//					// move selection to keep same text selected
+//					selection.start +=  addedCharCount - removedCharCount;
+//					selection.end +=  addedCharCount - removedCharCount;
+//				}
+//				this._setSelection(selection, false, false);
+//			}
 			
 			var model = this._model;
 			var startLine = model.getLineAtOffset(start);
@@ -6990,6 +7026,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		},
 		_startIME: function () {
 			if (this._imeOffset !== -1) { return; }
+			//TODO multi
 			var selection = this._getSelection();
 			if (!selection.isEmpty()) {
 				this._modifyContent({text: "", start: selection.start, end: selection.end}, true);

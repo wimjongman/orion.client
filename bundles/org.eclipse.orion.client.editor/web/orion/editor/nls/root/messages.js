@@ -73,6 +73,7 @@ define({
 	"tab": "Insert Tab", //$NON-NLS-1$ //$NON-NLS-0$
 	"enter": "Insert Line Delimiter", //$NON-NLS-1$ //$NON-NLS-0$
 	"enterNoCursor": "Insert Line Delimiter", //$NON-NLS-1$ //$NON-NLS-0$
+	"escape": "Escape", //$NON-NLS-1$ //$NON-NLS-0$
 	"selectAll": "Select All", //$NON-NLS-1$ //$NON-NLS-0$
 	"copy": "Copy", //$NON-NLS-1$ //$NON-NLS-0$
 	"cut": "Cut", //$NON-NLS-1$ //$NON-NLS-0$
