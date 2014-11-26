@@ -827,23 +827,35 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			var textView = editor.getTextView();
 			if (textView.getOptions("readonly")) { return false; } //$NON-NLS-0$
 			var model = editor.getModel();
-			var selection = editor.getSelection();
 			var open = "/*", close = "*/", commentTags = new RegExp("/\\*" + "|" + "\\*/", "g"); //$NON-NLS-5$ //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+			var self = this;
+			var offset = 0;
+			this.startUndo();
+			var selections = editor.getSelections();
+			selections.forEach(function(selection) {
+				selection.start += offset;
+				selection.end += offset;
 
-			var result = this._findEnclosingComment(model, selection.start, selection.end);
-			if (result.commentStart !== undefined && result.commentEnd !== undefined) {
-				return true; // Already in a comment
-			}
-
-			var text = model.getText(selection.start, selection.end);
-			if (text.length === 0) { return true; }
-
-			var oldLength = text.length;
-			text = text.replace(commentTags, "");
-			var newLength = text.length;
-
-			editor.setText(open + text + close, selection.start, selection.end);
-			editor.setSelection(selection.start + open.length, selection.end + open.length + (newLength-oldLength));
+				var result = self._findEnclosingComment(model, selection.start, selection.end);
+				if (result.commentStart !== undefined && result.commentEnd !== undefined) {
+					return; // Already in a comment
+				}
+	
+				var text = model.getText(selection.start, selection.end);
+				if (text.length === 0) { return; }
+	
+				var oldLength = text.length;
+				text = text.replace(commentTags, "");
+				var newLength = text.length;
+				text = open + text + close;
+	
+				editor.setText(text, selection.start, selection.end);
+				offset += (selection.start - selection.end) + text.length;
+				selection.start += open.length;
+				selection.end +=  open.length + (newLength-oldLength);
+			});
+			this.endUndo();
+			editor.setSelections(selections);
 			return true;
 		},
 		/**
@@ -984,21 +996,30 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			var editor = this.editor;
 			var textView = editor.getTextView();
 			if (textView.getOptions("readonly")) { return false; } //$NON-NLS-0$
-			var selection = editor.getSelection();
-			if (selection.start !== selection.end) { return false; }
 			var model = editor.getModel();
-			var caretOffset = editor.getCaretOffset();
-			var prevChar = (caretOffset === 0) ? "" : model.getText(selection.start - 1, selection.start); //$NON-NLS-0$
-			var nextChar = (caretOffset === model.getCharCount()) ? "" : model.getText(selection.start, selection.start + 1); //$NON-NLS-0$
-
-			if ((prevChar === "(" && nextChar === ")") || //$NON-NLS-1$ //$NON-NLS-0$
-				(prevChar === "[" && nextChar === "]") || //$NON-NLS-1$ //$NON-NLS-0$
-				(prevChar === "{" && nextChar === "}") || //$NON-NLS-1$ //$NON-NLS-0$
-				(prevChar === "<" && nextChar === ">") || //$NON-NLS-1$ //$NON-NLS-0$
-				(prevChar === '"' && nextChar === '"') || //$NON-NLS-1$ //$NON-NLS-0$
-				(prevChar === "'" && nextChar === "'")) { //$NON-NLS-1$ //$NON-NLS-0$
-				editor.setText("", selection.start, selection.start + 1); //$NON-NLS-0$
-			}
+			var offset = 0;
+			this.startUndo();
+			var selections = editor.getSelections();
+			selections.forEach(function(selection) {
+				selection.start += offset;
+				selection.end += offset;
+				if (selection.start !== selection.end) { return; }
+			
+				var prevChar = (selection.start === 0) ? "" : model.getText(selection.start - 1, selection.start); //$NON-NLS-0$
+				var nextChar = (selection.start === model.getCharCount()) ? "" : model.getText(selection.start, selection.start + 1); //$NON-NLS-0$
+	
+				if ((prevChar === "(" && nextChar === ")") || //$NON-NLS-1$ //$NON-NLS-0$
+					(prevChar === "[" && nextChar === "]") || //$NON-NLS-1$ //$NON-NLS-0$
+					(prevChar === "{" && nextChar === "}") || //$NON-NLS-1$ //$NON-NLS-0$
+					(prevChar === "<" && nextChar === ">") || //$NON-NLS-1$ //$NON-NLS-0$
+					(prevChar === '"' && nextChar === '"') || //$NON-NLS-1$ //$NON-NLS-0$
+					(prevChar === "'" && nextChar === "'")) { //$NON-NLS-1$ //$NON-NLS-0$
+					editor.setText("", selection.start, selection.start + 1); //$NON-NLS-0$
+					offset += -1;
+				}
+			});
+			this.endUndo();
+			editor.setSelections(selections);
 			return false;
 		},
 		_findEnclosingComment: function(model, start, end) {
@@ -1059,40 +1080,53 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			var textView = editor.getTextView();
 			if (textView.getOptions("readonly")) { return false; } //$NON-NLS-0$
 			var model = editor.getModel();
-			var selection = editor.getSelection();
 			var open = "/*", close = "*/"; //$NON-NLS-1$ //$NON-NLS-0$
+			var self  = this;
+			var offset = 0;
+			this.startUndo();
+			var selections = editor.getSelections();
+			selections.forEach(function(selection) {
+				selection.start += offset;
+				selection.end += offset;
 
-			// Try to shrink selection to a comment block
-			var selectedText = model.getText(selection.start, selection.end);
-			var newStart, newEnd;
-			var i;
-			for(i=0; i < selectedText.length; i++) {
-				if (selectedText.substring(i, i + open.length) === open) {
-					newStart = selection.start + i;
-					break;
+				// Try to shrink selection to a comment block
+				var selectedText = model.getText(selection.start, selection.end);
+				var newStart, newEnd;
+				var i;
+				for(i=0; i < selectedText.length; i++) {
+					if (selectedText.substring(i, i + open.length) === open) {
+						newStart = selection.start + i;
+						break;
+					}
 				}
-			}
-			for (; i < selectedText.length; i++) {
-				if (selectedText.substring(i, i + close.length) === close) {
-					newEnd = selection.start + i;
-					break;
+				for (; i < selectedText.length; i++) {
+					if (selectedText.substring(i, i + close.length) === close) {
+						newEnd = selection.start + i;
+						break;
+					}
 				}
-			}
-
-			if (newStart !== undefined && newEnd !== undefined) {
-				editor.setText(model.getText(newStart + open.length, newEnd), newStart, newEnd + close.length);
-				editor.setSelection(newStart, newEnd);
-			} else {
-				// Otherwise find enclosing comment block
-				var result = this._findEnclosingComment(model, selection.start, selection.end);
-				if (result.commentStart === undefined || result.commentEnd === undefined) {
-					return true;
+	
+				var text;
+				if (newStart !== undefined && newEnd !== undefined) {
+					text = model.getText(newStart + open.length, newEnd);
+					editor.setText(text, newStart, newEnd + close.length);
+					offset += (newStart - newEnd - close.length) + text.length;
+					selection.start = newStart;
+					selection.end = newEnd;
+				} else {
+					// Otherwise find enclosing comment block
+					var result = self._findEnclosingComment(model, selection.start, selection.end);
+					if (!(result.commentStart === undefined || result.commentEnd === undefined)) {
+						text = model.getText(result.commentStart + open.length, result.commentEnd);
+						editor.setText(text, result.commentStart, result.commentEnd + close.length);
+						offset += (result.commentStart - result.commentEnd - close.length) + text.length;
+						selection.start = selection.start - open.length;
+						selection.end = selection.end - close.length;
+					}
 				}
-
-				var text = model.getText(result.commentStart + open.length, result.commentEnd);
-				editor.setText(text, result.commentStart, result.commentEnd + close.length);
-				editor.setSelection(selection.start - open.length, selection.end - close.length);
-			}
+			});
+			this.endUndo();
+			editor.setSelections(selections);
 			return true;
 		},
 		toggleLineComment: function() {
