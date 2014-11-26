@@ -565,7 +565,7 @@ define("orion/editor/editor", [ //$NON-NLS-0$
 		getCaretOffset: function() {
 			return this.mapOffset(this._textView.getCaretOffset());
 		},
-
+		
 		getSelection: function() {
 			var textView = this._textView;
 			var selection = textView.getSelection();
@@ -575,6 +575,19 @@ define("orion/editor/editor", [ //$NON-NLS-0$
 				selection.end = model.mapOffset(selection.end);
 			}
 			return selection;
+		},
+
+		getSelections: function() {
+			var textView = this._textView;
+			var model = textView.getModel();
+			var selections = textView.getSelections();
+			selections.forEach(function(selection) {
+				if (model.getBaseModel) {
+					selection.start = model.mapOffset(selection.start);
+					selection.end = model.mapOffset(selection.end);
+				}
+			});
+			return selections;
 		},
 
 		_expandOffset: function(offset) {
@@ -631,6 +644,24 @@ define("orion/editor/editor", [ //$NON-NLS-0$
 				end = model.mapOffset(end, true);
 			}
 			textView.setSelection(start, end, show, callback);
+		},
+		setSelections: function(ranges, show, callback) {
+			var self = this;
+			var textView = this._textView;
+			var model = textView.getModel();
+			ranges.forEach(function(range) {
+				var start = range.start;
+				var end = range.end;
+				if (model.getBaseModel) {
+					self._expandOffset(start);
+					self._expandOffset(end);
+					start = model.mapOffset(start, true);
+					end = model.mapOffset(end, true);
+				}
+				range.start = start;
+				range.end = end;
+			});
+			textView.setSelections(ranges, show, callback);
 		},
 
 		/**

@@ -290,7 +290,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 	};
 	/** @private */
 	Selection.convert = function(selections) {
-		if (selections.length === 1) return selections[0].convert();
+//		if (selections.length === 1) return selections[0].convert();
 		return selections.map(function(sel) {
 			return sel.convert();
 		});
@@ -2291,6 +2291,10 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var s = this._getSelection();
 			return s.convert();
 		},
+		getSelections: function () {
+			var s = this._getSelections();
+			return Selection.convert(s);
+		},
 		/**
 		 * Returns the text for the given range.
 		 * <p>
@@ -3169,6 +3173,25 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			end = Math.max(0, Math.min (end, charCount));
 			var selection = new Selection(start, end, caret);
 			this._setSelection(selection, show === undefined || show, true, callback);
+		},
+		setSelections: function (ranges, show, callback) {
+			var selections = [];
+			var charCount = this._model.getCharCount();
+			ranges.forEach(function(range) {
+				var start = range.start;
+				var end = range.end;
+				var caret = start > end;
+				if (caret) {
+					var tmp = start;
+					start = end;
+					end = tmp;
+				}
+				start = Math.max(0, Math.min (start, charCount));
+				end = Math.max(0, Math.min (end, charCount));
+				var selection = new Selection(start, end, caret);
+				selections.push(selection);
+			});
+			this._setSelection(selections, show === undefined || show, true, callback);
 		},
 		/**
 		 * Replaces the text in the given range with the given text.
