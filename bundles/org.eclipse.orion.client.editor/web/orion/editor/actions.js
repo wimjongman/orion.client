@@ -1101,58 +1101,67 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			if (textView.getOptions("readonly")) { return false; } //$NON-NLS-0$
 			var comment = this.lineComment || "//"; //$NON-NLS-0$
 			var model = editor.getModel();
-			var selection = editor.getSelection();
-			var firstLine = model.getLineAtOffset(selection.start);
-			var lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
-			var uncomment = true, lineIndices = [], index;
-			for (var i = firstLine; i <= lastLine; i++) {
-				var lineText = model.getLine(i, true);
-				index = lineText.indexOf(comment);
-				lineIndices.push(index);
-				if (!uncomment || index === -1) {
-					uncomment = false;
-				} else {
-					if (index !== 0) {
-						var j;
-						for (j=0; j<index; j++) {
-							var c = lineText.charCodeAt(j);
-							if (!(c === 32 || c === 9)) {
-								break;
+			var offset = 0;
+			this.startUndo();
+			var selections = editor.getSelections();
+			textView.setRedraw(false);
+			selections.forEach(function(selection) {
+				selection.start += offset;
+				selection.end += offset;
+				var firstLine = model.getLineAtOffset(selection.start);
+				var lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
+				var uncomment = true, lineIndices = [], index;
+				for (var i = firstLine; i <= lastLine; i++) {
+					var lineText = model.getLine(i, true);
+					index = lineText.indexOf(comment);
+					lineIndices.push(index);
+					if (!uncomment || index === -1) {
+						uncomment = false;
+					} else {
+						if (index !== 0) {
+							var j;
+							for (j=0; j<index; j++) {
+								var c = lineText.charCodeAt(j);
+								if (!(c === 32 || c === 9)) {
+									break;
+								}
 							}
+							uncomment = j === index;
 						}
-						uncomment = j === index;
 					}
 				}
-			}
-			var selStart, selEnd, l = comment.length, k;
-			var lineStart = model.getLineStart(firstLine);
-			textView.setRedraw(false);
-			this.startUndo();
-			if (uncomment) {
-				for (k = lineIndices.length - 1; k >= 0; k--) {
-					index = lineIndices[k] + model.getLineStart(firstLine + k);
-					editor.setText("", index, index + l);
+				var selStart, selEnd, l = comment.length, k;
+				var lineStart = model.getLineStart(firstLine);
+				if (uncomment) {
+					for (k = lineIndices.length - 1; k >= 0; k--) {
+						index = lineIndices[k] + model.getLineStart(firstLine + k);
+						editor.setText("", index, index + l);
+						offset += -l;
+					}
+					var lastLineStart = model.getLineStart(lastLine);
+					selStart = lineStart === selection.start ? selection.start : selection.start - l;
+					selEnd = selection.end - (l * (lastLine - firstLine + 1)) + (selection.end === lastLineStart+1 ? l : 0);
+				} else {
+					for (k = lineIndices.length - 1; k >= 0; k--) {
+						index = model.getLineStart(firstLine + k);
+						editor.setText(comment, index, index);
+						offset += comment.length;
+					}
+					selStart = lineStart === selection.start ? selection.start : selection.start + l;
+					selEnd = selection.end + (l * (lastLine - firstLine + 1));
 				}
-				var lastLineStart = model.getLineStart(lastLine);
-				selStart = lineStart === selection.start ? selection.start : selection.start - l;
-				selEnd = selection.end - (l * (lastLine - firstLine + 1)) + (selection.end === lastLineStart+1 ? l : 0);
-			} else {
-				for (k = lineIndices.length - 1; k >= 0; k--) {
-					index = model.getLineStart(firstLine + k);
-					editor.setText(comment, index, index);
-				}
-				selStart = lineStart === selection.start ? selection.start : selection.start + l;
-				selEnd = selection.end + (l * (lastLine - firstLine + 1));
-			}
+				selection.start = selStart;
+				selection.end = selEnd;
+			});
 			this.endUndo();
-			editor.setSelection(selStart, selEnd);
+			editor.setSelections(selections);
 			textView.setRedraw(true);
 			return true;
 		},
 		trimTrailingWhitespaces: function() {
 			var editor = this.editor;
 			var model = editor.getModel();
-			var selection = editor.getSelection();
+			var selections = editor.getSelections();
 			editor.getTextView().setRedraw(false);
 			editor.getUndoStack().startCompoundChange();
 			var matchTrailingWhiteSpace = /(\s+$)/;
@@ -1169,16 +1178,18 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 					 * Move the caret to its original position prior to the save. If the caret
 					 * was in the trailing whitespaces, move the caret to the end of the line.
 					 */
-					if (selection.start > start) {
-						selection.start = Math.max(start, selection.start - matchLength);
-					}
-					if (selection.start !== selection.end && selection.end > start) {
-						selection.end = Math.max(start, selection.end - matchLength);
-					}
+					selections.forEach(function(selection) {
+						if (selection.start > start) {
+							selection.start = Math.max(start, selection.start - matchLength);
+						}
+						if (selection.start !== selection.end && selection.end > start) {
+							selection.end = Math.max(start, selection.end - matchLength);
+						}
+					});
 				}
 			}
 			editor.getUndoStack().endCompoundChange();
-			editor.setSelection(selection.start, selection.end, false);
+			editor.setSelections(selections, false);
 			editor.getTextView().setRedraw(true);
 		},
 		startUndo: function() {
