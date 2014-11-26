@@ -876,26 +876,39 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			var editor = this.editor;
 			var textView = editor.getTextView();
 			if (textView.getOptions("readonly")) { return false; } //$NON-NLS-0$
-			var selection = editor.getSelection();
-			var model = editor.getModel();
-			var currentOffset = editor.getCaretOffset();
-			var nextChar = (currentOffset === model.getCharCount()) ? "" : model.getText(selection.start, selection.start + 1).trim(); //$NON-NLS-0$
 			var isClosingBracket = new RegExp("^$|[)}\\]>]"); //$NON-NLS-0$ // matches any empty string and closing bracket
-
-			if (selection.start === selection.end && isClosingBracket.test(nextChar)) { //$NON-NLS-0$
-				// No selection and subsequent character is not a closing bracket - wrap the caret with the opening and closing brackets,
-				// and maintain the caret position inbetween the brackets
-				editor.setText(openBracket + closeBracket, selection.start, selection.start);
-				editor.setCaretOffset(selection.start + 1);
-				return true;
-			} else if (selection.start !== selection.end) {
-				// Wrap the selected text with the specified opening and closing brackets and keep selection on text
-				var text = model.getText(selection.start, selection.end);
-				editor.setText(openBracket + text + closeBracket, selection.start, selection.end);
-				editor.setSelection(selection.start + 1, selection.end + 1);
-				return true;
-			}
-			return false;
+			var model = editor.getModel();
+			var offset = 0;
+			this.startUndo();
+			var selections = editor.getSelections();
+			selections.forEach(function(selection) {
+				selection.start += offset;
+				selection.end += offset;
+				var nextChar = (selection.start === model.getCharCount()) ? "" : model.getText(selection.start, selection.start + 1).trim(); //$NON-NLS-0$
+				var text;
+				if (selection.start === selection.end && isClosingBracket.test(nextChar)) {
+					// No selection and subsequent character is not a closing bracket - wrap the caret with the opening and closing brackets,
+					// and maintain the caret position inbetween the brackets
+					text = openBracket + closeBracket;
+					editor.setText(text, selection.start, selection.start);
+					offset += text.length;
+					selection.start = selection.end = selection.start + 1;
+				} else if (selection.start !== selection.end) {
+					// Wrap the selected text with the specified opening and closing brackets and keep selection on text
+					var text = openBracket + model.getText(selection.start, selection.end) + closeBracket;
+					editor.setText(text, selection.start, selection.end);
+					offset += (selection.start - selection.end) + text.length;
+					selection.start += 1;
+					selection.end += 1;
+				} else {
+					editor.setText(openBracket, selection.start, selection.end);
+					offset += (selection.start - selection.end) + openBracket.length;
+					selection.start = selection.end = selection.start + openBracket.length;
+				}
+			});
+			this.endUndo();
+			editor.setSelections(selections);
+			return true;
 		},
 		/**
 		 * Called on a quotation mark keypress.
