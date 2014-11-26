@@ -201,20 +201,28 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			var textView = editor.getTextView();
 			if (textView.getOptions("readonly")) { return false; } //$NON-NLS-0$
 			var model = editor.getModel();
-			var selection = editor.getSelection();
-			var firstLine = model.getLineAtOffset(selection.start);
-			var lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
-			var lineStart = model.getLineStart(firstLine);
-			var lineEnd = model.getLineEnd(lastLine, true);
-			var lineCount = model.getLineCount();
-			var delimiter = "";
-			var text = model.getText(lineStart, lineEnd);
-			if (lastLine === lineCount-1) {
-				text = (delimiter = model.getLineDelimiter()) + text;
-			}
-			var insertOffset = lineEnd;
-			editor.setText(text, insertOffset, insertOffset);
-			editor.setSelection(insertOffset + delimiter.length, insertOffset + text.length);
+			var offset = 0;
+			var selections = editor.getSelections();
+			selections.forEach(function(selection) {
+				selection.start += offset;
+				selection.end += offset;
+				var firstLine = model.getLineAtOffset(selection.start);
+				var lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
+				var lineStart = model.getLineStart(firstLine);
+				var lineEnd = model.getLineEnd(lastLine, true);
+				var lineCount = model.getLineCount();
+				var delimiter = "";
+				var text = model.getText(lineStart, lineEnd);
+				if (lastLine === lineCount-1) {
+					text = (delimiter = model.getLineDelimiter()) + text;
+				}
+				var insertOffset = lineEnd;
+				editor.setText(text, insertOffset, insertOffset);
+				offset += text.length;
+				selection.start = insertOffset + delimiter.length;
+				selection.end = insertOffset + text.length;
+			});
+			editor.setSelections(selections);
 			return true;
 		},
 		copyLinesUp: function() {
@@ -222,20 +230,28 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			var textView = editor.getTextView();
 			if (textView.getOptions("readonly")) { return false; } //$NON-NLS-0$
 			var model = editor.getModel();
-			var selection = editor.getSelection();
-			var firstLine = model.getLineAtOffset(selection.start);
-			var lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
-			var lineStart = model.getLineStart(firstLine);
-			var lineEnd = model.getLineEnd(lastLine, true);
-			var lineCount = model.getLineCount();
-			var delimiter = "";
-			var text = model.getText(lineStart, lineEnd);
-			if (lastLine === lineCount-1) {
-				text += (delimiter = model.getLineDelimiter());
-			}
-			var insertOffset = lineStart;
-			editor.setText(text, insertOffset, insertOffset);
-			editor.setSelection(insertOffset, insertOffset + text.length - delimiter.length);
+			var offset = 0;
+			var selections = editor.getSelections();
+			selections.forEach(function(selection) {
+				selection.start += offset;
+				selection.end += offset;
+				var firstLine = model.getLineAtOffset(selection.start);
+				var lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
+				var lineStart = model.getLineStart(firstLine);
+				var lineEnd = model.getLineEnd(lastLine, true);
+				var lineCount = model.getLineCount();
+				var delimiter = "";
+				var text = model.getText(lineStart, lineEnd);
+				if (lastLine === lineCount-1) {
+					text += (delimiter = model.getLineDelimiter());
+				}
+				var insertOffset = lineStart;
+				editor.setText(text, insertOffset, insertOffset);
+				offset += text.length;
+				selection.start = insertOffset;
+				selection.end = insertOffset + text.length - delimiter.length;
+			});
+			editor.setSelections(selections);
 			return true;
 		},
 		deleteLines: function(data) {
@@ -405,6 +421,7 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 					}
 					editor.setText("", lineStart, lineEnd);
 					editor.setText(text, insertOffset, insertOffset);
+					offset += (lineStart - lineEnd) + text.length;
 					selection.start = insertOffset + delimiterLength;
 					selection.end = insertOffset + delimiterLength + text.length;
 				}
@@ -443,6 +460,7 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 					}
 					editor.setText("", lineStart, lineEnd);
 					editor.setText(text, insertOffset, insertOffset);
+					offset += (lineStart - lineEnd) + text.length;
 					selection.start = insertOffset;
 					selection.end = insertOffset + text.length - delimiterLength;
 				}
