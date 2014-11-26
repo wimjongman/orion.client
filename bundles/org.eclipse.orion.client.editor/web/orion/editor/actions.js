@@ -1109,23 +1109,28 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 		lineStart: function() {
 			var editor = this.editor;
 			var model = editor.getModel();
-			var caretOffset = editor.getCaretOffset();
-			var lineIndex = model.getLineAtOffset(caretOffset);
-			var lineOffset = model.getLineStart(lineIndex);
-			var lineText = model.getLine(lineIndex);
-			var offset;
-			for (offset=0; offset<lineText.length; offset++) {
-				var c = lineText.charCodeAt(offset);
-				if (!(c === 32 || c === 9)) {
-					break;
+			var selections = editor.getSelections();
+			selections.forEach(function(selection) {
+				var caretOffset = selection.getCaret();
+				var lineIndex = model.getLineAtOffset(caretOffset);
+				var lineOffset = model.getLineStart(lineIndex);
+				var lineText = model.getLine(lineIndex);
+				var offset;
+				for (offset=0; offset<lineText.length; offset++) {
+					var c = lineText.charCodeAt(offset);
+					if (!(c === 32 || c === 9)) {
+						break;
+					}
 				}
-			}
-			offset += lineOffset;
-			if (caretOffset !== offset) {
-				editor.setSelection(offset, offset);
-				return true;
-			}
-			return false;
+				offset += lineOffset;
+				if (caretOffset !== offset) {
+					selection.setCaret(offset);
+				} else {
+					selection.setCaret(lineOffset);
+				}
+			});
+			editor.setSelections(selections);
+			return true;
 		},
 		removeBlockComment: function() {
 			var editor = this.editor;
