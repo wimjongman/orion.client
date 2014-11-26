@@ -246,18 +246,26 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			if (data && data.count) {
 				count = data.count;
 			}
-			var selection = editor.getSelection();
-			var model = editor.getModel();
-			var firstLine = model.getLineAtOffset(selection.start);
-			var lineStart = model.getLineStart(firstLine);
-			var lastLine;
-			if (selection.start !== selection.end || count === 1) {
-				lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
-			} else {
-				lastLine = Math.min(firstLine + count - 1, model.getLineCount() - 1);
-			}
-			var lineEnd = model.getLineEnd(lastLine, true);
-			editor.setText("", lineStart, lineEnd);
+			var offset = 0;
+			var selections = editor.getSelections();
+			selections.forEach(function(selection) {
+				selection.start += offset;
+				selection.end += offset;
+				var model = editor.getModel();
+				var firstLine = model.getLineAtOffset(selection.start);
+				var lineStart = model.getLineStart(firstLine);
+				var lastLine;
+				if (selection.start !== selection.end || count === 1) {
+					lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
+				} else {
+					lastLine = Math.min(firstLine + count - 1, model.getLineCount() - 1);
+				}	
+				var lineEnd = model.getLineEnd(lastLine, true);
+				editor.setText("", lineStart, lineEnd);
+				offset += (lineStart - lineEnd);
+				selection.start = selection.end = lineStart;
+			});
+			editor.setSelections(selections);
 			return true;
 		},
 		expandAnnotation: function(expand) {

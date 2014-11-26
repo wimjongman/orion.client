@@ -6391,10 +6391,11 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				if (e._ignoreDOMSelection) { this._ignoreDOMSelection = true; }
 				var offset = 0;
 				e.selection.forEach(function(selection) {
-					model.setText(e.text, selection.start + offset, selection.end + offset);
-					var newCaret = selection.start + offset + e.text.length;
+					selection.start += offset;
+					selection.end += offset;
+					model.setText(e.text, selection.start, selection.end);
 					offset += (selection.start - selection.end) + e.text.length;
-					selection.setCaret(newCaret);
+					selection.setCaret(selection.start + e.text.length);
 				});
 			} finally {
 				if (e._ignoreDOMSelection) { this._ignoreDOMSelection = false; }
@@ -6421,18 +6422,20 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var addedLineCount = modelChangedEvent.addedLineCount;
 			var removedLineCount = modelChangedEvent.removedLineCount;
 			
-//			var selection = this._getSelection();
-//			if (selection.end > start) {
-//				if (selection.end > start && selection.start < start + removedCharCount) {
-//					// selection intersects replaced text. set caret behind text change
-//					selection.setCaret(start + addedCharCount);
-//				} else {
-//					// move selection to keep same text selected
-//					selection.start +=  addedCharCount - removedCharCount;
-//					selection.end +=  addedCharCount - removedCharCount;
-//				}
-//				this._setSelection(selection, false, false);
-//			}
+			var selections = this._getSelections();
+			selections.forEach(function(selection) {
+				if (selection.end > start) {
+					if (selection.end > start && selection.start < start + removedCharCount) {
+						// selection intersects replaced text. set caret behind text change
+						selection.setCaret(start + addedCharCount);
+					} else {
+						// move selection to keep same text selected
+						selection.start +=  addedCharCount - removedCharCount;
+						selection.end +=  addedCharCount - removedCharCount;
+					}
+				}
+			})
+			this._setSelection(selections, false, false);
 			
 			var model = this._model;
 			var startLine = model.getLineAtOffset(start);
