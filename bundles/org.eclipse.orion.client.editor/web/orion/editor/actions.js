@@ -708,119 +708,143 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			var textView = editor.getTextView();
 			if (textView.getOptions("readonly")) { return false; } //$NON-NLS-0$
 			if (textView.getOptions("singleMode")) { return false; } //$NON-NLS-0$
-			var selection = editor.getSelection();
-			if (selection.start === selection.end) {
-				var model = editor.getModel();
-				var lineIndex = model.getLineAtOffset(selection.start);
-				var lineText = model.getLine(lineIndex, false);
-				var lineStart = model.getLineStart(lineIndex);
-				var index = 0;
-				var lineOffset = selection.start - lineStart;
-				var c;
-				while (index < lineOffset && ((c = lineText.charCodeAt(index)) === 32 || c === 9)) { index++; }
-				var prefix = lineText.substring(0, index);
-				var options = textView.getOptions("tabSize", "expandTab"); //$NON-NLS-1$ //$NON-NLS-0$
-				var tab = options.expandTab ? new Array(options.tabSize + 1).join(" ") : "\t"; //$NON-NLS-1$ //$NON-NLS-0$
-				var lineDelimiter = model.getLineDelimiter();
-				var matchCommentStart = /^[\s]*\/\*[\*]*[\s]*$/;
-				var matchCommentDelimiter = /^[\s]*\*/;
-				var matchCommentEnd = /\*\/[\s]*$/;
-				var lineTextBeforeCaret = lineText.substring(0, lineOffset);
-				var lineTextAfterCaret = lineText.substring(lineOffset);
-				var text;
-				// If the character before the caret is an opening brace, smart indent the next line.
-				var prevCharIdx;
-				if (this.smartIndentation && lineText.charCodeAt(prevCharIdx = lineTextBeforeCaret.trimRight().length - 1) === 123) {
-					// Remove any extra whitespace
-					var whitespaceBeforeCaret = lineOffset - prevCharIdx - 1;
-					var whitespaceAfterCaret = lineTextAfterCaret.length - lineTextAfterCaret.trimLeft().length;
-
-					text = lineText.charCodeAt(lineOffset + whitespaceAfterCaret) === 125 ?
-						   lineDelimiter + prefix + tab + lineDelimiter + prefix :
-						   lineDelimiter + prefix + tab;
-
-					editor.setText(text, selection.start - whitespaceBeforeCaret, selection.end + whitespaceAfterCaret);
-					editor.setCaretOffset(selection.start + lineDelimiter.length + prefix.length + tab.length - whitespaceBeforeCaret);
-					return true;
-				// Proceed with autocompleting multi-line comment if the text before the caret matches
-				// the start or comment delimiter (*) of a multi-line comment
-				} else if (this.autoCompleteComments && !matchCommentEnd.test(lineTextBeforeCaret) &&
-							(matchCommentStart.test(lineTextBeforeCaret) || matchCommentDelimiter.test(lineTextBeforeCaret))) {
-					var caretOffset;
-
-					/**
-					 * Matches the start of a multi-line comment. Autocomplete the multi-line block comment,
-					 * moving any text after the caret into the block comment and setting the caret to be
-					 * after the comment delimiter.
-					 */
-					var match = matchCommentStart.exec(lineTextBeforeCaret);
-					if (match) {
-						text = lineDelimiter + prefix + " * "; //$NON-NLS-0$
-						// Text added into the comment block are trimmed of all preceding and trailing whitespaces.
-						// If the text after the caret contains the ending of a block comment, exclude the ending.
-						if (matchCommentEnd.test(lineTextAfterCaret)) {
-							text += lineTextAfterCaret.substring(0, lineTextAfterCaret.length - 2).trim();
-						} else {
-							text += lineTextAfterCaret.trim();
-						}
-						// Add the closing to the multi-line block comment if the next line is not a
-						// comment delimiter.
-						if ((model.getLineCount() === lineIndex + 1) ||
-							!matchCommentDelimiter.test(model.getLine(lineIndex + 1))) {
-							text += lineDelimiter + prefix + " */"; //$NON-NLS-0$
-						}
-						editor.setText(text, selection.start, selection.end + lineTextAfterCaret.length);
-						editor.setCaretOffset(selection.start + lineDelimiter.length + prefix.length + 3);
+			var model = editor.getModel();
+			var options = textView.getOptions("tabSize", "expandTab"); //$NON-NLS-1$ //$NON-NLS-0$
+			var tab = options.expandTab ? new Array(options.tabSize + 1).join(" ") : "\t"; //$NON-NLS-1$ //$NON-NLS-0$
+			var lineDelimiter = model.getLineDelimiter();
+			var matchCommentStart = /^[\s]*\/\*[\*]*[\s]*$/;
+			var matchCommentDelimiter = /^[\s]*\*/;
+			var matchCommentEnd = /\*\/[\s]*$/;
+			var self = this;
+			var offset = 0;
+			function indent(selection) {
+				if (selection.start === selection.end) {
+					var lineIndex = model.getLineAtOffset(selection.start);
+					var lineText = model.getLine(lineIndex, false);
+					var lineStart = model.getLineStart(lineIndex);
+					var index = 0;
+					var lineOffset = selection.start - lineStart;
+					var c;
+					while (index < lineOffset && ((c = lineText.charCodeAt(index)) === 32 || c === 9)) { index++; }
+					var prefix = lineText.substring(0, index);
+					var lineTextBeforeCaret = lineText.substring(0, lineOffset);
+					var lineTextAfterCaret = lineText.substring(lineOffset);
+					var text;
+					// If the character before the caret is an opening brace, smart indent the next line.
+					var prevCharIdx;
+					if (self.smartIndentation && lineText.charCodeAt(prevCharIdx = lineTextBeforeCaret.trimRight().length - 1) === 123) {
+						// Remove any extra whitespace
+						var whitespaceBeforeCaret = lineOffset - prevCharIdx - 1;
+						var whitespaceAfterCaret = lineTextAfterCaret.length - lineTextAfterCaret.trimLeft().length;
+	
+						text = lineText.charCodeAt(lineOffset + whitespaceAfterCaret) === 125 ?
+							   lineDelimiter + prefix + tab + lineDelimiter + prefix :
+							   lineDelimiter + prefix + tab;
+	
+						editor.setText(text, selection.start - whitespaceBeforeCaret, selection.end + whitespaceAfterCaret);
+						offset += (selection.start - whitespaceBeforeCaret - selection.end - whitespaceBeforeCaret) + text.length;
+						selection.start = selection.end = selection.start + lineDelimiter.length + prefix.length + tab.length - whitespaceBeforeCaret;
 						return true;
-					}
-
-					/**
-					 * Matches a comment delimiter (*) as the start of the line, and traverses up the lines to confirm if
-					 * it is a multi-line comment by matching the start of a block comment. If so, continue the
-					 * multi-line comment in the next line. Any text that follows after the caret is moved to the newly
-					 * added comment delimiter.
-					 */
-					match = matchCommentDelimiter.exec(lineTextBeforeCaret);
-					if (match) {
-						for (var i = lineIndex - 1; i >= 0; i--) {
-							var prevLine = model.getLine(i, false);
-							if (matchCommentStart.test(prevLine)) {
-								/**
-								 * If the text after the caret matches the end of a comment block or the character in front of the
-								 * caret is a forward slash, continue the block comment with the caret and text after the caret on
-								 * the next line directly in front of the star (*).
-								 */
-								if (matchCommentEnd.test(lineTextAfterCaret) || lineText.charCodeAt(lineOffset) === 47) {
-									text = lineDelimiter + prefix + "*" + lineTextAfterCaret; //$NON-NLS-0$
-									caretOffset = selection.start + lineDelimiter.length + prefix.length + 1;
-								} else {
-									text = lineDelimiter + prefix + "* " + lineTextAfterCaret; //$NON-NLS-0$
-									caretOffset = selection.start + lineDelimiter.length + prefix.length + 2;
+					// Proceed with autocompleting multi-line comment if the text before the caret matches
+					// the start or comment delimiter (*) of a multi-line comment
+					} else if (self.autoCompleteComments && !matchCommentEnd.test(lineTextBeforeCaret) &&
+								(matchCommentStart.test(lineTextBeforeCaret) || matchCommentDelimiter.test(lineTextBeforeCaret))) {
+						var caretOffset;
+	
+						/**
+						 * Matches the start of a multi-line comment. Autocomplete the multi-line block comment,
+						 * moving any text after the caret into the block comment and setting the caret to be
+						 * after the comment delimiter.
+						 */
+						var match = matchCommentStart.exec(lineTextBeforeCaret);
+						if (match) {
+							text = lineDelimiter + prefix + " * "; //$NON-NLS-0$
+							// Text added into the comment block are trimmed of all preceding and trailing whitespaces.
+							// If the text after the caret contains the ending of a block comment, exclude the ending.
+							if (matchCommentEnd.test(lineTextAfterCaret)) {
+								text += lineTextAfterCaret.substring(0, lineTextAfterCaret.length - 2).trim();
+							} else {
+								text += lineTextAfterCaret.trim();
+							}
+							// Add the closing to the multi-line block comment if the next line is not a
+							// comment delimiter.
+							if ((model.getLineCount() === lineIndex + 1) ||
+								!matchCommentDelimiter.test(model.getLine(lineIndex + 1))) {
+								text += lineDelimiter + prefix + " */"; //$NON-NLS-0$
+							}
+							editor.setText(text, selection.start, selection.end + lineTextAfterCaret.length);
+							offset += (selection.start  - selection.end - lineTextAfterCaret.length) + text.length;
+							selection.start = selection.end = selection.start + lineDelimiter.length + prefix.length + 3;
+							return true;
+						}
+	
+						/**
+						 * Matches a comment delimiter (*) as the start of the line, and traverses up the lines to confirm if
+						 * it is a multi-line comment by matching the start of a block comment. If so, continue the
+						 * multi-line comment in the next line. Any text that follows after the caret is moved to the newly
+						 * added comment delimiter.
+						 */
+						match = matchCommentDelimiter.exec(lineTextBeforeCaret);
+						if (match) {
+							for (var i = lineIndex - 1; i >= 0; i--) {
+								var prevLine = model.getLine(i, false);
+								if (matchCommentStart.test(prevLine)) {
+									/**
+									 * If the text after the caret matches the end of a comment block or the character in front of the
+									 * caret is a forward slash, continue the block comment with the caret and text after the caret on
+									 * the next line directly in front of the star (*).
+									 */
+									if (matchCommentEnd.test(lineTextAfterCaret) || lineText.charCodeAt(lineOffset) === 47) {
+										text = lineDelimiter + prefix + "*" + lineTextAfterCaret; //$NON-NLS-0$
+										caretOffset = selection.start + lineDelimiter.length + prefix.length + 1;
+									} else {
+										text = lineDelimiter + prefix + "* " + lineTextAfterCaret; //$NON-NLS-0$
+										caretOffset = selection.start + lineDelimiter.length + prefix.length + 2;
+									}
+									editor.setText(text, selection.start, selection.end + lineTextAfterCaret.length);
+									offset += (selection.start  - selection.end - lineTextAfterCaret.length) + text.length;
+									selection.start = selection.end = caretOffset;
+									return true;
+								} else if (!matchCommentDelimiter.test(prevLine)) {
+									return false;
 								}
-								editor.setText(text, selection.start, selection.end + lineTextAfterCaret.length);
-								editor.setCaretOffset(caretOffset);
-								return true;
-							} else if (!matchCommentDelimiter.test(prevLine)) {
-								return false;
 							}
 						}
+						return false;
+					} else if (matchCommentEnd.test(lineTextBeforeCaret) && prefix.charCodeAt(prefix.length - 1) === 32) {
+						// Matches the end of a block comment. Fix the indentation for the following line.
+						text = lineDelimiter + prefix.substring(0, prefix.length - 1);
+						editor.setText(text, selection.start, selection.end);
+						offset += (selection.start  - selection.end) + text.length;
+						selection.start = selection.end = selection.start + text.length;
+						return true;
+					} else if (index > 0) {
+						//TODO still wrong when typing inside folding
+						index = lineOffset;
+						while (index < lineText.length && ((c = lineText.charCodeAt(index++)) === 32 || c === 9)) { selection.end++; }
+						text = model.getLineDelimiter() + prefix;
+						editor.setText(text, selection.start, selection.end);
+						offset += (selection.start  - selection.end) + text.length;
+						selection.start = selection.end = selection.start + text.length;
+						return true;
 					}
-					return false;
-				} else if (matchCommentEnd.test(lineTextBeforeCaret) && prefix.charCodeAt(prefix.length - 1) === 32) {
-					// Matches the end of a block comment. Fix the indentation for the following line.
-					text = lineDelimiter + prefix.substring(0, prefix.length - 1);
-					editor.setText(text, selection.start, selection.end);
-					editor.setCaretOffset(selection.start + text.length);
-					return true;
-				} else if (index > 0) {
-					//TODO still wrong when typing inside folding
-					index = lineOffset;
-					while (index < lineText.length && ((c = lineText.charCodeAt(index++)) === 32 || c === 9)) { selection.end++; }
-					editor.setText(model.getLineDelimiter() + prefix, selection.start, selection.end);
-					return true;
 				}
+				return false;
 			}
-			return false;
+			this.startUndo();
+			var selections = editor.getSelections();
+			selections.forEach(function(selection) {
+				selection.start += offset;
+				selection.end += offset;
+				if (!indent(selection)) {
+					editor.setText(lineDelimiter, selection.start, selection.end);
+					offset += (selection.start - selection.end) + lineDelimiter.length;
+					selection.start = selection.end = selection.start + lineDelimiter.length;
+				}
+			});
+			this.endUndo();
+			editor.setSelections(selections);
+			return true;
 		},
 		addBlockComment: function() {
 			var editor = this.editor;
