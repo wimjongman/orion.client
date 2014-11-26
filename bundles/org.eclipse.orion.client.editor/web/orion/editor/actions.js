@@ -1201,14 +1201,15 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			var editor = this.editor;
 			var textView = editor.getTextView();
 			if (textView.getOptions("readonly")) { return false; } //$NON-NLS-0$
-			var selection = editor.getSelection();
 			var model = editor.getModel();
-			var currentOffset = editor.getCaretOffset();
-			var nextChar = (currentOffset === model.getCharCount()) ? "" : model.getText(selection.start, selection.start + 1); //$NON-NLS-0$
-
-			if (nextChar === closingChar) {
-				editor.setCaretOffset(selection.start + 1);
-				return true;
+			var selections = editor.getSelections();
+			if (selections.length == 1 && selections[0].start === selections[0].end) {
+				var nextChar = selections[0].start === model.getCharCount() ? "" : model.getText(selections[0].start, selections[0].start + 1); //$NON-NLS-0$
+				if (nextChar === closingChar) {
+					selections[0].start = selections[0].end = selections[0].start + 1
+					editor.setSelections(selections);
+					return true;
+				}
 			}
 			return false;
 		},
