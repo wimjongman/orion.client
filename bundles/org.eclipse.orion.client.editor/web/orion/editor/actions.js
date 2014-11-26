@@ -381,29 +381,35 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			var textView = editor.getTextView();
 			if (textView.getOptions("readonly")) { return false; } //$NON-NLS-0$
 			var model = editor.getModel();
-			var selection = editor.getSelection();
-			var firstLine = model.getLineAtOffset(selection.start);
-			var lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
-			var lineCount = model.getLineCount();
-			if (lastLine === lineCount-1) {
-				return true;
-			}
-			var lineStart = model.getLineStart(firstLine);
-			var lineEnd = model.getLineEnd(lastLine, true);
-			var insertOffset = model.getLineEnd(lastLine+1, true) - (lineEnd - lineStart);
-			var text, delimiterLength = 0;
-			if (lastLine !== lineCount-2) {
-				text = model.getText(lineStart, lineEnd);
-			} else {
-				// Move delimiter following selection to front of the text
-				var lineEndNoDelimiter = model.getLineEnd(lastLine);
-				text = model.getText(lineEndNoDelimiter, lineEnd) + model.getText(lineStart, lineEndNoDelimiter);
-				delimiterLength += lineEnd - lineEndNoDelimiter;
-			}
+			var offset = 0;
 			this.startUndo();
-			editor.setText("", lineStart, lineEnd);
-			editor.setText(text, insertOffset, insertOffset);
-			editor.setSelection(insertOffset + delimiterLength, insertOffset + delimiterLength + text.length);
+			var selections = editor.getSelections();
+			selections.forEach(function(selection) {
+				selection.start += offset;
+				selection.end += offset;
+				var firstLine = model.getLineAtOffset(selection.start);
+				var lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
+				var lineCount = model.getLineCount();
+				if (lastLine !== lineCount-1) {
+					var lineStart = model.getLineStart(firstLine);
+					var lineEnd = model.getLineEnd(lastLine, true);
+					var insertOffset = model.getLineEnd(lastLine+1, true) - (lineEnd - lineStart);
+					var text, delimiterLength = 0;
+					if (lastLine !== lineCount-2) {
+						text = model.getText(lineStart, lineEnd);
+					} else {
+						// Move delimiter following selection to front of the text
+						var lineEndNoDelimiter = model.getLineEnd(lastLine);
+						text = model.getText(lineEndNoDelimiter, lineEnd) + model.getText(lineStart, lineEndNoDelimiter);
+						delimiterLength += lineEnd - lineEndNoDelimiter;
+					}
+					editor.setText("", lineStart, lineEnd);
+					editor.setText(text, insertOffset, insertOffset);
+					selection.start = insertOffset + delimiterLength;
+					selection.end = insertOffset + delimiterLength + text.length;
+				}
+			});
+			editor.setSelections(selections);
 			this.endUndo();
 			return true;
 		},
@@ -412,30 +418,36 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			var textView = editor.getTextView();
 			if (textView.getOptions("readonly")) { return false; } //$NON-NLS-0$
 			var model = editor.getModel();
-			var selection = editor.getSelection();
-			var firstLine = model.getLineAtOffset(selection.start);
-			if (firstLine === 0) {
-				return true;
-			}
-			var lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
-			var lineCount = model.getLineCount();
-			var insertOffset = model.getLineStart(firstLine - 1);
-			var lineStart = model.getLineStart(firstLine);
-			var lineEnd = model.getLineEnd(lastLine, true);
-			var text = model.getText(lineStart, lineEnd);
-			var delimiterLength = 0;
-			if (lastLine === lineCount-1) {
-				// Move delimiter preceding selection to end of text
-				var delimiterStart = model.getLineEnd(firstLine - 1);
-				var delimiterEnd = model.getLineEnd(firstLine - 1, true);
-				text += model.getText(delimiterStart, delimiterEnd);
-				lineStart = delimiterStart;
-				delimiterLength = delimiterEnd - delimiterStart;
-			}
+			var offset = 0;
 			this.startUndo();
-			editor.setText("", lineStart, lineEnd);
-			editor.setText(text, insertOffset, insertOffset);
-			editor.setSelection(insertOffset, insertOffset + text.length - delimiterLength);
+			var selections = editor.getSelections();
+			selections.forEach(function(selection) {
+				selection.start += offset;
+				selection.end += offset;
+				var firstLine = model.getLineAtOffset(selection.start);
+				if (firstLine !== 0) {
+					var lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
+					var lineCount = model.getLineCount();
+					var insertOffset = model.getLineStart(firstLine - 1);
+					var lineStart = model.getLineStart(firstLine);
+					var lineEnd = model.getLineEnd(lastLine, true);
+					var text = model.getText(lineStart, lineEnd);
+					var delimiterLength = 0;
+					if (lastLine === lineCount-1) {
+						// Move delimiter preceding selection to end of text
+						var delimiterStart = model.getLineEnd(firstLine - 1);
+						var delimiterEnd = model.getLineEnd(firstLine - 1, true);
+						text += model.getText(delimiterStart, delimiterEnd);
+						lineStart = delimiterStart;
+						delimiterLength = delimiterEnd - delimiterStart;
+					}
+					editor.setText("", lineStart, lineEnd);
+					editor.setText(text, insertOffset, insertOffset);
+					selection.start = insertOffset;
+					selection.end = insertOffset + text.length - delimiterLength;
+				}
+			});
+			editor.setSelections(selections);
 			this.endUndo();
 			return true;
 		},
