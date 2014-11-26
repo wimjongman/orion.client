@@ -906,32 +906,47 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			var editor = this.editor;
 			var textView = editor.getTextView();
 			if (textView.getOptions("readonly")) { return false; } //$NON-NLS-0$
-			var selection = editor.getSelection();
-			var model = editor.getModel();
-			var currentOffset = editor.getCaretOffset();
-			var prevChar = (currentOffset === 0) ? "" : model.getText(selection.start - 1, selection.start).trim(); //$NON-NLS-0$
-			var nextChar = (currentOffset === model.getCharCount()) ? "" : model.getText(selection.start, selection.start + 1).trim(); //$NON-NLS-0$
 			var isQuotation = new RegExp("^\"$|^'$"); //$NON-NLS-0$
 			var isAlpha = new RegExp("\\w"); //$NON-NLS-0$
 			var isClosingBracket = new RegExp("^$|[)}\\]>]"); //$NON-NLS-0$ // matches any empty string and closing bracket
-
-			// Wrap the selected text with the specified opening and closing quotation marks and keep selection on text
-			if (selection.start !== selection.end) {
-				var text = model.getText(selection.start, selection.end);
-				if (isQuotation.test(text)) { return false; }
-				editor.setText(quotation + text + quotation, selection.start, selection.end);
-				editor.setSelection(selection.start + 1, selection.end + 1);
-			} else if (nextChar === quotation) {
-				// Skip over the next character if it matches the specified quotation mark
-				editor.setCaretOffset(selection.start + 1);
-			} else if (prevChar === quotation || isQuotation.test(nextChar) || isAlpha.test(prevChar) || !isClosingBracket.test(nextChar)) {
-				// Insert the specified quotation mark
-				return false;
-			} else {
-				// No selection - wrap the caret with the opening and closing quotation marks, and maintain the caret position inbetween the quotations
-				editor.setText(quotation + quotation, selection.start, selection.start);
-				editor.setCaretOffset(selection.start + 1);
-			}
+			var model = editor.getModel();
+			var offset = 0;
+			this.startUndo();
+			var selections = editor.getSelections();
+			selections.forEach(function(selection) {
+				selection.start += offset;
+				selection.end += offset;
+				var prevChar = (selection.start === 0) ? "" : model.getText(selection.start - 1, selection.start).trim(); //$NON-NLS-0$
+				var nextChar = (selection.start === model.getCharCount()) ? "" : model.getText(selection.start, selection.start + 1).trim(); //$NON-NLS-0$
+				function insertQuotation() {
+					editor.setText(quotation, selection.start, selection.end);
+					offset += (selection.start - selection.end) + quotation.length;
+					selection.start = selection.end = selection.start + quotation.length;
+				}
+				// Wrap the selected text with the specified opening and closing quotation marks and keep selection on text
+				if (selection.start !== selection.end) {
+					var text = model.getText(selection.start, selection.end);
+					if (isQuotation.test(text)) {
+						insertQuotation();
+					} else {
+						editor.setText(quotation + text + quotation, selection.start, selection.end);
+						selection.start += 1;
+						selection.end += 1;
+					}
+				} else if (nextChar === quotation) {
+					// Skip over the next character if it matches the specified quotation mark
+					selection.start = selection.end = selection.start + 1;
+				} else if (prevChar === quotation || isQuotation.test(nextChar) || isAlpha.test(prevChar) || !isClosingBracket.test(nextChar)) {
+					insertQuotation();
+				} else {
+					// No selection - wrap the caret with the opening and closing quotation marks, and maintain the caret position inbetween the quotations
+					editor.setText(quotation + quotation, selection.start, selection.end);
+					offset += quotation.length * 2;
+					selection.start = selection.end = selection.start + quotation.length;
+				}
+			});
+			this.endUndo();
+			editor.setSelections(selections);
 			return true;
 		},
 		/**
@@ -1197,7 +1212,7 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			var model = editor.getModel();
 			var selections = editor.getSelections();
 			editor.getTextView().setRedraw(false);
-			editor.getUndoStack().startCompoundChange();
+			this.startUndo();
 			var matchTrailingWhiteSpace = /(\s+$)/;
 			var lineCount = model.getLineCount();
 			for (var i = 0; i < lineCount; i++) {
@@ -1222,7 +1237,7 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 					});
 				}
 			}
-			editor.getUndoStack().endCompoundChange();
+			this.endUndo();
 			editor.setSelections(selections, false);
 			editor.getTextView().setRedraw(true);
 		},
