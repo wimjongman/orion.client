@@ -319,24 +319,37 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			if (textView.getOptions("readonly")) { return false; } //$NON-NLS-0$
 			if(!textView.getOptions("tabMode")) { return; } //$NON-NLS-0$
 			var model = editor.getModel();
-			var selection = editor.getSelection();
-			var firstLine = model.getLineAtOffset(selection.start);
-			var lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
-			if (firstLine !== lastLine) {
-				var lines = [];
-				lines.push("");
-				for (var i = firstLine; i <= lastLine; i++) {
-					lines.push(model.getLine(i, true));
+			var offset = 0;
+			var selections = editor.getSelections();
+			if (selections.some(function(selection) {
+				selection.start += offset;
+				selection.end += offset;
+				var firstLine = model.getLineAtOffset(selection.start);
+				var lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
+				if (firstLine !== lastLine || selections.length > 1) {
+					var lines = [];
+					lines.push("");
+					for (var i = firstLine; i <= lastLine; i++) {
+						lines.push(model.getLine(i, true));
+					}
+					var lineStart = model.getLineStart(firstLine);
+					var lineEnd = model.getLineEnd(lastLine, true);
+					var options = textView.getOptions("tabSize", "expandTab"); //$NON-NLS-1$ //$NON-NLS-0$
+					var tab = options.expandTab ? new Array(options.tabSize + 1).join(" ") : "\t"; //$NON-NLS-1$ //$NON-NLS-0$
+					var text = lines.join(tab);
+					editor.setText(text, lineStart, lineEnd);
+					var start = lineStart === selection.start ? selection.start : selection.start + tab.length;
+					var end = selection.end + ((lastLine - firstLine + 1) * tab.length);
+					offset += (lineStart - lineEnd) + text.length;
+					selection.start = start;
+					selection.end = end;
+				} else {
+					return true;
 				}
-				var lineStart = model.getLineStart(firstLine);
-				var lineEnd = model.getLineEnd(lastLine, true);
-				var options = textView.getOptions("tabSize", "expandTab"); //$NON-NLS-1$ //$NON-NLS-0$
-				var text = options.expandTab ? new Array(options.tabSize + 1).join(" ") : "\t"; //$NON-NLS-1$ //$NON-NLS-0$
-				editor.setText(lines.join(text), lineStart, lineEnd);
-				editor.setSelection(lineStart === selection.start ? selection.start : selection.start + text.length, selection.end + ((lastLine - firstLine + 1) * text.length));
-				return true;
-			}
-			return false;
+				return false;
+			})) return false;
+			editor.setSelections(selections);
+			return true;
 		},
 		gotoLastEdit: function() {
 			if (typeof this._lastEditLocation === "number")  { //$NON-NLS-0$
@@ -488,38 +501,47 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			var textView = editor.getTextView();
 			if (textView.getOptions("readonly")) { return false; } //$NON-NLS-0$
 			if(!textView.getOptions("tabMode")) { return; } //$NON-NLS-0$
+			var offset = 0;
 			var model = editor.getModel();
-			var selection = editor.getSelection();
-			var firstLine = model.getLineAtOffset(selection.start);
-			var lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
-			var tabSize = textView.getOptions("tabSize"); //$NON-NLS-0$
-			var spaceTab = new Array(tabSize + 1).join(" "); //$NON-NLS-0$
-			var lines = [], removeCount = 0, firstRemoveCount = 0;
-			for (var i = firstLine; i <= lastLine; i++) {
-				var line = model.getLine(i, true);
-				if (model.getLineStart(i) !== model.getLineEnd(i)) {
-					if (line.indexOf("\t") === 0) { //$NON-NLS-0$
-						line = line.substring(1);
-						removeCount++;
-					} else if (line.indexOf(spaceTab) === 0) {
-						line = line.substring(tabSize);
-						removeCount += tabSize;
-					} else {
-						return true;
+			var selections = editor.getSelections();
+			selections.forEach(function(selection) {
+				selection.start += offset;
+				selection.end += offset;
+				var firstLine = model.getLineAtOffset(selection.start);
+				var lastLine = model.getLineAtOffset(selection.end > selection.start ? selection.end - 1 : selection.end);
+				var tabSize = textView.getOptions("tabSize"); //$NON-NLS-0$
+				var spaceTab = new Array(tabSize + 1).join(" "); //$NON-NLS-0$
+				var lines = [], removeCount = 0, firstRemoveCount = 0;
+				for (var i = firstLine; i <= lastLine; i++) {
+					var line = model.getLine(i, true);
+					if (model.getLineStart(i) !== model.getLineEnd(i)) {
+						if (line.indexOf("\t") === 0) { //$NON-NLS-0$
+							line = line.substring(1);
+							removeCount++;
+						} else if (line.indexOf(spaceTab) === 0) {
+							line = line.substring(tabSize);
+							removeCount += tabSize;
+						} else {
+							return true;
+						}
 					}
+					if (i === firstLine) {
+						firstRemoveCount = removeCount;
+					}
+					lines.push(line);
 				}
-				if (i === firstLine) {
-					firstRemoveCount = removeCount;
-				}
-				lines.push(line);
-			}
-			var lineStart = model.getLineStart(firstLine);
-			var lineEnd = model.getLineEnd(lastLine, true);
-			var lastLineStart = model.getLineStart(lastLine);
-			editor.setText(lines.join(""), lineStart, lineEnd);
-			var start = lineStart === selection.start ? selection.start : selection.start - firstRemoveCount;
-			var end = Math.max(start, selection.end - removeCount + (selection.end === lastLineStart+1 && selection.start !== selection.end ? 1 : 0));
-			editor.setSelection(start, end);
+				var lineStart = model.getLineStart(firstLine);
+				var lineEnd = model.getLineEnd(lastLine, true);
+				var lastLineStart = model.getLineStart(lastLine);
+				var text = lines.join("");
+				editor.setText(text, lineStart, lineEnd);
+				var start = lineStart === selection.start ? selection.start : selection.start - firstRemoveCount;
+				var end = Math.max(start, selection.end - removeCount + (selection.end === lastLineStart+1 && selection.start !== selection.end ? 1 : 0));
+				offset += (lineStart - lineEnd) + text.length;
+				selection.start = start;
+				selection.end = end;
+			});
+			editor.setSelections(selections);
 			return true;
 		},
 		startUndo: function() {
