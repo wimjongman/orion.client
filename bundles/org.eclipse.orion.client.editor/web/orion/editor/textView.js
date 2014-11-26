@@ -291,9 +291,10 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 	/** @private */
 	Selection.convert = function(selections) {
 //		if (selections.length === 1) return selections[0].convert();
-		return selections.map(function(sel) {
-			return sel.convert();
-		});
+//		return selections.map(function(sel) {
+//			return sel.convert();
+//		});
+		return selections;
 	};
 	/** @private */
 	Selection.merge = function(selections) {
@@ -323,7 +324,8 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		},
 		/** @private */
 		convert: function() {
-			return {start: this.start, end: this.end};
+			//return {start: this.start, end: this.end};
+			return this;
 		},
 		/** @private */
 		collapse: function() {
