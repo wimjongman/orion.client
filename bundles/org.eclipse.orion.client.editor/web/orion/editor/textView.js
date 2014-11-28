@@ -288,6 +288,12 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		}
 		return true;
 	};
+	Selection.editing = function(selections) {
+		for (var i = 0; i < selections.length; i++) {
+			if (selections[i]._editing) return selections[i];
+		}
+		return selections[0];
+	};
 	/** @private */
 	Selection.convert = function(selections) {
 //		if (selections.length === 1) return selections[0].convert();
@@ -297,6 +303,12 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		return selections;
 	};
 	/** @private */
+	Selection.contains = function(selections, offset) {
+		return selections.some(function(selection) {
+			return selection.contains(offset);
+		});
+	}
+	/** @private */
 	Selection.merge = function(selections) {
 		if (selections.length <= 1) return selections;
 		selections.sort(function(a, b) {
@@ -305,7 +317,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		var result = [];
 		var current = selections[0];
 		for (var i = 1; i < selections.length; i++) {
-			if (selections[i].start >= current.end) {
+			if (selections[i].start >= current.end || current._editing || selections[i]._editing) {
 				result.push(current);
 				current = selections[i];
 			} else {
@@ -320,12 +332,20 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		clone: function() {
 			var result = new Selection(this.start, this.end, this.caret);
 			result._columnX = this._columnX;
+			result._editing = this._editing;
 			return result;
 		},
 		/** @private */
 		convert: function() {
 			//return {start: this.start, end: this.end};
 			return this;
+		},
+		/** @private */
+		contains: function(offset) {
+			if (this.start <= offset && offset < this.end) {
+				return true;
+			}
+			return false;
 		},
 		/** @private */
 		collapse: function() {
@@ -3826,8 +3846,11 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 					self._ignoreFocus = false;
 				}, 0);
 			}
+			var extend = e.shiftKey;
+			var add = util.isMac ? e.metaKey : e.ctrlKey;
 			if (this._clickCount === 1) {
-				result = this._setSelectionTo(e.clientX, e.clientY, e.shiftKey, (!util.isOpera || util.isOpera >= 12.16) && this._hasFocus && this.isListening("DragStart"), util.isMac ? e.metaKey : e.ctrlKey); //$NON-NLS-0$
+				var drag = (!util.isOpera || util.isOpera >= 12.16) && this._hasFocus && this.isListening("DragStart"); //$NON-NLS-0$
+				result = this._setSelectionTo(e.clientX, e.clientY, true, extend, add, drag);
 				if (result) { this._setGrab(target); }
 			} else {
 				/*
@@ -3846,8 +3869,8 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				if (this._isW3CEvents) { this._setGrab(target); }
 				
 				this._doubleClickSelection = null;
-				this._setSelectionTo(e.clientX, e.clientY, e.shiftKey);
-				this._doubleClickSelection = this._getSelection();
+				this._setSelectionTo(e.clientX, e.clientY, true, extend, add, false);
+				this._doubleClickSelection = Selection.editing(this._getSelections());
 			}
 			return result;
 		},
@@ -4007,7 +4030,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				this._doAutoScroll("right", x - rightEdge, y); //$NON-NLS-0$
 			} else {
 				this._endAutoScroll();
-				this._setSelectionTo(x, y, true);
+				this._setSelectionTo(x, y, false, true);
 			}
 		},
 		_isClientDiv: function(e) {
@@ -4073,13 +4096,15 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				return;
 			}
 			if (left && this._isMouseDown) {
+				var selections = this._getSelections();
+				var selection = Selection.editing(selections);
+				selection._editing = false;
 				if (this._dragOffset !== -1) {
-					var selection = this._getSelection();
 					selection.extend(this._dragOffset);
 					selection.collapse();
-					this._setSelection(selection, true, true);
 					this._dragOffset = -1;
 				}
+				this._setSelection(selections, true);
 				this._isMouseDown = false;
 				this._endAutoScroll();
 				
@@ -4852,12 +4877,13 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		_doEnter: function (args) {
 			if (this._singleMode) return true;
 			var model = this._model;
-			//TODO multi
-			var selection = this._getSelection();
+			var selections = this._getSelections();
 			this._doContent(model.getLineDelimiter()); 
 			if (args && args.noCursor) {
-				selection.end = selection.start;
-				this._setSelection(selection, true);
+				selections.forEach(function(selection) {
+					selection.end = selection.start;
+				});
+				this._setSelection(selections, true);
 			}
 			return true;
 		},
@@ -5102,7 +5128,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 					if (util.isLinux && self._lastMouseButton === 2) {
 						var timeDiff = new Date().getTime() - self._lastMouseTime;
 						if (timeDiff <= self._clickTime) {
-							self._setSelectionTo(self._lastMouseX, self._lastMouseY);
+							self._setSelectionTo(self._lastMouseX, self._lastMouseY, true);
 						}
 					}
 					self._doContent(text);
@@ -5181,7 +5207,8 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		/************************************ Internals ******************************************/
 		_autoScroll: function () {
 			var model = this._model;
-			var selection = this._getSelection();
+			var selections = this._getSelections();
+			var selection = Selection.editing(selections);
 			var pt = this.convert({x: this._autoScrollX, y: this._autoScrollY}, "page", "document"); //$NON-NLS-1$ //$NON-NLS-0$
 			var caret = selection.getCaret();
 			var lineCount = model.getLineCount();
@@ -5206,7 +5233,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				selection.extend(line.getOffset(pt.x, pt.y - this._getLinePixel(lineIndex)));
 				line.destroy();
 			}
-			this._setSelection(selection, true);
+			this._setSelection(selections, true);
 		},
 		_autoScrollTimer: function () {
 			this._autoScroll();
@@ -6740,29 +6767,42 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				}
 			}
 		},
-		_setSelectionTo: function (x, y, extent, drag, add) {
-			var model = this._model, offset;
-			var selection = this._getSelection();
+		_setSelectionTo: function (x, y, down, extent, add, drag) {
+			var model = this._model;
+			var selections = this._getSelections();
 			var pt = this.convert({x: x, y: y}, "page", "document"); //$NON-NLS-1$ //$NON-NLS-0$
-			var lineIndex = this._getLineIndex(pt.y), line;
-			if (this._clickCount === 1) {
-				line = this._getLine(lineIndex);
-				offset = line.getOffset(pt.x, pt.y - this._getLinePixel(lineIndex));
-				line.destroy();
-				if (drag && !extent) {
-					if (selection.start <= offset && offset < selection.end) {
-						this._dragOffset = offset;
-						return false;
-					}
+			var lineIndex = this._getLineIndex(pt.y);
+			var line = this._getLine(lineIndex);
+			var offset = line.getOffset(pt.x, pt.y - this._getLinePixel(lineIndex));
+			if (drag && !extent) {
+				if (Selection.contains(selections, offset)) {
+					this._dragOffset = offset;
+					line.destroy();
+					return false;
 				}
+			}
+			var selection;
+			if (!down) {
+				selection = Selection.editing(selections);
+			} else if (extent) {
+				selection = selections[selections.length - 1];
+				selection._editing = true;
+			} else {
+				selection = new Selection(0, 0);
+				selection._editing = true;
+				if (add) {
+					selections.push(selection);
+				} else {
+					selections = [selection];
+				}
+			}
+			if (this._clickCount === 1) {
 				selection.extend(offset);
 				if (!extent) { selection.collapse(); }
 			} else {
 				var word = (this._clickCount & 1) === 0;
 				var start, end;
 				if (word) {
-					line = this._getLine(lineIndex);
-					offset = line.getOffset(pt.x, pt.y - this._getLinePixel(lineIndex));
 					if (this._doubleClickSelection) {
 						if (offset >= this._doubleClickSelection.start) {
 							start = this._doubleClickSelection.start;
@@ -6775,7 +6815,6 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 						start = line.getNextOffset(offset, {unit:"word", count:-1}); //$NON-NLS-0$
 						end = line.getNextOffset(start, {unit:"wordend", count:1}); //$NON-NLS-0$
 					}
-					line.destroy();
 				} else {
 					if (this._doubleClickSelection) {
 						var doubleClickLine = model.getLineAtOffset(this._doubleClickSelection.start);
@@ -6793,8 +6832,9 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				}
 				selection.setCaret(start);
 				selection.extend(end);
-			} 
-			this._setSelection(selection, true, true, null, false, add);
+			}
+			this._setSelection(selections, true, true, null, false);
+			line.destroy();
 			return true;
 		},
 		_setFullSelection: function(fullSelection, init) {
@@ -6935,7 +6975,8 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			if (this._redrawCount > 0) { return; }
 			if (this._ignoreDOMSelection) { return; }
 			var model = this._model;
-			var selection = this._getSelection();
+			var selections = this._getSelections();
+			var selection = Selection.editing(selections);
 			var scroll = this._getScroll();
 			var caret = selection.getCaret();
 			var start = selection.start;
