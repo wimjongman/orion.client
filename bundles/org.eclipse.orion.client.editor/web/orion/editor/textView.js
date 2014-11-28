@@ -3392,7 +3392,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			* The fix is to create a DOM element in the body to force a redraw.
 			*/
 			if (util.isIE < 9) {
-				if (!this._getSelection().isEmpty()) {
+				if (!this._getSelections()[0].isEmpty()) {
 					var rootDiv = this._rootDiv;
 					var child = util.createElement(rootDiv.ownerDocument, "div"); //$NON-NLS-0$
 					rootDiv.appendChild(child);
@@ -4104,7 +4104,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 					selection.collapse();
 					this._dragOffset = -1;
 				}
-				this._setSelection(selections, true);
+				this._setSelection(selections, false);
 				this._isMouseDown = false;
 				this._endAutoScroll();
 				
@@ -4727,32 +4727,34 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			return true;
 		},
 		_doCase: function (args) {
-			var selection = this._getSelection();
-			this._doMove(args, selection);
-			//TODO multi text
-			var text = this.getText(selection.start, selection.end);
-			this._setSelection(selection, true);
-			switch (args.type) {
-				case "lower": text = text.toLowerCase(); break; //$NON-NLS-0$
-				case "capitalize": text = text.replace(/(?:^|\s)\S/g, function(a) { return a.toUpperCase(); }); break; //$NON-NLS-0$
-				case "reverse":  //$NON-NLS-0$
-					var newText = "";
-					for (var i=0; i<text.length; i++) {
-						var s = text[i];
-						var l = s.toLowerCase();
-						if (l !== s) {
-							s = l;
-						} else {
-							s = s.toUpperCase();
-						}
-						newText += s;
-					} 
-					text = newText;
-					break;
-				default: text = text.toUpperCase(); break;
-			}
-			this._doContent(text);
-			return true;
+			var self = this;
+			var selections = this._getSelections();
+			var changes = [];
+			selections.forEach(function(selection) {
+				self._doMove(args, selection);
+				var text = self.getText(selection.start, selection.end);
+				switch (args.type) {
+					case "lower": text = text.toLowerCase(); break; //$NON-NLS-0$
+					case "capitalize": text = text.replace(/(?:^|\s)\S/g, function(a) { return a.toUpperCase(); }); break; //$NON-NLS-0$
+					case "reverse":  //$NON-NLS-0$
+						var newText = "";
+						for (var i=0; i<text.length; i++) {
+							var s = text[i];
+							var l = s.toLowerCase();
+							if (l !== s) {
+								s = l;
+							} else {
+								s = s.toUpperCase();
+							}
+							newText += s;
+						} 
+						text = newText;
+						break;
+					default: text = text.toUpperCase(); break;
+				}
+				changes.push(text);
+			});
+			return this._modifyContent({text: changes, selection: selections, _ignoreDOMSelection: true}, true);
 		},
 		_doContent: function (text) {
 			var self = this;
@@ -5173,18 +5175,22 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		},
 		_doTab: function () {
 			if (!this._tabMode || this._readonly) { return; }
+			var self = this;
 			var text = "\t"; //$NON-NLS-0$
+			var selections = this._getSelections();
 			if (this._expandTab) {
-				//TODO multi text
+				text = [];
 				var model = this._model;
-				var caret = this._getSelection().getCaret();
-				var lineIndex = model.getLineAtOffset(caret);
-				var lineStart = model.getLineStart(lineIndex);
-				var spaces = this._tabSize - ((caret - lineStart) % this._tabSize);
-				text = (newArray(spaces + 1)).join(" "); //$NON-NLS-0$
+				var tabSize = this._tabSize;
+				selections.forEach(function(selection) {
+					var caret = selection.getCaret();
+					var lineIndex = model.getLineAtOffset(caret);
+					var lineStart = model.getLineStart(lineIndex);
+					var spaces = tabSize - ((caret - lineStart) % tabSize);
+					text.push((newArray(spaces + 1)).join(" ")); //$NON-NLS-0$
+				});
 			}
-			this._doContent(text);
-			return true;
+			return this._modifyContent({text: text, selection: selections, _ignoreDOMSelection: true}, true);
 		},
 		_doShiftTab: function () {
 			if (!this._tabMode || this._readonly) { return; }
@@ -6418,13 +6424,15 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var model = this._model;
 			try {
 				if (e._ignoreDOMSelection) { this._ignoreDOMSelection = true; }
-				var offset = 0;
+				var offset = 0, i = 0;
 				e.selection.forEach(function(selection) {
 					selection.start += offset;
 					selection.end += offset;
-					model.setText(e.text, selection.start, selection.end);
-					offset += (selection.start - selection.end) + e.text.length;
-					selection.setCaret(selection.start + e.text.length);
+					var text = Array.isArray(e.text) ? e.text[i] : e.text;
+					model.setText(text, selection.start, selection.end);
+					offset += (selection.start - selection.end) + text.length;
+					selection.setCaret(selection.start + text.length);
+					i++;
 				});
 			} finally {
 				if (e._ignoreDOMSelection) { this._ignoreDOMSelection = false; }
