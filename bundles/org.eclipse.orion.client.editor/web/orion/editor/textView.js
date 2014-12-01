@@ -4521,9 +4521,17 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 					start += lineStart;
 					end += lineStart;
 					
+					var selections = this._getSelections();
+					var deltaStart = selections[0].start - start;
+					var deltaEnd = selections[0].end - end;
+					selections[0].start = start;
+					selections[0].end = end;
+					for (var i=1; i<selections.length; i++) {
+						selections[i].start -= deltaStart;
+						selections[i].end -= deltaEnd;
+					}
 					this._ignoreQueueUpdate = util.isSafari;
-					//TODO multi
-					this._modifyContent({text: deltaText, start: start, end: end, _ignoreDOMSelection: true, _ignoreDOMSelection1: util.isChrome}, true);
+					this._modifyContent({text: deltaText, selection: selections, _ignoreDOMSelection: true}, true);
 					this._ignoreQueueUpdate = false;
 				}
 			} else {
@@ -6439,12 +6447,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			}
 
 			if (updateCaret) {
-				try {
-					if (e._ignoreDOMSelection1) { this._ignoreDOMSelection = true; }
-					this._setSelection(e.selection, true);
-				} finally {
-					if (e._ignoreDOMSelection1) { this._ignoreDOMSelection = false; }
-				}
+				this._setSelection(e.selection, true);
 			}
 			this.onModify({type: "Modify"}); //$NON-NLS-0$
 			return true;
@@ -7103,12 +7106,9 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		},
 		_startIME: function () {
 			if (this._imeOffset !== -1) { return; }
-			//TODO multi
-			var selection = this._getSelection();
-			if (!selection.isEmpty()) {
-				this._modifyContent({text: "", start: selection.start, end: selection.end}, true);
-			}
-			this._imeOffset = selection.start;
+			var selections = this._getSelections();
+			this._modifyContent({text: "", selection: selections}, true);
+			this._imeOffset = selections[0].start;
 		},
 		_unhookEvents: function() {
 			this._model.removeEventListener("preChanging", this._modelListener.onChanging); //$NON-NLS-0$
