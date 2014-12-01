@@ -4,7 +4,7 @@ The Orion Git page has been designed to offer the most common Git functionality 
 
 ![Git Page](git_images/gitPage.png "Git Page")
 
-Fig 1. Git Page in Orion 7.0
+Fig 1. Current Git Page in Orion 7.0
 # Git Page Structure
 
 The Git page is a selection driven master-detail page. You select a repo, you select a branch (or accept the default branch selected) and, along with your current changes, the page will display the changes for the branch.
