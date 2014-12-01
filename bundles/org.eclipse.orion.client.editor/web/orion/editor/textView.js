@@ -958,7 +958,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 								 * causes the selection to be lost. The fix is to detect this case
 								 * and restore the selection. 
 								 */
-								var s = view._getSelection();
+								var s = view._getSelections()[0];
 								if ((lineOffset <= s.start && s.start < lineOffset + nodeLength) ||  (lineOffset <= s.end && s.end < lineOffset + nodeLength)) {
 									view._updateDOMSelection();
 								}
@@ -1353,7 +1353,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 						 * causes the selection to be lost. The fix is to detect this case
 						 * and restore the selection. 
 						 */
-						var s = view._getSelection();
+						var s = view._getSelections()[0];
 						if ((offset <= s.start && s.start < offset + nodeLength) || (offset <= s.end && s.end < offset + nodeLength)) {
 							view._updateDOMSelection();
 						}
@@ -4102,6 +4102,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				if (this._dragOffset !== -1) {
 					selection.extend(this._dragOffset);
 					selection.collapse();
+					selections = selection;
 					this._dragOffset = -1;
 				}
 				this._setSelection(selections, false);
@@ -4402,9 +4403,9 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var selection = window.getSelection();
 			var start = this._getModelOffset(selection.anchorNode, selection.anchorOffset);
 			var end = this._getModelOffset(selection.focusNode, selection.focusOffset);
-			var sel = this._getSelection();
+			var sel = this._getSelections()[0];
 			if (start === undefined || end === undefined || (sel.start === start && sel.end === end)) {
-			    return false;
+				return false;
 			}
 			
 			if (this._checkSelectionChange) {
@@ -5163,7 +5164,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				case "lineDown": pixel = verticalScrollOffset + lineHeight; break; //$NON-NLS-0$
 				case "lineUp": pixel = verticalScrollOffset - lineHeight; break; //$NON-NLS-0$
 				case "centerLine": //$NON-NLS-0$
-					var selection = this._getSelection();
+					var selection = this._getSelections()[0];
 					var lineStart = model.getLineAtOffset(selection.start);
 					var lineEnd = model.getLineAtOffset(selection.end);
 					var selectionHeight = (lineEnd - lineStart + 1) * lineHeight;
