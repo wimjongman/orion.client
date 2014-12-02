@@ -307,7 +307,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		return selections.some(function(selection) {
 			return selection.contains(offset);
 		});
-	}
+	};
 	/** @private */
 	Selection.merge = function(selections) {
 		if (selections.length <= 1) return selections;
@@ -5184,7 +5184,6 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		},
 		_doTab: function () {
 			if (!this._tabMode || this._readonly) { return; }
-			var self = this;
 			var text = "\t"; //$NON-NLS-0$
 			var selections = this._getSelections();
 			if (this._expandTab) {
@@ -6181,7 +6180,6 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			return {x: viewDiv.scrollLeft, y: viewDiv.scrollTop};
 		},
 		_getSelection: function () {
-			//HACK old code working for now
 			return (Array.isArray(this._selection) ? this._selection[0] : this._selection).clone();
 		},
 		_getSelections: function () {
@@ -6425,8 +6423,11 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				return false;
 			}
 			e.type = "Verify"; //$NON-NLS-0$
-			//TODO multi
+			var oldStart = e.start = e.selection[0].start;
+			var oldEnd = e.end = e.selection[0].end;
 			this.onVerify(e);
+			if (oldStart !== e.start) e.selection[0].start = e.start;
+			if (oldEnd !== e.end) e.selection[0].end = e.end;
 
 			if (e.text === null || e.text === undefined) { return false; }
 			
