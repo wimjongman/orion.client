@@ -417,7 +417,7 @@ define("orion/editor/undoStack", [], function() { //$NON-NLS-0$
 				change = this.stack[this.index++];
 			} while (!(result = change.redo(this.view, true)));
 			this._ignoreUndo = false;
-			return true;
+			return result;
 		},
 		/**
 		 * Reset the stack to its original state. All changes in the stack are thrown away.
