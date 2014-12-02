@@ -38,8 +38,8 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			selection.end += offset;
 			callback(selection, setText);
 		});
-		if (compound || selections.length > 1) actions.endUndo();
 		editor.setSelections(selections);
+		if (compound || selections.length > 1) actions.endUndo();
 	}
 
 	/**

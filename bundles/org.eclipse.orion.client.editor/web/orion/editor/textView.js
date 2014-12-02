@@ -3200,17 +3200,22 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var selections = [];
 			var charCount = this._model.getCharCount();
 			ranges.forEach(function(range) {
-				var start = range.start;
-				var end = range.end;
-				var caret = start > end;
-				if (caret) {
-					var tmp = start;
-					start = end;
-					end = tmp;
+				var selection;
+				if (range instanceof Selection) {
+					selection = range.clone();
+				} else {
+					var start = range.start;
+					var end = range.end;
+					var caret = start > end;
+					if (caret) {
+						var tmp = start;
+						start = end;
+						end = tmp;
+					}
+					start = Math.max(0, Math.min (start, charCount));
+					end = Math.max(0, Math.min (end, charCount));
+					selection = new Selection(start, end, caret);
 				}
-				start = Math.max(0, Math.min (start, charCount));
-				end = Math.max(0, Math.min (end, charCount));
-				var selection = new Selection(start, end, caret);
 				selections.push(selection);
 			});
 			this._setSelection(selections, show === undefined || show, true, callback);

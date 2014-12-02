@@ -110,8 +110,7 @@ define("orion/editor/undoStack", [], function() { //$NON-NLS-0$
 		/** @ignore */
 		end: function (view) {
 			if (view) {
-				this.endSelection = view.getSelection();
-				this.endCaret = view.getCaretOffset();
+				this.endSelection = view.getSelections();
 			}
 			var owner = this.owner;
 			if (owner && owner.end) {
@@ -127,9 +126,7 @@ define("orion/editor/undoStack", [], function() { //$NON-NLS-0$
 				this.changes[i].undo(view, false);
 			}
 			if (select && view) {
-				var start = this.startSelection.start;
-				var end = this.startSelection.end;
-				view.setSelection(this.startCaret ? start : end, this.startCaret ? end : start);
+				view.setSelections(this.startSelection);
 			}
 			if (this.changes.length > 1 && view) {
 				view.setRedraw(true);
@@ -152,9 +149,7 @@ define("orion/editor/undoStack", [], function() { //$NON-NLS-0$
 				view.setRedraw(true);
 			}
 			if (select && view) {
-				var start = this.endSelection.start;
-				var end = this.endSelection.end;
-				view.setSelection(this.endCaret ? start : end, this.endCaret ? end : start);
+				view.setSelections(this.endSelection);
 			}
 			var owner = this.owner;
 			if (owner && owner.redo) {
@@ -172,8 +167,7 @@ define("orion/editor/undoStack", [], function() { //$NON-NLS-0$
 		/** @ignore */
 		start: function (view) {
 			if (view) {
-				this.startSelection = view.getSelection();
-				this.startCaret = view.getCaretOffset();
+				this.startSelection = view.getSelections();
 			}
 			var owner = this.owner;
 			if (owner && owner.start) {
