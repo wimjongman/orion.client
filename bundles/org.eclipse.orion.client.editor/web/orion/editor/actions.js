@@ -345,6 +345,7 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 			var model = editor.getModel();
 			var offset = 0;
 			var selections = editor.getSelections();
+			if (selections.length > 1) this.startUndo();
 			if (selections.some(function(selection) {
 				selection.start += offset;
 				selection.end += offset;
@@ -373,6 +374,7 @@ define("orion/editor/actions", [ //$NON-NLS-0$
 				return false;
 			})) return false;
 			editor.setSelections(selections);
+			if (selections.length > 1) this.endUndo();
 			return true;
 		},
 		gotoLastEdit: function() {
