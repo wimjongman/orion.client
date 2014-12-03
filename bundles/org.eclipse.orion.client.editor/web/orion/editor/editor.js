@@ -759,6 +759,7 @@ define("orion/editor/editor", [ //$NON-NLS-0$
 			this._textView = this._textViewFactory();
 			if (this._undoStackFactory) {
 				this._undoStack = this._undoStackFactory.createUndoStack(this);
+				this._textView.setOptions({undoStack: this._undoStack});
 				this.checkDirty();
 			}
 			if (this._textDNDFactory) {

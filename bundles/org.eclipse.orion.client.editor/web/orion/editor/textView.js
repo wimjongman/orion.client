@@ -1677,6 +1677,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 	 * @property {Boolean} [tabMode=true] whether or not the tab keypress is consumed by the view or is used for focus traversal.
 	 * @property {Boolean} [expandTab=false] whether or not the tab key inserts white spaces.
 	 * @property {orion.editor.TextTheme} [theme=orion.editor.TextTheme.getTheme()] the TextTheme manager. TODO more info on this
+	 * @property {orion.editor.UndoStack} [undoStack] the Undo Stack.
 	 * @property {String} [themeClass] the CSS class for the view theming.
 	 * @property {Number} [tabSize=8] The number of spaces in a tab.
 	 * @property {Boolean} [overwriteMode=false] whether or not the view is in insert/overwrite mode.
@@ -2197,7 +2198,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		  this._doMove(options, selection);
 		  return selection.getCaret();
 		},
-        /**
+		/**
 		 * Returns the specified view options.
 		 * <p>
 		 * The returned value is either a <code>orion.editor.TextViewOptions</code> or an option value. An option value is returned when only one string parameter
@@ -5817,6 +5818,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				wrapOffset: {value: 0, update: this._setWrapOffset},
 				wrapMode: {value: false, update: this._setWrapMode},
 				wrappable: {value: false, update: null},
+				undoStack: {value: null, update: this._setUndoStack},
 				theme: {value: mTextTheme.TextTheme.getTheme(), update: this._setTheme},
 				themeClass: {value: undefined, update: this._setThemeClass}
 			};
@@ -6423,6 +6425,21 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				horizontal: rect.bottom - overlayScrollWidth <= y && y < rect.bottom && rect.left <= x && x < rect.right
 			};
 		},
+		_startUndo: function() {
+			if (this._undoStack) {
+				var self = this;
+				this._compoundChange = this._undoStack.startCompoundChange({
+					end: function() {
+						self._compoundChange = null;
+					}
+				});
+			}
+		},
+		_endUndo: function() {
+			if (this._undoStack) {
+				this._undoStack.endCompoundChange();
+			}
+		},
 		_modifyContent: function(e, updateCaret) {
 			if (this._readonly && !e._code) {
 				return false;
@@ -6435,6 +6452,16 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			if (oldEnd !== e.end) e.selection[0].end = e.end;
 
 			if (e.text === null || e.text === undefined) { return false; }
+			
+			var undo = this._compoundChange;
+			if (undo) {
+				if (!Selection.compare(this._getSelections(), undo.owner.selection)) {
+					this._endUndo();
+					if (e.selection.length > 1) this._startUndo();
+				}
+			} else {
+				if (e.selection.length > 1) this._startUndo();
+			}
 			
 			var model = this._model;
 			try {
@@ -6452,10 +6479,13 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			} finally {
 				if (e._ignoreDOMSelection) { this._ignoreDOMSelection = false; }
 			}
-
 			if (updateCaret) {
 				this._setSelection(e.selection, true);
 			}
+			
+			undo = this._compoundChange;
+			if (undo) undo.owner.selection = updateCaret ? e.selection : this._getSelections();
+			
 			this.onModify({type: "Modify"}); //$NON-NLS-0$
 			return true;
 		},
@@ -6970,6 +7000,9 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			if (this._themeClass && globalThemeClass !== this._themeClass) { viewContainerClass += " " + this._themeClass; } //$NON-NLS-0$
 			this._rootDiv.className = viewContainerClass;
 			this._updateStyle(init);
+		},
+		_setUndoStack: function (undoStack) {
+			this._undoStack = undoStack;
 		},
 		_setWrapMode: function (wrapMode, init) {
 			this._wrapMode = wrapMode && this._wrappable;
