@@ -2194,9 +2194,9 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		 * @returns {Number} the next character offset
 		 */
 		getNextOffset: function(offset, options) {
-		  var selection = new Selection(offset, offset, false);
-		  this._doMove(options, selection);
-		  return selection.getCaret();
+			var selection = new Selection(offset, offset, false);
+			this._doMove(options, selection);
+			return selection.getCaret();
 		},
 		/**
 		 * Returns the specified view options.
@@ -2287,7 +2287,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		 * @since 5.0
 		 */
 		getLineStart: function(line) {
-			this.getModel().getLineStart(line);
+			return this.getModel().getLineStart(line);
 		},
 		/**
 		 * Get the view rulers.
