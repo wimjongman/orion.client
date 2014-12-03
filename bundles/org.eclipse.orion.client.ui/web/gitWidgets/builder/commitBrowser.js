@@ -38,6 +38,8 @@ if (_all_script && _all_script.length && _all_script.length > 0) {
 }
 define([
 	'gitWidgets/helper/gitCommitHelper',
+	'orion/widgets/browse/staticDataSource',
+	'orion/contentTypes',
 	'orion/serviceregistry',
 	'orion/pluginregistry',
 	'orion/git/gitClient',
@@ -46,6 +48,8 @@ define([
 	'orion/URL-shim'
 ], function(
 	mGitCommitHelper, 
+	mStaticDataSource,
+	mContentTypes,
 	mServiceRegistry, 
 	mPluginRegistry,
 	mGitClient,
@@ -63,6 +67,8 @@ define([
 		}
 		var serviceRegistry = this.serviceRegistry = new mServiceRegistry.ServiceRegistry();
 		var gitClient = this.gitClient = new mGitClient.GitService(serviceRegistry);
+		this._contentTypeService =  new mContentTypes.ContentTypeRegistry(mStaticDataSource.ContentTypes);
+		serviceRegistry.registerService("orion.core.contentTypeRegistry", this._contentTypeService); //$NON-NLS-0$
 		var pluginURL = new URL("../../git/plugins/gitPlugin.html", _browser_script_source);
 		var plugins = {};
 		plugins[pluginURL.href] = {autostart: "started", lastModified: -1};
