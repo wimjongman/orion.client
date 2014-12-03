@@ -12,19 +12,23 @@
 define([
 	'orion/git/widgets/gitChangeList',
 	'orion/section',
-	'orion/selection',
 	'orion/webui/littlelib',
-	'orion/Deferred',
+	'orion/commandRegistry',
 	'orion/objects'
-], function(mGitChangeList, mSection, mSelection, lib, Deferred, objects) {
-	
-	function GitCimmitHelper(options) {
+], function(
+	mGitChangeList, 
+	mSection, 
+	lib, 
+	mCommandRegistry,
+	objects
+) {
+	function GitCommitHelper(options) {
 		this.parentId = options.parentId;
-		this.registry = options.registry;
-		//this.linkService = options.linkService;
-		this.commandService = options.commandService;
-		//this.fileClient = options.fileClient;
+		this._serviceRegistry = options.serviceRegistry;
 		this.gitClient = options.gitClient;
+		//this.linkService = options.linkService;
+		this._commandRegistry = new mCommandRegistry.CommandRegistry({});
+		//this.fileClient = options.fileClient;
 		//this.progressService = options.progressService;
 		//this.preferencesService = options.preferencesService;
 		//this.statusService = options.statusService;
@@ -32,7 +36,7 @@ define([
 		this.actionScopeId = options.actionScopeId;
 	}
 	
-	objects.mixin(GitCimmitHelper.prototype, /** @lends orion.git.GitCimmitHelper.prototype */ {
+	objects.mixin(GitCommitHelper.prototype, /** @lends orion.git.GitCommitHelper.prototype */ {
 		handleError: function(error) {
 			var display = {};
 			display.Severity = "Error"; //$NON-NLS-0$
@@ -43,7 +47,7 @@ define([
 			} catch (Exception) {
 				display.Message = error.DetailedMessage || error.Message || error.message;
 			}
-			this.statusService.setProgressResult(display);
+			//this.statusService.setProgressResult(display);
 			
 		},
 		destroyDiffs: function() {
@@ -58,7 +62,7 @@ define([
 		},
 		displayDiffs: function(repository, commit, location, commitName, title) {
 			this.destroyDiffs();
-			var parent = lib.node('table'); //$NON-NLS-0$
+			var parent = lib.node(this.parentId);
 			var section = this.diffsSection = new mSection.Section(parent, {
 				id : "diffSection", //$NON-NLS-0$
 				title : title || messages["CommitChanges"],
@@ -69,8 +73,8 @@ define([
 			});
 	
 			var explorer = this.diffsNavigator = new mGitChangeList.GitChangeListExplorer({
-				serviceRegistry: this.registry,
-				commandRegistry: this.commandService,
+				serviceRegistry: this._serviceRegistry,
+				commandRegistry: this._commandRegistry,
 				selection: null,
 				parentId:"diffNode", //$NON-NLS-0$
 				actionScopeId: "diffSectionItemActionArea", //$NON-NLS-0$
@@ -91,6 +95,6 @@ define([
 	});
 	
 	return {
-		GitCimmitHelper: GitCimmitHelper
+		GitCommitHelper: GitCommitHelper
 	};
 });

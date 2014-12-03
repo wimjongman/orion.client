@@ -28,8 +28,9 @@ define([
 	'orion/globalCommands',
 	'orion/git/gitCommands',
 	'orion/Deferred',
+	'gitWidgets/builder/built-commitBrowser',
 	'orion/metrics'
-], function(require, messages, mGitChangeList, mGitCommitList, mGitBranchList, mGitConfigList, mGitRepoList, mSection, mSelection, lib, URITemplate, PageUtil, util, mFileUtils, i18nUtil, mGlobalCommands, mGitCommands, Deferred, mMetrics) {
+], function(require, messages, mGitChangeList, mGitCommitList, mGitBranchList, mGitConfigList, mGitRepoList, mSection, mSelection, lib, URITemplate, PageUtil, util, mFileUtils, i18nUtil, mGlobalCommands, mGitCommands, Deferred, mCommitBrowser, mMetrics) {
 	
 	var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
 	
@@ -97,6 +98,7 @@ define([
 		this.pageNavId = options.pageNavId;
 		this.actionScopeId = options.actionScopeId;
 		this.checkbox = false;
+		this.commitBrowser = new mCommitBrowser("table");
 		
 		var that = this;
 		mGitCommands.getModelEventDispatcher().addEventListener("modelChanged", function(event) { //$NON-NLS-0$
@@ -711,6 +713,10 @@ define([
 	};
 
 	GitRepositoryExplorer.prototype.displayDiffs = function(repository, commit, location, commitName, title) {
+		this.commitBrowser.startup().then(function(param) {
+			this.commitBrowser.displayCommit(repository, commit, location, commitName, title);
+		}.bind(this));
+		/*
 		this.destroyDiffs();
 		var parent = lib.node('table'); //$NON-NLS-0$
 		var section = this.diffsSection = new mSection.Section(parent, {
@@ -741,6 +747,7 @@ define([
 			handleError: this.handleError.bind(this)
 		});
 		return explorer.display();
+		*/
 	};
 	
 	GitRepositoryExplorer.prototype.displayConfig = function(repository, mode) {
