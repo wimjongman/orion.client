@@ -3209,27 +3209,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			this._setSelection(selection, show === undefined || show, true, callback);
 		},
 		setSelections: function (ranges, show, callback) {
-			var selections = [];
-			var charCount = this._model.getCharCount();
-			ranges.forEach(function(range) {
-				var selection;
-				if (range instanceof Selection) {
-					selection = range.clone();
-				} else {
-					var start = range.start;
-					var end = range.end;
-					var caret = start > end;
-					if (caret) {
-						var tmp = start;
-						start = end;
-						end = tmp;
-					}
-					start = Math.max(0, Math.min (start, charCount));
-					end = Math.max(0, Math.min (end, charCount));
-					selection = new Selection(start, end, caret);
-				}
-				selections.push(selection);
-			});
+			var selections = this._rangesToSelections(ranges);
 			this._setSelection(selections, show === undefined || show, true, callback);
 		},
 		/**
@@ -3250,16 +3230,23 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		 * @see orion.editor.TextView#getText
 		 */
 		setText: function (text, start, end) {
-			var reset = start === undefined && end === undefined;
-			if (start === undefined) { start = 0; }
-			if (end === undefined) { end = this._model.getCharCount(); }
+			var isSingle = typeof text === "string"; //$NON-NLS-0$
+			var reset = start === undefined && end === undefined && isSingle;
+			var edit;
+			if (isSingle) {
+				if (start === undefined) { start = 0; }
+				if (end === undefined) { end = this._model.getCharCount(); }
+				edit = {text: text, selection: [new Selection(start, end, false)]};
+			} else {
+				edit = text;
+				edit.selection = this._rangesToSelections(edit.selection);
+			}
+			edit._code = true;
 			if (reset) {
 				this._variableLineHeight = false;
 			}
-			this._modifyContent({text: text, selection: [new Selection(start, end, false)], _code: true}, !reset);
+			this._modifyContent(edit, !reset);
 			if (reset) {
-				this._setSelection(new Selection(0, 0, false), true);
-				
 				/*
 				* Bug in Firefox.  For some reason, the caret does not show after the
 				* view is refreshed.  The fix is to toggle the contentEditable state and
@@ -6438,7 +6425,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				this._undoStack.endCompoundChange();
 			}
 		},
-		_modifyContent: function(e, updateCaret) {
+		_modifyContent: function(e, caretAtEnd) {
 			if (this._readonly && !e._code) {
 				return false;
 			}
@@ -6471,18 +6458,16 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 					var text = Array.isArray(e.text) ? e.text[i] : e.text;
 					model.setText(text, selection.start, selection.end);
 					offset += (selection.start - selection.end) + text.length;
-					selection.setCaret(selection.start + text.length);
+					selection.setCaret(caretAtEnd ? selection.start + text.length : selection.start);
 					i++;
 				});
 			} finally {
 				if (e._ignoreDOMSelection) { this._ignoreDOMSelection = false; }
 			}
-			if (updateCaret) {
-				this._setSelection(e.selection, true);
-			}
+			this._setSelection(e.selection, true);
 			
 			undo = this._compoundChange;
-			if (undo) undo.owner.selection = updateCaret ? e.selection : this._getSelections();
+			if (undo) undo.owner.selection = e.selection;
 			
 			this.onModify({type: "Modify"}); //$NON-NLS-0$
 			return true;
@@ -6559,6 +6544,30 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				self._updateTimer = null;
 				self._update();
 			}, 0);
+		},
+		_rangesToSelections: function(ranges) {
+			var selections = [];
+			var charCount = this._model.getCharCount();
+			ranges.forEach(function(range) {
+				var selection;
+				if (range instanceof Selection) {
+					selection = range.clone();
+				} else {
+					var start = range.start;
+					var end = range.end;
+					var caret = start > end;
+					if (caret) {
+						var tmp = start;
+						start = end;
+						end = tmp;
+					}
+					start = Math.max(0, Math.min (start, charCount));
+					end = Math.max(0, Math.min (end, charCount));
+					selection = new Selection(start, end, caret);
+				}
+				selections.push(selection);
+			});
+			return selections;
 		},
 		_resetLineHeight: function(startLine, endLine) {
 			if (this._wrapMode || this._variableLineHeight) {
