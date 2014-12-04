@@ -783,16 +783,14 @@ exports.InlineCompareView = (function() {
                 function(lineIndex, ruler){this._diffNavigator.matchPositionFromOverview(lineIndex);}.bind(this));
 		
 		this._textView.addEventListener("Selection", function(evt){ //$NON-NLS-0$
-			if(evt.newValue){
-				if(evt.newValue.start !== evt.newValue.end){
-					return;
-				}
+			var selections = Array.isArray(evt.newValue) ? evt.newValue : [evt.newValue];
+			if(selections.length > 1 || !selections[0].isEmpty()){
+				return;
 			}
 			if(this._diffNavigator.autoSelecting || !this._diffNavigator.editorWrapper[0].diffFeeder){
 				return;
 			}
-			var caretPos = this._textView.getCaretOffset();
-			this._diffNavigator.gotoDiff(caretPos, this._textView);
+			this._diffNavigator.gotoDiff(selections[0].getCaret(), this._textView);
 		}.bind(this)); 
 	};
 
