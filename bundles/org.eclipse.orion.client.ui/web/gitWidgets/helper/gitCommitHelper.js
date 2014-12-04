@@ -60,7 +60,7 @@ define([
 				this.diffsSection = null;
 			}
 		},
-		displayDiffs: function(repository, commit, location, commitName, title) {
+		displayDiffs: function(commit, location, commitName, title) {
 			this.destroyDiffs();
 			var parent = lib.node(this.parentId);
 			var section = this.diffsSection = new mSection.Section(parent, {
@@ -79,7 +79,7 @@ define([
 				parentId:"diffNode", //$NON-NLS-0$
 				actionScopeId: "diffSectionItemActionArea", //$NON-NLS-0$
 				prefix: "diff", //$NON-NLS-0$
-				repository: repository,
+				//repository: repository,
 				commit: commit,
 				changes: commit ? commit.Diffs : null,
 				location: location,

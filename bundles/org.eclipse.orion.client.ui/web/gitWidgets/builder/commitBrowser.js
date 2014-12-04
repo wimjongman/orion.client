@@ -92,8 +92,8 @@ define([
 				return this.pluginRegistry.start();
 			}
 		},
-		displayCommit: function(repository, commit, location, commitName, title) {
-			this.commitHelper.displayDiffs(repository, commit, location, commitName, title);
+		displayCommit: function(commit, location, commitName, title) {
+			this.commitHelper.displayDiffs(commit, location, commitName, title);
 		}
 	});
 	return Browser;

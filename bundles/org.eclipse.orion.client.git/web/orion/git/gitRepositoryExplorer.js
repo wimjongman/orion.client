@@ -28,11 +28,11 @@ define([
 	'orion/globalCommands',
 	'orion/git/gitCommands',
 	'orion/Deferred',
-	'orion/metrics'
-	//'gitWidgets/builder/built-commitBrowser'
-	//'gitWidgets/built/built-commitBrowser'
+	'orion/metrics',
+	'gitWidgets/builder/built-commitBrowser'
 ], function( require, messages, mGitChangeList, mGitCommitList, mGitBranchList, mGitConfigList, mGitRepoList, mSection, mSelection, lib, URITemplate, PageUtil, util, mFileUtils, i18nUtil, mGlobalCommands, mGitCommands, Deferred, mMetrics, mCommitBrowser ) {
 	
+	var useBuild = new URL(window.location.href).query.get("build") === "true";
 	var repoTemplate = new URITemplate("git/git-repository.html#{,resource,params*}"); //$NON-NLS-0$
 	
 	function compare(s1, s2, props) {
@@ -99,10 +99,13 @@ define([
 		this.pageNavId = options.pageNavId;
 		this.actionScopeId = options.actionScopeId;
 		this.checkbox = false;
-		//this.commitBrowser = new mCommitBrowser("table");
-		require(['gitWidgets/built/built-commitBrowser'], function(mWidget){
-			this.commitBrowser = new orion.git.commitBrowser("table");
-		}.bind(this));
+		if(!useBuild) {
+			this.commitBrowser = new mCommitBrowser("table");
+		} else {
+			require(['gitWidgets/built/built-commitBrowser'], function(mWidget){
+				this.commitBrowser = new orion.git.commitBrowser("table");
+			}.bind(this));
+		}
 		
 		var that = this;
 		mGitCommands.getModelEventDispatcher().addEventListener("modelChanged", function(event) { //$NON-NLS-0$
@@ -717,8 +720,9 @@ define([
 	};
 
 	GitRepositoryExplorer.prototype.displayDiffs = function(repository, commit, location, commitName, title) {
-		this.commitBrowser.startup().then(function(param) {
-			this.commitBrowser.displayCommit(repository, commit, location, commitName, title);
+		this.commitBrowser.startup().then(function() {
+			//this.commitBrowser.displayCommit(commit, null, null,title);
+			this.commitBrowser.displayCommit(null, commit.DiffLocation, commit.Parents[0].Name, title);
 		}.bind(this));
 		/*
 		this.destroyDiffs();

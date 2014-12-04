@@ -10,12 +10,10 @@
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
 /*eslint-env browser, amd*/
-define(['browse/builder/browse'],
-function(mFileBrowser) {
-	new mFileBrowser(
-		"fileBrowser",
-		"https://github.com/libingw/test1.git",
-		null /*,
-		{maxLine: 20, fileURL: "https://api.github.com/repos/libingw/test1/contents!testBranch/demo.html", start: 23, end: 192}*/
-	); 
+define(['gitWidgets/builder/commitBrowser'],
+function(mCommitBrowser) {
+	var commitBrowser = new mCommitBrowser("commitBrowser");
+	commitBrowser.startup().then(function() {
+		commitBrowser.displayCommit(null, "/gitapi/diff/0977fdc693d3cf8955304335ff11e8445dc85d45/file/libingw-OrionContent/OrionClient/", "1959585b786038e12ac72e44e5b170bbb3eb5aa6", "0977fdc693d3cf8955304335ff11e8445dc85d45");
+	});
 });
