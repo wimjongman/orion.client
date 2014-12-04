@@ -5312,7 +5312,8 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			*/
 			if (util.isFirefox && util.isMac) {
 				var window = this._getWindow();
-				var document = this._clientDiv.ownerDocument;
+				var parent = this._clientDiv;
+				var document = parent.ownerDocument;
 				var div = util.createElement(document, "div"); //$NON-NLS-0$
 				div.style.backgroundColor = highlightRGB; //$NON-NLS-0$
 				parent.appendChild(div);
