@@ -389,7 +389,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		},
 		/** @private */
 		equals: function(object) {
-			return this.caret === object.caret && this.start === object.start && this.end === object.end;
+			return this.caret === object.caret && this.start === object.start && this.end === object.end && this._editing === object._editing;
 		}
 	};
 	/** @private */
