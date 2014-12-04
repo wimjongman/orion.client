@@ -481,6 +481,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var view = this._view;
 			var start = startNode._line.getNodeOffset(startOffset);
 			var end = endNode._line.getNodeOffset(endOffset);
+			if (!start.node || !end.node) return;
 			var range;
 			var window = view._getWindow();
 			var document = view._parent.ownerDocument;
