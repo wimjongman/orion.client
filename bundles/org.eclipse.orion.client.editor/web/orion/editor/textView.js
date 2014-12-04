@@ -2318,6 +2318,17 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var s = this._getSelections();
 			return Selection.convert(s);
 		},
+		getSelectionText: function(delimiter) {
+			var text = [];
+			var self = this;
+			var selections = this._getSelections();
+			selections.forEach(function(selection) {
+				if (!selection.isEmpty()) {
+					text.push(self._getBaseText(selection.start, selection.end));
+				}
+			});
+			return text.join(delimiter || this._model.getLineDelimiter());
+		},
 		/**
 		 * Returns the text for the given range.
 		 * <p>
@@ -4788,16 +4799,9 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			return this._modifyContent({text: text, selection: selections, _ignoreDOMSelection: true}, true);
 		},
 		_doCopy: function (e) {
-			var self = this;
-			var text = [];
-			var selections = this._getSelections();
-			selections.forEach(function(selection) {
-				if (!selection.isEmpty()) {
-					text.push(self._getBaseText(selection.start, selection.end));
-				}
-			});
-			if (text.length) {
-				return this._setClipboardText(text.join(this._model.getLineDelimiter()), e);
+			var text = this.getSelectionText();
+			if (text) {
+				return this._setClipboardText(text, e);
 			}
 			return true;
 		},
@@ -4834,17 +4838,10 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			return true;
 		},
 		_doCut: function (e) {
-			var self = this;
-			var text = [];
-			var selections = this._getSelections();
-			selections.forEach(function(selection) {
-				if (!selection.isEmpty()) {
-					text.push(self._getBaseText(selection.start, selection.end));
-				}
-			});
-			if (text.length) {
+			var text = this.getSelectionText();
+			if (text) {
 				this._doContent("");
-				return this._setClipboardText(text.join(this._model.getLineDelimiter()), e);
+				return this._setClipboardText(text, e);
 			}
 			return true;
 		},
