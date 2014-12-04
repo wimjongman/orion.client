@@ -24,7 +24,9 @@
         almond: 'requirejs/almond',
         i18n: 'requirejs/i18n',
         text: 'requirejs/text',
-        "orion/extensionCommands": "gitWidgets/builder/buildFrom/emptyExtensionCommands"
+        "orion/extensionCommands": "gitWidgets/builder/buildFrom/emptyExtensionCommands",
+        "orion/globalCommands": "gitWidgets/builder/buildFrom/emptyGlobalCommands",
+        "orion/editorCommands": "gitWidgets/builder/buildFrom/emptyEditorCommands"
 	},
 	name: "almond",
 	include: "gitWidgets/builder/commitBrowser",
