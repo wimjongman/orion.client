@@ -5122,14 +5122,16 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		_doPaste: function(e) {
 			var self = this;
 			var result = this._getClipboardText(e, function(text) {
-				if (text) {
+				if (text.length) {
 					if (util.isLinux && self._lastMouseButton === 2) {
 						var timeDiff = new Date().getTime() - self._lastMouseTime;
 						if (timeDiff <= self._clickTime) {
 							self._setSelectionTo(self._lastMouseX, self._lastMouseY, true);
 						}
 					}
-					self._doContent(text);
+					var selections = self._getSelections();
+					var delimiter = self._singleMode ? "" : self._model.getLineDelimiter();
+					self._doContent(selections.length === text.length ? text : text.join(delimiter));
 				}
 			});
 			return result !== null;
@@ -5945,8 +5947,6 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			return Math.max(0, this._viewDiv.clientWidth - viewPad.left - viewPad.right - innerRightWidth);
 		},
 		_getClipboardText: function (event, handler) {
-			var delimiter = this._singleMode ? "" : this._model.getLineDelimiter();
-			var clipboadText, text;
 			// IE
 			var window = this._getWindow();
 			var clipboardData = window.clipboardData;
@@ -5954,13 +5954,14 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			if (!clipboardData && event) {
 				clipboardData = event.clipboardData;
 			}
+			function convert(wholeText) {
+				var clipboadText = [];
+				convertDelimiter(wholeText, function(t) {clipboadText.push(t);}, function() {});
+				if (handler) { handler(clipboadText); }
+				return clipboadText;
+			}
 			if (clipboardData) {
-				clipboadText = [];
-				text = clipboardData.getData(util.isIE ? "Text" : "text/plain"); //$NON-NLS-1$"//$NON-NLS-0$
-				convertDelimiter(text, function(t) {clipboadText.push(t);}, function() {clipboadText.push(delimiter);});
-				text = clipboadText.join("");
-				if (handler) { handler(text); }
-				return text;
+				return convert(clipboardData.getData(util.isIE ? "Text" : "text/plain")); //$NON-NLS-1$"//$NON-NLS-0$
 			}
 			if (util.isFirefox) {
 				this._ignoreFocus = true;
@@ -5980,9 +5981,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				var _getText = function() {
 					var noteText = self._getTextFromElement(clipboardDiv);
 					clipboardDiv.innerHTML = "";
-					clipboadText = [];
-					convertDelimiter(noteText, function(t) {clipboadText.push(t);}, function() {clipboadText.push(delimiter);});
-					return clipboadText.join("");
+					return convert(noteText);
 				};
 				
 				/* Try execCommand first. Works on firefox with clipboard permission. */
@@ -6004,10 +6003,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 					if (event) {
 						window.setTimeout(function() {
 							self.focus();
-							text = _getText();
-							if (text && handler) {
-								handler(text);
-							}
+							_getText();
 							self._ignoreFocus = false;
 						}, 0);
 						return null;
@@ -6020,11 +6016,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				}
 				this.focus();
 				this._ignoreFocus = false;
-				text = _getText();
-				if (text && handler) {
-					handler(text);
-				}
-				return text;
+				return _getText();
 			}
 			return "";
 		},
