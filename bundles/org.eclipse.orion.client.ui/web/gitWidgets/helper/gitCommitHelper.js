@@ -10,12 +10,14 @@
  ******************************************************************************/
 /*eslint-env browser, amd*/
 define([
+	'i18n!git/nls/gitmessages',
 	'orion/git/widgets/gitChangeList',
 	'orion/section',
 	'orion/webui/littlelib',
 	'orion/commandRegistry',
 	'orion/objects'
 ], function(
+	messages,
 	mGitChangeList, 
 	mSection, 
 	lib, 
@@ -34,6 +36,10 @@ define([
 		//this.statusService = options.statusService;
 		this.pageNavId = options.pageNavId;
 		this.actionScopeId = options.actionScopeId;
+		var parent = lib.node(this.parentId);
+		this._inner_node = document.createElement("div"); //$NON-NLS-0$
+		this._inner_node.classList.add("commit_browse_inner_container"); //$NON-NLS-0$
+		parent.appendChild(this._inner_node);
 	}
 	
 	objects.mixin(GitCommitHelper.prototype, /** @lends orion.git.GitCommitHelper.prototype */ {
@@ -50,6 +56,13 @@ define([
 			//this.statusService.setProgressResult(display);
 			
 		},
+		destroy: function() {
+			this.destroyDiffs();
+			if (this._inner_node && this._inner_node.parentNode) {
+				this._inner_node.parentNode.removeChild(this._inner_node);
+			}
+			this._inner_node = null;
+		},
 		destroyDiffs: function() {
 			if (this.diffsNavigator) {
 				this.diffsNavigator.destroy();
@@ -62,7 +75,7 @@ define([
 		},
 		displayDiffs: function(commit, location, commitName, title) {
 			this.destroyDiffs();
-			var parent = lib.node(this.parentId);
+			var parent = this._inner_node;
 			var section = this.diffsSection = new mSection.Section(parent, {
 				id : "diffSection", //$NON-NLS-0$
 				title : title || messages["CommitChanges"],
