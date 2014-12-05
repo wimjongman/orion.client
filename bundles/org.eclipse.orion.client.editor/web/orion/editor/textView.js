@@ -5456,7 +5456,6 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			}
 		},
 		_clearSelection: function (direction) {
-			var self = this;
 			var selections = this._getSelections();
 			selections.forEach(function(selection) {
 				if (direction === "next") { //$NON-NLS-0$
@@ -5465,7 +5464,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 					selection.end = selection.start;
 				}
 			});
-			this._setSelection(selection, true);
+			this._setSelection(selections, true);
 			return true;
 		},
 		_commitIME: function (insertText) {
