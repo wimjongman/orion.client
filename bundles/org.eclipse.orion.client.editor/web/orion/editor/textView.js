@@ -424,7 +424,8 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var cursor = !this.primary && this._selection && this._selection.isEmpty();
 			var color;
 			if (cursor) {
-				color = "#000000";// need foreground color here
+				// need foreground color
+				color = "#000000"; //$NON-NLS-0$
 			} else {
 				color = focused ? view._highlightRGB : "lightgray"; //$NON-NLS-0$
 			}
@@ -557,7 +558,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var view = this._view;
 			if (!view._fullSelection) { return; }
 			if (util.isIOS) { return; }
-//			if (startNode === endNode && startOffset === endOffset) { return; }
+			if (startNode === endNode && startOffset === endOffset && this.primary) { return; }
 			var viewPad = view._getViewPadding();
 			var clientRect = view._clientDiv.getBoundingClientRect();
 			var viewRect = view._viewDiv.getBoundingClientRect();
@@ -578,9 +579,14 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			view._ignoreDOMSelection = true;
 			var startLine = new TextLine(view, startNode.lineIndex, startNode);
 			var startRect = startLine.getBoundingClientRect(startOffset, false);
-			var l = startRect.left;
-			var endLine = new TextLine(view, endNode.lineIndex, endNode);
-			var endRect = endLine.getBoundingClientRect(endOffset, false);
+			var l = startRect.left, endLine, endRect;
+			if (startNode === endNode && startOffset === endOffset) {
+				endLine = startLine;
+				endRect = startRect;
+			} else {
+				endLine = new TextLine(view, endNode.lineIndex, endNode);
+				endRect = endLine.getBoundingClientRect(endOffset, false);
+			}
 			var r = endRect.left;
 			view._ignoreDOMSelection = false;
 			var sel1Div = this._divs[0];
