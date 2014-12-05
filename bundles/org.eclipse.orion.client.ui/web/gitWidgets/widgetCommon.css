@@ -4,6 +4,10 @@
 	margin-top: 2px;
 }
 
+.commit_browse_inner_container .navRow {
+	font-size: 9pt;
+}
+
 .sectionTable {
 	margin-top: 0;
 	border: 1px solid;

@@ -36,10 +36,6 @@ define([
 		//this.statusService = options.statusService;
 		this.pageNavId = options.pageNavId;
 		this.actionScopeId = options.actionScopeId;
-		var parent = lib.node(this.parentId);
-		this._inner_node = document.createElement("div"); //$NON-NLS-0$
-		this._inner_node.classList.add("commit_browse_inner_container"); //$NON-NLS-0$
-		parent.appendChild(this._inner_node);
 	}
 	
 	objects.mixin(GitCommitHelper.prototype, /** @lends orion.git.GitCommitHelper.prototype */ {
@@ -74,7 +70,11 @@ define([
 			}
 		},
 		displayDiffs: function(commit, location, commitName, title) {
-			this.destroyDiffs();
+			this.destroy();
+			this._parent = lib.node(this.parentId);
+			this._inner_node = document.createElement("div"); //$NON-NLS-0$
+			this._inner_node.classList.add("commit_browse_inner_container"); //$NON-NLS-0$
+			this._parent.appendChild(this._inner_node);
 			var parent = this._inner_node;
 			var section = this.diffsSection = new mSection.Section(parent, {
 				id : "diffSection", //$NON-NLS-0$
