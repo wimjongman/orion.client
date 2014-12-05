@@ -296,10 +296,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 	};
 	/** @private */
 	Selection.convert = function(selections) {
-//		if (selections.length === 1) return selections[0].convert();
-//		return selections.map(function(sel) {
-//			return sel.convert();
-//		});
+		if (selections.length === 1) return selections[0];
 		return selections;
 	};
 	/** @private */
@@ -334,11 +331,6 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			result._columnX = this._columnX;
 			result._editing = this._editing;
 			return result;
-		},
-		/** @private */
-		convert: function() {
-			//return {start: this.start, end: this.end};
-			return this;
 		},
 		/** @private */
 		contains: function(offset) {
@@ -2318,12 +2310,10 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		 * @see orion.editor.TextView#setSelection
 		 */
 		getSelection: function () {
-			var s = this._getSelection();
-			return s.convert();
+			return this._getSelection();
 		},
 		getSelections: function () {
-			var s = this._getSelections();
-			return Selection.convert(s);
+			return this._getSelections();
 		},
 		getSelectionText: function(delimiter) {
 			var text = [];
