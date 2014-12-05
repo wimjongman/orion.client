@@ -145,11 +145,11 @@ define("orion/editor/undoStack", [], function() { //$NON-NLS-0$
 			for (var i = 0; i < this.changes.length; i++) {
 				this.changes[i].redo(view, false);
 			}
-			if (this.changes.length > 1, view) {
-				view.setRedraw(true);
-			}
 			if (select && view) {
 				view.setSelections(this.endSelection);
+			}
+			if (this.changes.length > 1, view) {
+				view.setRedraw(true);
 			}
 			var owner = this.owner;
 			if (owner && owner.redo) {
