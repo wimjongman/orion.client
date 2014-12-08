@@ -6466,6 +6466,8 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 
 			if (e.text === null || e.text === undefined) { return false; }
 			
+			if (e.selection.length > 1) this.setRedraw(false);
+			
 			var undo = this._compoundChange;
 			if (undo) {
 				if (!Selection.compare(this._getSelections(), undo.owner.selection)) {
@@ -6497,6 +6499,8 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			undo = this._compoundChange;
 			if (undo) undo.owner.selection = e.selection;
 			
+			if (e.selection.length > 1) this.setRedraw(true);
+
 			this.onModify({type: "Modify"}); //$NON-NLS-0$
 			return true;
 		},
