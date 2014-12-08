@@ -288,7 +288,13 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		}
 		return true;
 	};
-	Selection.editing = function(selections) {
+	Selection.editing = function(selections, back) {
+		if (back) {
+			for (var i = selections.length - 1; i >= 0; i--) {
+				if (selections[i]._editing) return selections[i];
+			}
+			return selections[selections.length - 1];
+		}
 		for (var i = 0; i < selections.length; i++) {
 			if (selections[i]._editing) return selections[i];
 		}
@@ -330,6 +336,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			var result = new Selection(this.start, this.end, this.caret);
 			result._columnX = this._columnX;
 			result._editing = this._editing;
+			result._docX = this._docX;
 			return result;
 		},
 		/** @private */
@@ -370,6 +377,10 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		/** @private */
 		getCaret: function() {
 			return this.caret ? this.start : this.end;
+		},
+		/** @private */
+		getAnchor: function() {
+			return this.caret ? this.end : this.start;
 		},
 		/** @private */
 		toString: function() {
@@ -3848,7 +3859,9 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				}, 0);
 			}
 			var extend = e.shiftKey;
+			var block = e.altKey;
 			var add = util.isMac ? e.metaKey : e.ctrlKey;
+			this._blockSelection = this._doubleClickSelection = null;
 			if (this._clickCount === 1) {
 				var drag = (!util.isOpera || util.isOpera >= 12.16) && this._hasFocus && this.isListening("DragStart"); //$NON-NLS-0$
 				result = this._setSelectionTo(e.clientX, e.clientY, true, extend, add, drag);
@@ -3869,9 +3882,11 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				*/
 				if (this._isW3CEvents) { this._setGrab(target); }
 				
-				this._doubleClickSelection = null;
 				this._setSelectionTo(e.clientX, e.clientY, true, extend, add, false);
 				this._doubleClickSelection = Selection.editing(this._getSelections());
+			}
+			if (block) {
+				this._blockSelection = Selection.editing(this._getSelections());
 			}
 			return result;
 		},
@@ -5211,7 +5226,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 		_autoScroll: function () {
 			var model = this._model;
 			var selections = this._getSelections();
-			var selection = Selection.editing(selections);
+			var selection = Selection.editing(selections, this._autoScrollDir === "down"); //$NON-NLS-0$
 			var pt = this.convert({x: this._autoScrollX, y: this._autoScrollY}, "page", "document"); //$NON-NLS-1$ //$NON-NLS-0$
 			var caret = selection.getCaret();
 			var lineCount = model.getLineCount();
@@ -5227,7 +5242,9 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				pt.x += line.getBoundingClientRect(caret, false).left;
 				line.destroy();
 			}
-			if (lineIndex === 0 && (util.isMac || util.isLinux)) {
+			if (this._blockSelection) {
+				selections = this._getBlockSelections(selections, lineIndex, pt);
+			} else if (lineIndex === 0 && (util.isMac || util.isLinux)) {
 				selection.extend(0);
 			} else if (lineIndex === lineCount - 1 && (util.isMac || util.isLinux)) {
 				selection.extend(model.getCharCount());
@@ -5918,6 +5935,29 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 				}
 			}
 			return child.lineIndex;
+		},
+		_getBlockSelections: function(selections, lineIndex, pt) {
+			var model = this._model;
+			selections = selections.filter(function(sel) { return !sel._editing; });
+			var firstLine = model.getLineAtOffset(this._blockSelection.getAnchor()), lastLine;
+			if (lineIndex > firstLine) {
+				lastLine = lineIndex;
+			} else {
+				lastLine = firstLine;
+				firstLine = lineIndex;
+			}
+			for (var l = firstLine; l <= lastLine; l++) {
+				var line = this._getLine(l);
+				var o1 = line.getOffset(pt.x, 1);
+				var o2 = line.getOffset(this._blockSelection._docX, 1);
+				line.destroy();
+				if (o1 === o2 && o1 === model.getLineEnd(l)) continue;
+				var caret = o1 < o2;
+				var sel = new Selection(caret ? o1 : o2, caret ? o2 : o1, caret);
+				sel._editing = true;
+				selections.push(sel);
+			}
+			return selections;
 		},
 		_getBoundsAtOffset: function(offset) {
 			var model = this._model;
@@ -6824,57 +6864,62 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 					return false;
 				}
 			}
-			var selection;
-			if (!down) {
-				selection = Selection.editing(selections);
-			} else if (extent) {
-				selection = selections[selections.length - 1];
-				selection._editing = true;
+			if (this._blockSelection) {
+				selections = this._getBlockSelections(selections, lineIndex, pt);
 			} else {
-				selection = new Selection(0, 0);
-				selection._editing = true;
-				if (add) {
-					selections.push(selection);
+				var selection;
+				if (!down) {
+					selection = Selection.editing(selections);
+				} else if (extent) {
+					selection = selections[selections.length - 1];
+					selection._editing = true;
 				} else {
-					selections = [selection];
+					selection = new Selection(0, 0);
+					selection._editing = true;
+					if (add) {
+						selections.push(selection);
+					} else {
+						selections = [selection];
+					}
+					selection._docX = pt.x;
 				}
-			}
-			if (this._clickCount === 1) {
-				selection.extend(offset);
-				if (!extent) { selection.collapse(); }
-			} else {
-				var word = (this._clickCount & 1) === 0;
-				var start, end;
-				if (word) {
-					if (this._doubleClickSelection) {
-						if (offset >= this._doubleClickSelection.start) {
-							start = this._doubleClickSelection.start;
-							end = line.getNextOffset(offset, {unit:"wordend", count:1}); //$NON-NLS-0$
+				if (this._clickCount === 1) {
+					selection.extend(offset);
+					if (!extent) { selection.collapse(); }
+				} else {
+					var word = (this._clickCount & 1) === 0;
+					var start, end;
+					if (word) {
+						if (this._doubleClickSelection) {
+							if (offset >= this._doubleClickSelection.start) {
+								start = this._doubleClickSelection.start;
+								end = line.getNextOffset(offset, {unit:"wordend", count:1}); //$NON-NLS-0$
+							} else {
+								start = line.getNextOffset(offset, {unit:"word", count:-1}); //$NON-NLS-0$
+								end = this._doubleClickSelection.end;
+							}
 						} else {
 							start = line.getNextOffset(offset, {unit:"word", count:-1}); //$NON-NLS-0$
-							end = this._doubleClickSelection.end;
+							end = line.getNextOffset(start, {unit:"wordend", count:1}); //$NON-NLS-0$
 						}
 					} else {
-						start = line.getNextOffset(offset, {unit:"word", count:-1}); //$NON-NLS-0$
-						end = line.getNextOffset(start, {unit:"wordend", count:1}); //$NON-NLS-0$
-					}
-				} else {
-					if (this._doubleClickSelection) {
-						var doubleClickLine = model.getLineAtOffset(this._doubleClickSelection.start);
-						if (lineIndex >= doubleClickLine) {
-							start = model.getLineStart(doubleClickLine);
-							end = model.getLineEnd(lineIndex);
+						if (this._doubleClickSelection) {
+							var doubleClickLine = model.getLineAtOffset(this._doubleClickSelection.start);
+							if (lineIndex >= doubleClickLine) {
+								start = model.getLineStart(doubleClickLine);
+								end = model.getLineEnd(lineIndex);
+							} else {
+								start = model.getLineStart(lineIndex);
+								end = model.getLineEnd(doubleClickLine);
+							}
 						} else {
 							start = model.getLineStart(lineIndex);
-							end = model.getLineEnd(doubleClickLine);
+							end = model.getLineEnd(lineIndex);
 						}
-					} else {
-						start = model.getLineStart(lineIndex);
-						end = model.getLineEnd(lineIndex);
 					}
+					selection.setCaret(start);
+					selection.extend(end);
 				}
-				selection.setCaret(start);
-				selection.extend(end);
 			}
 			this._setSelection(selections, true, true, null, false);
 			line.destroy();
@@ -7022,7 +7067,7 @@ define("orion/editor/textView", [  //$NON-NLS-0$
 			if (this._ignoreDOMSelection) { return; }
 			var model = this._model;
 			var selections = this._getSelections();
-			var selection = Selection.editing(selections);
+			var selection = Selection.editing(selections, this._autoScrollDir === "down"); //$NON-NLS-0$
 			var scroll = this._getScroll();
 			var caret = selection.getCaret();
 			var start = selection.start;
