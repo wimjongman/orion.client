@@ -7,14 +7,6 @@
  * License v1.0 (http://www.eclipse.org/org/documents/edl-v10.html). 
  * 
  ******************************************************************************/
-define(['orion/i18n!profile/nls/messages', 'profile/nls/root/messages'], function(bundle, root) {
-	var result = {
-			root:root
-	};
-	Object.keys(bundle).forEach(function(key) {
-		if (typeof result[key] === 'undefined') {
-			result[key] = bundle[key];
-		}
-	});
-	return result;
+define(['profile/nls/root/messages', 'orion/i18nMsgUtils'], function(root, mUtils) {
+	return mUtils.getMessages(root, true);
 });

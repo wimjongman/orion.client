@@ -8,14 +8,6 @@
  * 
  ******************************************************************************/
 /*eslint-env browser, amd*/
-define(['orion/i18n!orion/edit/nls/messages', 'orion/edit/nls/root/messages'], function(bundle, root) {
-	var result = {
-			root:root
-	};
-	Object.keys(bundle).forEach(function(key) {
-		if (typeof result[key] === 'undefined') {
-			result[key] = bundle[key];
-		}
-	});
-	return result;
+define(['orion/edit/nls/root/messages', 'orion/i18nMsgUtils'], function(root, mUtils) {
+	return mUtils.getMessages(root, true);
 });

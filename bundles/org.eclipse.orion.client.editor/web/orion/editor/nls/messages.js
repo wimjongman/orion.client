@@ -10,19 +10,7 @@
  *		Felipe Heidrich (IBM Corporation) - initial API and implementation
  *		Silenio Quarti (IBM Corporation) - initial API and implementation
  ******************************************************************************/
-
 /*eslint-env browser, amd*/
-
-define(['orion/editor/i18n!orion/editor/nls/messages', 'orion/editor/nls/root/messages'], function(bundle, root) {
-	var result = {
-		root: root
-	};
-	for (var key in bundle) {
-		if (bundle.hasOwnProperty(key)) {
-			if (typeof result[key] === 'undefined') {
-				result[key] = bundle[key];
-			}
-		}
-	}
-	return result;
+define(['orion/editor/nls/root/messages', 'orion/i18nMsgUtils'], function(root, mUtils) {
+	return mUtils.getMessages(root, true);
 });
