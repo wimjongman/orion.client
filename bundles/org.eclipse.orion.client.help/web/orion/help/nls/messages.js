@@ -8,6 +8,21 @@
  * 
  ******************************************************************************/
 /*eslint-env browser, amd*/
-define(['orion/help/nls/root/messages', 'orion/i18nMsgUtils'], function(root, mUtils) {
-	return mUtils.getMessages(root, true);
+define({
+	root: {//Default message bundle
+		"Help": "Help",
+		"Contents": "Contents",
+		"Print": "Print",
+		"unknownError": "An unknown error occurred.",
+		"noResponse": "No response from server. Check your internet connection and try again.",
+		"introMarkdown": "#Using the Help system\nBrowse the available topics in the table of contents on the left and click on a topic to display it.  You can use your browser's **Back** and **Forward** buttons to navigate through the history of viewed topics."
+	},
+	"ja": true,
+	"zh": true,
+	"zh-tw": true,
+	"fr": true,
+	"de": true,
+	"it": true,
+	"es": true,
+	"pt-br": true						
 });

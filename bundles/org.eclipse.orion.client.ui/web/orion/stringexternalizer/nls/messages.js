@@ -8,6 +8,28 @@
  * 
  ******************************************************************************/
 /*eslint-env browser, amd*/
-define(['orion/stringexternalizer/nls/root/messages', 'orion/i18nMsgUtils'], function(root, mUtils) {
-	return mUtils.getMessages(root, true);
+define({
+	root: {//Default message bundle
+		"Change Directory": "Change Directory",
+		"ChgMessageDir": "Change messages directory",
+		"ExternalizeStrConfig": "Externalize Strings Configuration",
+		"Messages directory:": "Messages directory:",
+		"Messages file name:": "Messages file name:",
+		"Messages module:": "Messages module:",
+		"MarkNotNON-NLS": "Mark not exported as NON-NLS:",
+		"Files to externalize": "Files to externalize",
+		"ExternalizeStrMsg": "Externalize string from ${0} only",
+		"Writing files...": "Writing files...",
+		"Passed": "Passed",
+		"Failed": "Failed",
+		"ResourceChanged": "Resource has been changed by others"
+	},
+	"ja": true,
+	"zh": true,
+	"zh-tw": true,
+	"fr": true,
+	"de": true,
+	"it": true,
+	"es": true,
+	"pt-br": true						
 });

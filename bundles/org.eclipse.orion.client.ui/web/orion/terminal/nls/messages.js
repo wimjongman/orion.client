@@ -8,6 +8,18 @@
  * 
  ******************************************************************************/
 /*eslint-env browser, amd*/
-define(['orion/terminal/nls/root/messages', 'orion/i18nMsgUtils'], function(root, mUtils) {
-	return mUtils.getMessages(root, true);
+define({
+	root: {//Default message bundle
+		"Terminal": "Terminal",
+		"Open Terminal page": "Open the Terminal page.",
+		"Open Terminal page pwd": "Open the Terminal page with this folder as the current directory."
+	},
+	"ja": true,
+	"zh": true,
+	"zh-tw": true,
+	"fr": true,
+	"de": true,
+	"it": true,
+	"es": true,
+	"pt-br": true						
 });
