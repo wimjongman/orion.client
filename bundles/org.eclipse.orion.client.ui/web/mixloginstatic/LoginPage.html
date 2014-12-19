@@ -1,0 +1,85 @@
+ <!doctype html>
+<!--[if IE 9]><html class="lt-ie10" lang="en" > <![endif]-->
+<html class="no-js" lang="en" data-useragent="Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Trident/6.0)">
+	<head>
+		<meta name="copyright" content="Copyright (c) 2010,2012 IBM Corporation and others.">
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<title>OrionHub - Open Source Web and Cloud Development Environment</title>
+		<meta name="description" content="Documentation and reference library for ZURB Foundation. JavaScript, CSS, components, grid and more."/>
+		<meta name="author" content="ZURB, inc. ZURB network also includes zurb.com"/>
+		<meta name="copyright" content="ZURB, inc. Copyright (c) 2014"/>
+	
+		<link rel="stylesheet" href="/fonts/font.css"/>
+		<link rel="stylesheet" href="/css/images.css"/>
+		<link href='http://fonts.googleapis.com/css?family=Roboto:400,700' rel='stylesheet' type='text/css'>
+
+		<link rel="stylesheet"  type="text/css" href="css/login.css"></link>
+		<script src="../requirejs/require.js"></script>
+		<script type="text/javascript">
+			/*eslint-env browser, amd*/
+			require({
+			  baseUrl: '..',
+
+			  // set the paths to our library packages
+			  packages: [],
+			  paths: {
+				  text: 'requirejs/text',
+				  i18n: 'requirejs/i18n',
+				  domReady: 'requirejs/domReady'
+			  }
+			});
+			require(["mixloginstatic/LoginPage"]);
+		</script>
+	</head>
+	<body>
+		<div class="container">
+			<div class="orion-container">
+				<div class="logo-container"> 
+					<span class="orion-logo"><img src="images/orion.png"/></span> 
+				</div>
+				<div class="orion-auth-buttons">
+						<a href="#" class="button orion-link-button" id='signinBtn'></a>
+						<a href="#" class="button orion-link-button" id='registerBtn'></a>
+				</div>
+			</div>
+			<div class="central">
+				<div class="main-section">
+					<div class="auth-sections">
+						<div class="left-section">
+							<form class="orion-auth">
+								<h1 class="login-title" id="emailLogin"></h1>
+								<input class="login-field" type="text" id="username"/>
+								<input class="login-field" type="password" id="password"/>
+								<input class="login-field" type="password" id="repeatPassword" style="display: none;"/>
+								<input class="login-field" type="email" id="email" style="display: none;"/>
+								<label class="remember-me" id="rememberMe"><input type="checkbox"/></label>
+								<button class="login-button" id="signInBtn"></button>
+								<a class="forgotten" href="#" id="forgotPassword"></a>
+							</form>
+						</div>
+						<!-- div class="middle-section">
+							<div class="divider-line"></div>
+						</div -->
+						<div class="right-section">
+							<div class="social-section">
+								<h1 class="login-title" id="socialLogin"></h1>
+								<a class="auth-btn google-auth" href="/login/oauth?oauth=google">
+									<i class="google-icon"></i>
+									<span class="social-login-text" id="signInWithGoogle"></span>
+								</a>
+								<a class="auth-btn github-auth" href="/login/oauth?oauth=github">
+									<i class="github-icon"></i>
+									<span class="social-login-text" id="signInWithGitHub"></span>
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="footer">
+				<p id="copyright"></p>
+			</div>
+		</div>
+	</body>
+</html>

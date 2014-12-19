@@ -1,0 +1,309 @@
+html {
+	height: 100%;
+}
+
+body {
+	height: 100%;
+	background: white;
+	color: #222222;
+	padding: 0;
+	margin: 0;
+	font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif;
+	font-weight: normal;
+	font-style: normal;
+	line-height: 1.5;
+	position: relative;
+	cursor: auto;
+}
+
+.container {
+	min-height: 100%;
+	position: relative;
+}
+
+.central {
+	padding-bottom: 50px;
+}
+
+.orion-container {
+	display: flex;
+	flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-content: flex-start;
+    align-items: flex-start;
+    
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0;
+    margin-bottom: 0;
+    max-width: 62.5rem;
+    width: 100%;
+    border-bottom: 1px solid #DDD;
+}
+
+.orion-containercontainer >div {
+   order: 0;
+   flex: 0 1 auto;
+   align-self: auto;
+}
+
+.logo-container {
+	margin-top: auto;
+	margin-bottom:auto;
+}
+
+.orion-auth-buttons {
+	color: white;
+	display: flex;
+	flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    align-content: flex-start;
+    align-items: flex-start;
+}
+
+@media only screen and (max-width: 768px) {
+	.orion-container {
+		flex-direction: column;
+		align-items: center;
+	}
+	
+
+}
+
+.orion-link-button {
+	font-size: 12px;
+	background: #FFF;
+	color: #777;
+	margin-top: 26px;
+	margin-bottom: 1.26rem;
+	padding: 10px;
+	text-decoration: none;
+}
+
+.orion-link-button:hover {
+	background-color: #008cba;
+	border-color: #007095;
+	color: white;
+}
+.main-section, .auth-sections {
+	display: flex;
+	flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-content: flex-start;
+    align-items: stretch;
+}
+
+.auth-sections {
+	margin-top: 50px;
+	order: 0;
+	flex-shrink: 1;
+	flex-grow: 0;
+	flex-basis: auto;
+	align-self: auto;
+	box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.15);
+	background: linear-gradient(to right, #FFF 0%, #FFF 47%, #F7F7F7 50%);
+}
+
+.buffer-space{
+   flex-grow: 2;
+}
+
+.left-section, .right-section, .middle-section {
+   	order: 0;
+   	flex-shrink: 1;
+   	flex-grow: 0;
+   	flex-basis: auto;
+   	align-self: auto;
+	padding: 40px;
+}
+
+.left-section {
+	min-width:220px;
+}
+
+.right-section {
+	border-left: 1px solid #E5E5E5;
+	background:white;
+	min-width:220px;
+}
+
+.divider-line {
+	border-right-style: solid;
+	border-right-width: 1px;
+	border-right-color: #ddd;
+   	order: 0;
+   	flex-shrink: 1;
+	flex-grow: 0;
+   	flex-basis: auto;
+   	align-self: auto;
+}
+
+.middle-section {
+	display: flex;
+	flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-content: flex-start;
+    align-items: stretch;
+}
+
+.orion-auth, .social-section {
+	display: flex;
+	flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    align-content: flex-start;
+    align-items: stretch;
+}
+
+.auth-btn {
+	margin: 10px;
+	border-radius: 3px;
+	text-align: center;
+	padding-left: 5px;
+	padding-right: 15px;
+	font-size: 14px;
+	color:white;
+	font-family: 'Roboto Bold', sans-serif;
+	font-size:8pt;
+	display: inherit;
+	text-decoration: none;
+}
+
+.google-auth {
+	background-color: #DD4B39;
+	margin-top:12px;
+}
+
+.github-auth {
+	background-color: #444;
+}
+
+.google-auth:hover {
+	background-color: #C23321;
+}
+
+.github-auth:hover {
+	background-color: #2B2B2B;
+}
+
+@media only screen and (max-width: 768px) {
+	.auth-sections {
+		flex-direction: column;
+	}
+	
+	.middle-section {
+		flex-direction: column;
+	}
+	
+	.left-section, .right-section, .middle-section {
+		margin: 5px;
+   		padding: 2px;
+	}
+	
+	.divider-line {
+		border-bottom-style: solid;
+		border-bottom-width: 1px;
+		border-bottom-color: #ddd;
+	}
+}
+
+.login-title {
+   	order: 0;
+	flex-shrink: 1;
+	flex-basis: auto;
+	align-self: flex-start;
+	font-family: sans-serif;
+	color: #878787;
+	font-size: 14px;
+	margin-left: 10px;
+	text-transform: uppercase;
+}
+
+.google-icon{
+	background-image: url("../images/google-icon.png");
+	background-repeat: no-repeat;
+	/* display: inline; */
+	height: 24px;
+	border-right: 1px solid #be3f2b;
+	width: 24px;
+	background-size: 24px 24px;
+	padding: 5px;
+	padding-right:7px;
+	background-position-x: 4px;
+	background-position-y: 5px;
+	background-position: center;
+}
+
+.social-login-text {
+	margin-top: 8px;
+	margin-left: 10px;
+}
+
+.github-icon {
+	background-image:url("../images/github-logo.png");
+	background-repeat: no-repeat;
+	/* display: inline; */
+	height: 24px;
+	border-right: 1px solid #5d5d5d;
+	width: 24px;
+	background-size: 24px 24px;
+	padding: 5px;
+	padding-right:7px;
+	background-position-x: 4px;
+	background-position-y: 5px;
+	background-position: center;
+}
+
+.login-field {
+	padding: 10px;
+	margin: 10px;
+	border: 1px solid #DDD;
+	border-radius: 3px;
+	color: #777;
+	font-size: 12px;
+	min-width: 160px;
+}
+
+.login-button {
+	background: #FBAF43;
+	border: none;
+	padding: 10px;
+	border-radius: 3px;
+	width: 180px;
+	color: #FFF;
+	margin-left: 10px;
+	font-size: 12px;
+}
+
+.remember-me {
+	padding: 10px;
+	font-size: 12px;
+	color: #777;
+	padding-bottom:15px;
+}
+
+.remember-me > input {
+	vertical-align: bottom;
+}
+
+.forgotten {
+	padding: 10px;
+	padding-top: 15px;
+	font-size: 12px;
+	color: #428BCA;
+}
+
+.footer {
+	position:absolute;
+	bottom: 0;
+	padding-left: 50px;
+	height: 50px;
+}
+
+.footer > p {
+	font-size: 0.9rem;
+}
