@@ -162,7 +162,9 @@ define("orion/editor/tooltip", [ //$NON-NLS-0$
 			// cancel any outstanding defers
 			if (this._hoverInfo) {
 				this._hoverInfo.forEach(function(info) {
-					info.cancel();
+					if (info.handled === undefined) {
+						info.cancel();						
+					}
 				});
 			}
 
@@ -353,6 +355,7 @@ define("orion/editor/tooltip", [ //$NON-NLS-0$
 			if (this._hoverInfo) {
 				this._hoverInfo.forEach(function(info) {
 					Deferred.when(info, function (data) {
+						info.handled = true;
 						if (data) {
 							if (self._renderContent(tooltipDoc, tooltipContents, data)) {
 								self._showTooltip(giveFocus, tooltipDiv);
