@@ -17,10 +17,11 @@ define([
 	'chai/chai',
 	'orion/objects',
 	'orion/Deferred',
-	'esprima',
+	'acorn/acorn_loose',
+	'estraverse',
 	'mocha/mocha', //mjust stay at the end, not a module
 	'doctrine' //must stay at the end, does not export a module 
-], function(ContentAssist, chai, objects, Deferred, Esprima) {
+], function(ContentAssist, chai, objects, Deferred, Acorn, Estraverse) {
 	var assert = chai.assert;
 
 	describe('Content Assist Tests', function() {
@@ -29,13 +30,18 @@ define([
 		 * @returns {Object} The AST
 		 */
 		function parseFull(contents) {
-			var ast = Esprima.parse(contents, {
-						range: true,
-						tolerant: true,
-						comment: true,
-						tokens: true
+		    var tokens = [];
+		    var comments = [];
+			var ast = Acorn.parse_dammit(contents, {
+						ranges: true,
+					    locations: true,
+					    onToken: tokens,
+					    onComment: comments,
 					});
 			ast.source = contents;
+			ast.comments = comments;
+			ast.tokens = tokens;
+			Estraverse.attachComments(ast, comments, tokens);
 			return ast;
 		}
 	

@@ -11,16 +11,16 @@
 /*eslint-env amd, node, mocha*/
 define([
 	'chai/chai',
-	'esprima',
+	'acorn/acorn_loose',
 	'javascript/astManager',
 	'orion/Deferred',
 	'javascript/occurrences',
 	'mocha/mocha'  //must stay at the end, not a module
-], function(chai, Esprima, ASTManager, Deferred, Occurrences) {
+], function(chai, Acorn, ASTManager, Deferred, Occurrences) {
 	var assert = chai.assert;
 	
 	describe('Occurrences Tests', function() {
-		var astManager = new ASTManager.ASTManager(Esprima);
+		var astManager = new ASTManager.ASTManager(Acorn);
 		var occurrences = new Occurrences.JavaScriptOccurrences(astManager);
 		var editorContext = {
 			text: "",

@@ -13,9 +13,10 @@
 define([
 	'orion/Deferred',
 	'orion/objects',
-	'orion/serialize',
-	'javascript/lru'
-], function(Deferred, Objects, Serialize, LRU) {
+	'orion/serialize', 
+	'javascript/lru',
+	'estraverse'
+], function(Deferred, Objects, Serialize, LRU, Estraverse) {
 	/**
 	 * @description Object of error types
 	 * @since 5.0
@@ -41,7 +42,7 @@ define([
 		this.parser = esprima;
 		this.cache = new LRU.LRU(10);
 		if (!this.parser) {
-			throw new Error("Missing parser");
+			throw new Error("Missing parser"); 
 		}
 	}
 	
@@ -91,13 +92,14 @@ define([
 		 * @returns {Object} The AST.
 		 */
 		parse: function(text) {
+		    var tokens = [];
+		    var comments = [];
 			try {
-				var ast = this.parser.parse(text, {
-					range: true,
-					loc: true,
-					tolerant: true,
-					tokens: true,
-					attachComment: true
+				var ast = this.parser.parse_dammit(text, {
+					ranges: true,
+					locations: true,
+					onToken: tokens,
+					onComment: comments,
 				});
 			} catch (e) {
 				// The "tolerant" Esprima sometimes blows up from parse errors in initial statements of code.
@@ -110,6 +112,9 @@ define([
 				ast.errors = ast.errors.map(Serialize.serializeError);
 			}
 			ast.source = text;
+			ast.comments = comments;
+			ast.tokens = tokens;
+			Estraverse.attachComments(ast, comments, tokens);
 			return ast;
 		},
 		/**

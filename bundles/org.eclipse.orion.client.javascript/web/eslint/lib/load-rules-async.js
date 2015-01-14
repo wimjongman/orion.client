@@ -18,8 +18,9 @@ define([
 'logger',
 'javascript/finder',
 'estraverse',
+'acorn/acorn',
 'orion/editor/stylers/application_javascript/syntax'
-], function(util, Logger, Finder, Estraverse, JsSyntax) {
+], function(util, Logger, Finder, Estraverse, Acorn, JsSyntax) {
 	
     var rules = {
         "curly" : {
@@ -186,7 +187,7 @@ define([
         						var tokens = context.getTokens(node.callee, 0, 1);
         						if(tokens && tokens.length > 0) {
         							var last = tokens[tokens.length-1];
-        							if(last.type !== 'Punctuator' || last.value !== '(') {
+        							if(/*last.value !== '('*/last.type !== Acorn.tokTypes.parenL) {
         								//if there s no opening parenthesis its safe to assume they are missing
         								context.report(node.callee, 'Missing parentheses invoking constructor.', null, tokens[0]);
         							}
@@ -488,7 +489,7 @@ define([
         				try {
         					var tokens = context.getTokens(node);
         					var t = tokens[tokens.length - 1];
-        					if (t && t.type === "Punctuator" && t.value === ";") {  //$NON-NLS-0$  //$NON-NLS-1$
+        					if (t && /*t.value === ";"*/ t.type === Acorn.tokTypes.semi) {  //$NON-NLS-0$  //$NON-NLS-1$
         						context.report(node, "Unnecessary semicolon.", null, t /* expose the bad token */);
         					}
         				}
@@ -1111,7 +1112,7 @@ define([
         				var tokens = context.getTokens(node);
         				var len = tokens.length;
         				var t = tokens[len - 1];
-        				if (t && t.type === "Punctuator" && t.value === ";") {  //$NON-NLS-0$  //$NON-NLS-1$
+        				if (t &&  t.type === Acorn.tokTypes.semi) {
         					return;
         				}
         				context.report(node, "Missing semicolon.", null, t /* expose the bad token */);

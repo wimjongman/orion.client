@@ -16,7 +16,7 @@
  */
 define([
 'orion/bootstrap',
-'esprima',
+'acorn/acorn_loose',
 'javascript/scriptResolver',
 'javascript/astManager',
 'javascript/quickFixes',

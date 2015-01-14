@@ -11,17 +11,17 @@
 /*eslint-env amd, node, mocha*/
 define([
 	'chai/chai',
-	'esprima',
+	'acorn/acorn_loose',
 	'javascript/astManager',
 	'orion/Deferred',
 	'javascript/outliner',
 	'mocha/mocha' //not a module, leave it at the end
-], function(chai, Esprima, ASTManager, Deferred, Outliner) {
+], function(chai, Acorn, ASTManager, Deferred, Outliner) {
 	
 	var assert = chai.assert;	
 
 	describe('Outliner Tests', function() {
-		var astManager = new ASTManager.ASTManager(Esprima);
+		var astManager = new ASTManager.ASTManager(Acorn);
 		var outliner = new Outliner.JSOutliner(astManager);
 		var context = {
 			text: "",

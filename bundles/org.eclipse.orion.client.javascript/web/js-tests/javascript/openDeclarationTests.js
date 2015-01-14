@@ -15,16 +15,16 @@ define([
 	'javascript/finder',
 	'chai/chai',
 	'orion/Deferred',
-	'esprima',
+	'acorn/acorn_loose',
 	'javascript/astManager',
 	'mocha/mocha', //must stay at the end, not a module
-], function(Finder, chai, Deferred, Esprima, ASTManager) {
+], function(Finder, chai, Deferred, Acorn, ASTManager) {
 	
 	var assert = chai.assert;
 
 	describe('Open Declaration Tests', function() {
 		
-		var astManager = new ASTManager.ASTManager(Esprima);
+		var astManager = new ASTManager.ASTManager(Acorn);
 		var editorContext = {
 			text: "",
 			/**

@@ -16,7 +16,8 @@ define([
 'orion/Deferred',
 'orion/editor/textModel',
 'javascript/finder',
-], function(Objects, Deferred, TextModel, Finder) {
+'acorn/acorn'
+], function(Objects, Deferred, TextModel, Finder, Acorn) {
 	
 	/**
 	 * @description Creates a new JavaScript quick fix computer
@@ -242,7 +243,7 @@ define([
                     var item = node.elements[idx];
                     if(item === null) {
                         var end = Finder.findToken(node.range[1], ast.tokens);
-                        if(end.value === ';') {
+                        if(end.type === Acorn.tokTypes.semi) {
                             end = ast.tokens[end.index-1];
                         }
                         //wipe all trailing entries first using the ']' token start as the end

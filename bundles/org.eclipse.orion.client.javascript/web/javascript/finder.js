@@ -13,8 +13,9 @@
 define([
 'estraverse',
 'orion/objects',
-'eslint/conf/environments'
-], function(Estraverse, Objects, ESlintEnv) {
+'eslint/conf/environments',
+'acorn/acorn'
+], function(Estraverse, Objects, ESlintEnv, Acorn) {
 
 	/**
 	 * @name javascript.Visitor
@@ -597,12 +598,17 @@ define([
 					idx = 0;
 					token = tokens[0];
 				if(offset >= token.range[0] && offset < token.range[1]) {
-					token.index = offset;
+					token.index = 0;
 					return token;
 				}
 				token = tokens[max];
 				if(offset >= token.range[0]) {
-					token.index = max;
+				    if(token.type === Acorn.tokTypes.eof) {
+				        token = tokens[max-1];
+				        token.index = max-1;
+				    } else {
+					   token.index = max;
+					}
 					return token;
 				}
 				token = null;
@@ -943,7 +949,8 @@ define([
 			if(ast.tokens && ast.tokens.length > 0) {
 				var token = this.findToken(offset, ast.tokens);
 				if(token) {
-					if(token.type === 'Punctuator') {  //$NON-NLS-0$
+				    //Acorn's punctuator tokens have a type.type property
+					if(/*token.type === 'Punctuator'*/token.type && token.type.type) {  //$NON-NLS-0$
 						var index = token.index;
 						//only check back if we are at the start of the punctuator i.e. here -> {
 						if(offset === token.range[0] && index != null && index > 0) {
@@ -956,7 +963,8 @@ define([
 							}
 						}
 					}
-					if(token.type === 'Identifier' || (token.type === 'Keyword' && token.value === 'this')) { //$NON-NLS-0$  //$NON-NLS-1$  //$NON-NLS-2$
+					/*if(token.type === 'Identifier' || (token.type === 'Keyword' && token.value === 'this')) { //$NON-NLS-0$  //$NON-NLS-1$  //$NON-NLS-2$*/
+					if(token.type === Acorn.tokTypes.name || (token.type === Acorn.tokTypes._this && token.value === 'this')) {
 						return token;
 					}
 				}

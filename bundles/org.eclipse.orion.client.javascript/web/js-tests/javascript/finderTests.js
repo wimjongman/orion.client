@@ -11,16 +11,17 @@
 /*eslint-env amd, node, mocha*/
 define([
 	'chai/chai',
-	'esprima',
+	'acorn/acorn_loose',
+	'acorn/acorn',
 	'javascript/finder',
 	'javascript/astManager',
 	'orion/Deferred',
 	'mocha/mocha' // not a module, leave it at the end
-], function(chai, Esprima, Finder, ASTManager, Deferred) {
+], function(chai, AcornLoose, Acorn, Finder, ASTManager, Deferred) {
 	var assert = chai.assert;
 
 	describe('Finder Tests', function() {
-		var astManager = new ASTManager.ASTManager(Esprima);
+		var astManager = new ASTManager.ASTManager(AcornLoose);
 		var editorContext = {
 			text: "",
 			/**
@@ -388,8 +389,8 @@ define([
 						assert.fail("Should have found a token");
 					}
 					else {
-						assert.equal(token.type, 'Punctuator', 'Should have found a Punctuator token');
-						assert.equal(token.value, '(', 'Should have found a ( token');
+						assert.equal(token.type, Acorn.tokTypes.parenL, 'Should have found a Punctuator token');
+						assert.equal(token.type.type, '(', 'Should have found a ( token');
 					}
 				}
 				finally {
@@ -411,7 +412,7 @@ define([
 						assert.fail("Should have found a token");
 					}
 					else {
-						assert.equal(token.type, 'Keyword', 'Should have found a Keyword token');
+						assert.equal(token.type, Acorn.tokTypes._function, 'Should have found a Keyword token');
 						assert.equal(token.value, 'function', 'Should have found a function token');
 					}
 				}
@@ -434,8 +435,8 @@ define([
 						assert.fail("Should have found a token");
 					}
 					else {
-						assert.equal(token.type, 'Punctuator', 'Should have found a Punctuator token');
-						assert.equal(token.value, '}', 'Should have found a } token');
+						assert.equal(token.type, Acorn.tokTypes.braceR, 'Should have found a Punctuator token');
+						assert.equal(token.type.type, '}', 'Should have found a } token');
 					}
 				}
 				finally {
@@ -457,7 +458,7 @@ define([
 						assert.fail("Should have found a token");
 					}
 					else {
-						assert.equal(token.type, 'Keyword', 'Should have found a Keyword token');
+						assert.equal(token.type, Acorn.tokTypes._var, 'Should have found a Keyword token');
 						assert.equal(token.value, 'var', 'Should have found a var token');
 					}
 				}
@@ -480,7 +481,7 @@ define([
 						assert.fail("Should have found a token");
 					}
 					else {
-						assert.equal(token.type, 'Punctuator', 'Should have found a Punctuator token');
+						assert.equal(token.type, Acorn.tokTypes.slash, 'Should have found a Punctuator token');
 						assert.equal(token.value, '/', 'Should have found a / token');
 					}
 				}
@@ -503,7 +504,7 @@ define([
 						assert.fail("Should have found a token");
 					}
 					else {
-						assert.equal(token.type, 'Keyword', 'Should have found a Keyword token');
+						assert.equal(token.type, Acorn.tokTypes._var, 'Should have found a Keyword token');
 						assert.equal(token.value, 'var', 'Should have found a var token');
 					}
 				}
@@ -526,7 +527,7 @@ define([
 						assert.fail("Should have found a token");
 					}
 					else {
-						assert.equal(token.type, 'Keyword', 'Should have found a Keyword token');
+						assert.equal(token.type, Acorn.tokTypes._function, 'Should have found a Keyword token');
 						assert.equal(token.value, 'function', 'Should have found a function token');
 					}
 				}
@@ -549,7 +550,7 @@ define([
 						assert.fail("Should have found a token");
 					}
 					else {
-						assert.equal(token.type, 'Keyword', 'Should have found a Keyword token');
+						assert.equal(token.type, Acorn.tokTypes._function, 'Should have found a Keyword token');
 						assert.equal(token.value, 'function', 'Should have found a function token');
 					}
 				}
@@ -589,7 +590,7 @@ define([
 						assert.fail("Should have found a token");
 					}
 					else {
-						assert.equal(token.type, 'Identifier', 'Should have found an Identifier token');
+						assert.equal(token.type, Acorn.tokTypes.name, 'Should have found an Identifier token');
 						assert.equal(token.value, 'f', 'Should have found a f token');
 					}
 				}
@@ -612,7 +613,7 @@ define([
 						assert.fail("Should have found a token");
 					}
 					else {
-						assert.equal(token.type, 'Punctuator', 'Should have found an Punctuator token');
+						assert.equal(token.type, Acorn.tokTypes.assign, 'Should have found an Punctuator token');
 						assert.equal(token.value, '=', 'Should have found a = token');
 					}
 				}
@@ -635,7 +636,7 @@ define([
 						assert.fail("Should have found a token");
 					}
 					else {
-						assert.equal(token.type, 'Identifier', 'Should have found an Identifier token');
+						assert.equal(token.type, Acorn.tokTypes.name, 'Should have found an Identifier token');
 						assert.equal(token.value, 'f', 'Should have found a f token');
 					}
 				}
@@ -658,7 +659,7 @@ define([
 						assert.fail("Should have found a token");
 					}
 					else {
-						assert.equal(token.type, 'Keyword', 'Should have found an Keyword token');
+						assert.equal(token.type, Acorn.tokTypes._function, 'Should have found an Keyword token');
 						assert.equal(token.value, 'function', 'Should have found a function token');
 					}
 				}
@@ -681,7 +682,7 @@ define([
 						assert.fail("Should have found a token");
 					}
 					else {
-						assert.equal(token.type, 'Keyword', 'Should have found an Keyword token');
+						assert.equal(token.type, Acorn.tokTypes._function, 'Should have found an Keyword token');
 						assert.equal(token.value, 'function', 'Should have found a function token');
 					}
 				}
@@ -704,8 +705,8 @@ define([
 						assert.fail("Should have found a token");
 					}
 					else {
-						assert.equal(token.type, 'Punctuator', 'Should have found an Punctuator token');
-						assert.equal(token.value, ')', 'Should have found a ) token');
+						assert.equal(token.type, Acorn.tokTypes.parenR, 'Should have found an Punctuator token');
+						assert.equal(token.type.type, ')', 'Should have found a ) token');
 					}
 				}
 				finally {
@@ -846,7 +847,7 @@ define([
 						assert.fail('Should have found a token');
 					}
 					else {
-						assert.equal(token.type, 'Identifier', 'Should have found an Identifier token');
+						assert.equal(token.type, Acorn.tokTypes.name, 'Should have found an Identifier token');
 						assert.equal(token.value, 'foo', 'Should have found a foo token');
 					}
 				}
