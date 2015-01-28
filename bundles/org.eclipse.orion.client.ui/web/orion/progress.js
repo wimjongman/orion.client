@@ -164,6 +164,9 @@ function(messages, lib, mOperationsDialog, Tooltip) {
 				deferred.then(/* @callback */ function(result){
 					if(that._operations[operationsIndex]){
 						var operation = that._operations[operationsIndex];
+						// add the operation to the deferred object
+						deferred.operation = operation;
+						deferred.operationsIndex = operationsIndex;
 						if(operationName)
 							operation.Name = operationName;
 						that._lastOperation = operation;
@@ -179,6 +182,9 @@ function(messages, lib, mOperationsDialog, Tooltip) {
 				}, function(error){
 					if(that._operations[operationsIndex]){
 						var operation = that._operations[operationsIndex];
+						// add the operation to the deferred object
+						deferred.operation = operation;
+						deferred.operationsIndex = operationsIndex;
 						if(operationName)
 							operation.Name = operationName;
 						if(progressMonitor){
@@ -193,6 +199,9 @@ function(messages, lib, mOperationsDialog, Tooltip) {
 						}
 					}
 				}, function(operation){
+						// add the operation to the deferred object
+					deferred.operation = operation;
+					deferred.operationsIndex = operationsIndex;
 					if(operationName)
 						operation.Name = operationName;
 					if(progressMonitor){
@@ -266,7 +275,7 @@ function(messages, lib, mOperationsDialog, Tooltip) {
 				this._operationDeferrds[operationIndex] = deferred;
 				if(operation.Location){
 					var data = {};
-					data[operation.Location] = {Name: operation.Name, expires: operation.expires};
+					data[operation.Location] = {Name: operation.Name, expires: operation.expires, display: operation.display};
 					this._serviceRegistry.getService("orion.core.preference").put("/operations", data); //$NON-NLS-2$ //$NON-NLS-1$
 				}
 				if(operation.progressMonitor){
