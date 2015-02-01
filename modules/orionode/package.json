@@ -16,6 +16,7 @@
   "optionalDependencies": {
     "pty.js": "0.2.5"
     "nodegit": "0.2.7"
+    "findit": "~2.0.0"
   },
   "devDependencies": {
     "mocha": "*",
