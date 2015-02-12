@@ -1673,6 +1673,18 @@ parseStatement: true, parseSourceElement: true */
             }
         },
 
+        //ORION pop the stacks while recovering
+        finishIf: function() {
+            if (extra.loc) {
+                state.markerStack.pop();
+                state.markerStack.pop();
+            }
+            if (extra.range) {
+                state.markerStack.pop();
+            }
+            return this;
+        },
+        
         finishArrayExpression: function (elements) {
             this.type = Syntax.ArrayExpression;
             this.elements = elements;
@@ -1894,7 +1906,11 @@ parseStatement: true, parseSourceElement: true */
             this.operator = operator;
             this.argument = argument;
             this.prefix = false;
-            this.finish();
+            if(!this.argument) { //ORION pop the stack when recovering
+            	this.finishIf();
+            } else {
+            	this.finish();
+            }
             return this;
         },
 
@@ -1905,6 +1921,7 @@ parseStatement: true, parseSourceElement: true */
             return this;
         },
 
+        //ORION be able to recover
         finishProperty: function (kind, key, value, method, shorthand) {
             this.type = Syntax.Property;
             this.key = key;
@@ -1912,7 +1929,11 @@ parseStatement: true, parseSourceElement: true */
             this.kind = kind;
             this.method = method;
             this.shorthand = shorthand;
-            this.finish();
+            if(!this.key) {
+            	this.finishIf();
+            } else {
+            	this.finish();
+            }
             return this;
         },
 
@@ -3897,7 +3918,7 @@ parseStatement: true, parseSourceElement: true */
             if (directive === 'use strict') {
                 strict = true;
                 if (firstRestricted) {
-                    throwErrorTolerant(firstRestricted, Messages.StrictOctalLiteral);
+                    tolerateUnexpectedToken(firstRestricted, Messages.StrictOctalLiteral);
                 }
             } else {
                 if (!firstRestricted && token.octal) {
@@ -3980,7 +4001,8 @@ parseStatement: true, parseSourceElement: true */
             inFunctionBody: false,
             inIteration: false,
             inSwitch: false,
-            lastCommentStart: -1
+            lastCommentStart: -1,
+            markerStack: []  //ORION record locations for rewinding
         };
 
         extra = {};
@@ -4068,7 +4090,8 @@ parseStatement: true, parseSourceElement: true */
             inFunctionBody: false,
             inIteration: false,
             inSwitch: false,
-            lastCommentStart: -1
+            lastCommentStart: -1,
+            markerStack: [] //ORION track the last locations for rewinding
         };
 
         extra = {};
@@ -4301,7 +4324,6 @@ parseStatement: true, parseSourceElement: true */
 	 * @description Recover an object property or ignore it
 	 * @private
 	 * @param {Object} prev The previous token from the stream
-	 * @author mrennie
 	 * @see https://bugs.eclipse.org/bugs/show_bug.cgi?id=432956
 	 */
 	function recoverProperty(prev, id, node) {
@@ -4310,37 +4332,40 @@ parseStatement: true, parseSourceElement: true */
 	        if(token.value === ':') {
 	        	try {
 	        		token = lex(); // eat the ':' so the assignment parsing starts on the correct index
-	            	return node.finishProperty('init', id, parseAssignmentExpression());
+	            	return node.finishProperty('init', id, parseAssignmentExpression(), false, true);
             	}
             	catch(e) {
-            		// TODO delegate.markEndIf(id);
+            		node.finishProperty('init', id, null, false, true);
+            		return null;
             	}
 	        } else if(token.type === Token.Punctuator && token.value === '}') {
-	        	throwErrorTolerant(prev, Messages.UnexpectedToken, prev.value);
-	        	//TODO delegate.markEndIf(id);
+	        	tolerateUnexpectedToken(prev, Messages.UnexpectedToken, prev.value);
+	        	node.finishProperty('init', id, false, true, true);
+	        	return null;
 	        } else {
-	        	throwErrorTolerant(prev, Messages.UnexpectedToken, prev.value);
+	        	tolerateUnexpectedToken(prev, Messages.UnexpectedToken, prev.value);
 	        	if(token.type === Token.Identifier || token.type === Token.StringLiteral) {
 	        		//if the next token is an identifer / literal, start over
-	        		//TODO delegate.markEndIf(id);
+	        		node.finishProperty('init', id, false, true);
+	        		return null;
 	        	}
 	        	while(token.type !== Token.EOF) {
 	        		if(token.type === Token.Punctuator && (token.value === ',' || token.value === '}')) {
 		            	//entering a prop, not complete, return null
-		            	//TODO delegate.markEndIf(id);
-		            	break;
+	        			node.finishProperty('init', id, false, true);
+	        			return null;
 		            } else {
 	        			token = lex(); // the token if we skipped it
 	        		}
 	        		token = advance();
 	        	}
 	        }
-	        //TODO delegate.markEndIf(id);
-	        return undefined;
+	        node.finishProperty('init', id, false, true);
+	        return null;
         }
         else {
         	expect(':');
-        	return node.finishProperty('init', id, parseAssignmentExpression());
+        	return node.finishProperty('init', id, parseAssignmentExpression(), false, true);
         }
 	}
 
