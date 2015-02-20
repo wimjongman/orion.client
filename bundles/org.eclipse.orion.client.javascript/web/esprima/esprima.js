@@ -33,7 +33,6 @@
 
 /*jslint bitwise:true plusplus:true */
 /*global esprima:true, define:true, exports:true, window: true,
-throwErrorTolerant: true,
 throwError: true, generateStatement: true, peek: true,
 parseAssignmentExpression: true, parseBlock: true, parseExpression: true,
 parseFunctionDeclaration: true, parseFunctionExpression: true,
@@ -464,7 +463,19 @@ parseStatement: true, parseSourceElement: true */
             }
         }
 
-        throwUnexpectedToken();
+        //ORION
+        if(index >= length && extra.comments) {
+            //ran off the end of the file - the whole thing is a comment
+            loc.end = {
+                line: lineNumber,
+                column: index - lineStart
+            };
+            comment = source.slice(start+2, index);
+            addComment('Block', comment, start, index, loc);
+            tolerateUnexpectedToken(null, Messages.UnexpectedToken);
+        } else {
+            throwError(Messages.UnexpectedToken, 'ILLEGAL');
+        }
     }
 
     function skipComment() {
@@ -1125,12 +1136,8 @@ parseStatement: true, parseSourceElement: true */
                 str += ch;
             }
         }
-
-        if (quote !== '') {
-            throwUnexpectedToken();
-        }
-
-        return {
+        
+        var tok = {
             type: Token.StringLiteral,
             value: str,
             octal: octal,
@@ -1139,6 +1146,13 @@ parseStatement: true, parseSourceElement: true */
             start: start,
             end: index
         };
+        
+        //ORION
+        if (quote !== '') {
+            tolerateUnexpectedToken(tok);
+        }
+
+        return tok;
     }
 
     function testRegExp(pattern, flags) {
@@ -1568,26 +1582,20 @@ parseStatement: true, parseSourceElement: true */
     }
 
     function Node() {
-        //ORION 
         if (extra.loc) {
             this.loc = new SourceLocation();
-            state.markerStack.push(this.loc);
         }
         if (extra.range) {
             this.range = [startIndex, 0];
-            state.markerStack.push(startIndex);
         }
     }
 
     function WrappingNode(startToken) {
-        //ORION
         if (extra.loc) {
             this.loc = new WrappingSourceLocation(startToken);
-            state.markerStack.push(this.loc);
         }
         if (extra.range) {
             this.range = [startToken.start, 0];
-            state.markerStack.push(startToken.start);
         }
     }
 
@@ -1649,7 +1657,6 @@ parseStatement: true, parseSourceElement: true */
                 }
             }
 
-
             if (leadingComments && leadingComments.length > 0) {
                 this.leadingComments = leadingComments;
             }
@@ -1669,32 +1676,15 @@ parseStatement: true, parseSourceElement: true */
                 if (extra.source) {
                     this.loc.source = extra.source;
                 }
-                state.markerStack.pop();  //ORION
             }
             if (extra.range) {
                 this.range[1] = lastIndex;
-                state.markerStack.pop(); //ORION
             }
             if (extra.attachComment) {
                 this.processComment();
             }
         },
 
-        //ORION pop the stacks while recovering
-        finishIf: function() {
-            if (this.range || this.loc) {
-                if (extra.loc) {
-                    state.markerStack.pop();
-                }
-                if (extra.range) {
-                    state.markerStack.pop();
-                }
-            } else {
-                this.finish();
-            }
-            return this;
-        },
-        
         finishArrayExpression: function (elements) {
             this.type = Syntax.ArrayExpression;
             this.elements = elements;
@@ -1720,11 +1710,7 @@ parseStatement: true, parseSourceElement: true */
             this.operator = operator;
             this.left = left;
             this.right = right;
-            if(!this.right) {
-                this.finishIf();
-            } else {
-                this.finish();
-            }
+            this.finish();
             return this;
         },
 
@@ -1806,11 +1792,7 @@ parseStatement: true, parseSourceElement: true */
         finishExpressionStatement: function (expression) {
             this.type = Syntax.ExpressionStatement;
             this.expression = expression;
-            if(!this.expression) {
-                this.finishIf();
-            } else {
-                this.finish();
-            }
+            this.finish();
             return this;
         },
 
@@ -1924,11 +1906,7 @@ parseStatement: true, parseSourceElement: true */
             this.operator = operator;
             this.argument = argument;
             this.prefix = false;
-            if(!this.argument) { //ORION pop the stack when recovering
-            	this.finishIf();
-            } else {
-            	this.finish();
-            }
+            this.finish();
             return this;
         },
 
@@ -1947,11 +1925,7 @@ parseStatement: true, parseSourceElement: true */
             this.kind = kind;
             this.method = method;
             this.shorthand = shorthand;
-            if(!this.key) {
-            	this.finishIf();
-            } else {
-            	this.finish();
-            }
+            this.finish();
             return this;
         },
 
@@ -2013,11 +1987,7 @@ parseStatement: true, parseSourceElement: true */
             this.operator = operator;
             this.argument = argument;
             this.prefix = true;
-            if(!this.argument) {
-                this.finishIf();
-            } else {
-                this.finish();
-            }
+            this.finish();
             return this;
         },
 
@@ -2170,8 +2140,16 @@ parseStatement: true, parseSourceElement: true */
         		lex();
             } else if (token.type === Token.Punctuator && token.value === ';') {
                 lex();
-                tolerateUnexpectedToken(token, Messages.MissingToken, ',');
-            } else {
+                //ORION we want the previous token
+                if(extra.tokens && extra.tokens.length > 0) {
+        			token = extra.tokens[extra.tokens.length-1];
+        		}
+                tolerateUnexpectedToken(token, Messages.MissingToken, ';');
+            } else if(token.type !== Token.EOF){
+                //ORION we want the previous token and don't report missing on EOF
+                if(extra.tokens && extra.tokens.length > 0) {
+        			token = extra.tokens[extra.tokens.length-1];
+        		}
                 tolerateUnexpectedToken(token, Messages.MissingToken, ',');
         	}
         } else {
@@ -2223,29 +2201,41 @@ parseStatement: true, parseSourceElement: true */
             op === '^=' ||
             op === '|=';
     }
-
+    
+    //ORION
     function consumeSemicolon() {
-        // Catch the very common case first: immediately a semicolon (U+003B).
-        if (source.charCodeAt(startIndex) === 0x3B || match(';')) {
-            lex();
-            return;
-        }
-
-        if (hasLineTerminator) {
-            return;
-        }
-
-        // FIXME(ikarienator): this is seemingly an issue in the previous location info convention.
-        lastIndex = startIndex;
-        lastLineNumber = startLineNumber;
-        lastLineStart = startLineStart;
-
-        if (lookahead.type !== Token.EOF && !match('}')) {
-            var badToken = lookahead;
-            if (extra.errors) {
-                rewind(); // ORION mutates lookahead
+        try {
+            // Catch the very common case first: immediately a semicolon (U+003B).
+            if (source.charCodeAt(startIndex) === 0x3B || match(';')) {
+                lex();
+                return;
             }
-            throwUnexpectedToken(badToken);
+    
+            if (hasLineTerminator) {
+                return;
+            }
+    
+            // FIXME(ikarienator): this is seemingly an issue in the previous location info convention.
+            lastIndex = startIndex;
+            lastLineNumber = startLineNumber;
+            lastLineStart = startLineStart;
+    
+            if (lookahead.type !== Token.EOF && !match('}')) {
+                var badToken = lookahead;
+                if (extra.errors) {
+                    rewind(startLineStart); // ORION mutates lookahead
+                }
+                //tolerateUnexpectedToken(badToken);
+                throwUnexpectedToken(badToken);
+            }
+        }
+        catch(e) {
+            if(extra.errors) {
+                recordError(e);
+                return;
+            } else {
+                throw e;
+            }
         }
     }
 
@@ -2323,7 +2313,8 @@ parseStatement: true, parseSourceElement: true */
 
         return node.finishIdentifier(token.value);
     }
-
+    
+    //ORION
     function parseObjectProperty() {
         var token, key, id, value, param, node = new Node();
 
@@ -2357,32 +2348,12 @@ parseStatement: true, parseSourceElement: true */
                 }
                 return node.finishProperty('set', key, value, false, false);
             }
-           /* if (match(':')) {
-                lex();
-            	value = parseAssignmentExpression();
-                return node.finishProperty('init', id, value, false, false);
-        	}
-        	if (match('(')) {
-                value = parsePropertyMethodFunction();
-                return node.finishProperty('init', id, value, true, false);
-            }
-            value = id;*/
             return recoverProperty(token, id, node);
-            //return node.finishProperty('init', id, value, false, true);
         }
         if (token.type === Token.EOF || token.type === Token.Punctuator) {
             throwUnexpectedToken(token);
         } else {
             return recoverProperty(token, parseObjectPropertyKey(), node);
-            /*key = parseObjectPropertyKey();
-            expect(':');
-            value = parseAssignmentExpression();
-            return node.finishProperty('init', key, value);
-			if (match('(')) {
-                value = parsePropertyMethodFunction();
-                return node.finishProperty('init', key, value, true, false);
-            }
-            throwUnexpectedToken(lex());*/
         }
     }
 
@@ -2541,18 +2512,26 @@ parseStatement: true, parseSourceElement: true */
         return args;
     }
 
+    //ORION
     function parseNonComputedProperty() {
         var token, node = new Node();
-
-        token = lex();
-
-        if (!isIdentifierName(token)) {
-            if (extra.errors) {
-                recoverNonComputedProperty(token);
+        try {
+            token = lex();
+            if (!isIdentifierName(token)) {
+                if (extra.errors) {
+                    recoverNonComputedProperty(token);
+                }
+                throwUnexpectedToken(token);
             }
-            throwUnexpectedToken(token);
         }
-
+        catch(e) {
+            if (extra.errors) {
+                recordError(e);
+                return null;
+            } else {
+                throw e;
+            }
+        }
         return node.finishIdentifier(token.value);
     }
 
@@ -3175,7 +3154,7 @@ parseStatement: true, parseSourceElement: true */
 
         test = parseExpression();
 
-        expectSkipTo(')');
+        expectSkipTo(')', '{');
 
         if (match(';')) {
             lex();
@@ -3425,7 +3404,7 @@ parseStatement: true, parseSourceElement: true */
 
         object = parseExpression();
 
-        expect(')');
+        expectSkipTo(')', '{');
 
         body = parseStatement();
 
@@ -3445,17 +3424,20 @@ parseStatement: true, parseSourceElement: true */
             test = parseExpression();
         }
         expect(':');
-        var start = startIndex; //ORION prevent infinite loops by checking if the index moved
+        var start = index; //ORION prevent infinite loops by checking if the index moved
         while (startIndex < length) {
             if (match('}') || matchKeyword('default') || matchKeyword('case')) {
                 break;
             }
             statement = parseStatement();
-            if(typeof statement === 'undefined' || start === startIndex) {
+            if(typeof statement === 'undefined' || statement === null) {
                 break;
             }
-            start = startIndex;
             consequent.push(statement);
+            if(start === index) {
+                break;
+            }
+            start = index;
         }
 
         return node.finishSwitchCase(test, consequent);
@@ -3711,16 +3693,16 @@ parseStatement: true, parseSourceElement: true */
         state.inSwitch = false;
         state.inFunctionBody = true;
         state.parenthesizedCount = 0;
-        var start = startIndex; //ORION 8.0 prevent infinite loops by checking for index movement
-        while (startIndex < length) {
+        var start = index; //ORION 8.0 prevent infinite loops by checking for index movement
+        while (index < length) {
             if (match('}')) {
                 break;
             }
             sourceElement = parseSourceElement();
-            if (typeof sourceElement === 'undefined' || start === startIndex) {
+            if (typeof sourceElement === 'undefined' || start === index) {
                 break;
             }
-            start = startIndex;
+            start = index;
             sourceElements.push(sourceElement);
         }
 
@@ -3951,15 +3933,19 @@ parseStatement: true, parseSourceElement: true */
                 }
             }
         }
-        var start = startIndex;  //ORION prevent infinite loops by checking index movement
+        //ORION prevent infinite loops by checking index movement
+        var start = index;  
         while (startIndex < length) {
             sourceElement = parseSourceElement();
             /* istanbul ignore if */
-            if (typeof sourceElement === 'undefined' || start === startIndex) {
+            if (typeof sourceElement === 'undefined' || sourceElement === null) {
                 break;
             }
-            start = startIndex;
             sourceElements.push(sourceElement);
+            if(start === index) {
+                break;
+            }
+            start = index;
         }
         return sourceElements;
     }
@@ -4026,8 +4012,7 @@ parseStatement: true, parseSourceElement: true */
             inFunctionBody: false,
             inIteration: false,
             inSwitch: false,
-            lastCommentStart: -1,
-            markerStack: []  //ORION record locations for rewinding
+            lastCommentStart: -1
         };
 
         extra = {};
@@ -4115,8 +4100,7 @@ parseStatement: true, parseSourceElement: true */
             inFunctionBody: false,
             inIteration: false,
             inSwitch: false,
-            lastCommentStart: -1,
-            markerStack: [] //ORION track the last locations for rewinding
+            lastCommentStart: -1
         };
 
         extra = {};
@@ -4140,13 +4124,9 @@ parseStatement: true, parseSourceElement: true */
                 //ORION hijack the parse statements we want to recover from
                 extra.parseStatement = parseStatement;
                 extra.parseExpression = parseExpression;
-				extra.parseNonComputedProperty = parseNonComputedProperty;
-				extra.consumeSemicolon = consumeSemicolon;
 				
 				parseStatement = parseStatementTolerant(parseStatement); // Note special case
 				parseExpression = parseTolerant(parseExpression);
-				parseNonComputedProperty = parseTolerant(parseNonComputedProperty);
-				consumeSemicolon = parseTolerant(consumeSemicolon);
             }
             if (extra.attachComment) {
                 extra.range = true;
@@ -4176,8 +4156,6 @@ parseStatement: true, parseSourceElement: true */
             if (typeof extra.errors !== 'undefined') {
         		parseStatement = extra.parseStatement;
         		parseExpression = extra.parseExpression;
-        		parseNonComputedProperty = extra.parseNonComputedProperty;
-        		consumeSemicolon = extra.consumeSemicolon;
         	}
             extra = {};
         }
@@ -4232,17 +4210,10 @@ parseStatement: true, parseSourceElement: true */
      */
     function parseTolerant(parseFunction) {
         return function () {
-        	var initialHeight = state.markerStack.length;
             try {
                 return parseFunction.apply(null, arguments);
             } catch (e) {
 				recordError(e);
-				//don't rewind here for statements
-				//TODO 
-				while (state.markerStack.length > initialHeight) {
-				    state.markerStack.pop();
-					//delegate.markEndIf(null);
-				}
             }
         };
     }
@@ -4270,10 +4241,11 @@ parseStatement: true, parseSourceElement: true */
      * don't rewind (because it will fail in the same way).  If it turns out to be the same
      * position as where we last rewound to, don't do it.  Clears the buffer and sets the
      * index in order to continue lexing from the new position.
+     * @param {Number} linestart The start of the line to rewind to
      * @since 5.0
      */
-    function rewind() {
-        var idx = index;
+    function rewind(linestart) {
+        var idx = linestart;
         while (idx > -1 && source[idx] !== ';' && source[idx] !== '\n') {
             idx--;
         }
@@ -4290,9 +4262,33 @@ parseStatement: true, parseSourceElement: true */
         }	        
         if (doRewind) {
 	        index = idx;
+	        rewindTokenStream(linestart);
 	        peek(); // recalculate lookahead
 	        extra.lastRewindLocation = index;
         }
+    }
+    
+    /**
+     * @description Rewinds the state of the token stream to make sure we remove stale
+     * tokens when we are re-parsing
+     * @param {Number} offset The index into the source
+     * @returns {Number} The index we stopped rewinding at 
+     * @since 9.0
+     */
+    function rewindTokenStream(offset, more) {
+        var idx = extra.tokens.length-1;
+    	while(idx > -1) {
+    	    var tok = extra.tokens[idx];
+    		if(tok.range[0] < offset) {
+    		    if(more) {
+    		      extra.tokens.pop();
+    		    }
+    			break;
+    		}
+    		idx--;
+    		extra.tokens.pop();
+    	}
+    	return idx;
     }
     
     /**
@@ -4306,19 +4302,12 @@ parseStatement: true, parseSourceElement: true */
      * @since 5.0
      */
     function recoverNonComputedProperty(token) {
-        if (token.value && token.type===Token.Punctuator) {
-        	var idx = extra.tokens.length-1;
-        	while(idx > 0) {
-        		if(extra.tokens[idx].range[0] === token.range[0]) {
-        			extra.tokens.pop(); //correct the stream
-        			break;
-        		}
-        		idx--;
-        		extra.tokens.pop(); //correct the stream
-        	}
-        	var prev = extra.tokens[idx-1];
+        if (token.value && token.type === Token.Punctuator) {
+            var start = token.range ? token.range[0] : token.start;
+            var idx = rewindTokenStream(start);
+        	var prev = extra.tokens[idx];
         	if(prev.type === TokenName[Token.Punctuator] && prev.value === '.') {
-        		extra.tokens.pop();
+        		//extra.tokens.pop();
         		index = prev.range[0]+1;
                 peek(); // recalculate lookahead
         	}
@@ -4361,6 +4350,8 @@ parseStatement: true, parseSourceElement: true */
 	            	return node.finishProperty('init', id, parseAssignmentExpression(), false, true);
             	}
             	catch(e) {
+            	    token = extra.tokens[extra.tokens.length-1];    
+            	    tolerateUnexpectedToken(token, Messages.UnexpectedToken, token.value);
             		node.finishProperty('init', id, null, false, true);
             		return null;
             	}
