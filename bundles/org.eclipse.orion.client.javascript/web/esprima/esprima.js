@@ -472,9 +472,9 @@ parseStatement: true, parseSourceElement: true */
             };
             comment = source.slice(start+2, index);
             addComment('Block', comment, start, index, loc);
-            tolerateUnexpectedToken(null, Messages.UnexpectedToken);
+            tolerateUnexpectedToken();
         } else {
-            throwError(Messages.UnexpectedToken, 'ILLEGAL');
+            throwUnexpectedToken();
         }
     }
 
@@ -831,8 +831,17 @@ parseStatement: true, parseSourceElement: true */
                 end: index
             };
         }
-
-        throwUnexpectedToken();
+        //ORION 
+        ++index;
+        var tok = {
+            type: Token.Punctuator, 
+            lineNumber: lineNumber,
+            lineStart: lineStart,
+            start: start,
+            end: index,
+            value: source.slice(start, index)
+        };
+        throwUnexpectedToken(tok);
     }
 
     // 7.8.3 Numeric Literals
@@ -1230,7 +1239,7 @@ parseStatement: true, parseSourceElement: true */
         }
 
         if (!terminated) {
-            throwUnexpectedToken(null, Messages.UnterminatedRegExp);
+            throwUnexpectedToken(lookahead, Messages.UnterminatedRegExp);
         }
 
         // Exclude leading and trailing slash.
@@ -1290,7 +1299,8 @@ parseStatement: true, parseSourceElement: true */
         scanning = true;
         var start, body, flags, value;
 
-        lookahead = null;
+        //ORION do not null out the lookahead
+        //lookahead = null;
         skipComment();
         start = index;
 
@@ -1447,7 +1457,8 @@ parseStatement: true, parseSourceElement: true */
                 lineNumber: lineNumber,
                 lineStart: lineStart,
                 start: index,
-                end: index
+                end: index,
+                range: [index, index] //ORION
             };
         }
 
@@ -2030,8 +2041,11 @@ parseStatement: true, parseSourceElement: true */
         error.lineNumber = line;
         error.column = pos - (scanning ? lineStart : lastLineStart) + 1;
         error.description = description;
-        if(token) { //ORION
+        //ORION 
+        if(token) {
+            error.index = typeof(token.start) === 'number' ? token.start : token.range[0];
             error.token = token.value;
+            error.end = typeof(token.end) === 'number' ? token.end : token.range[1];
         }
         return error;
     }
@@ -2066,7 +2080,7 @@ parseStatement: true, parseSourceElement: true */
 
         error = createError(lineNumber, lastIndex, msg);
             if (extra.errors) {
-            extra.errors.push(error);
+                extra.errors.push(error);
             } else {
             throw error;
         }
@@ -2142,13 +2156,13 @@ parseStatement: true, parseSourceElement: true */
                 lex();
                 //ORION we want the previous token
                 if(extra.tokens && extra.tokens.length > 0) {
-        			token = extra.tokens[extra.tokens.length-1];
+        			token = extra.tokens[extra.tokens.length-2];
         		}
                 tolerateUnexpectedToken(token, Messages.MissingToken, ';');
             } else if(token.type !== Token.EOF){
                 //ORION we want the previous token and don't report missing on EOF
                 if(extra.tokens && extra.tokens.length > 0) {
-        			token = extra.tokens[extra.tokens.length-1];
+        			token = extra.tokens[extra.tokens.length-2];
         		}
                 tolerateUnexpectedToken(token, Messages.MissingToken, ',');
         	}

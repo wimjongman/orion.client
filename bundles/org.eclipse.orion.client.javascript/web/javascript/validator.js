@@ -169,7 +169,7 @@ define([
 		var prob = {
 		    id: getProblemId(e),
 			description: description,
-			severity: getSeverity(e),
+			severity: getSeverity(e)
 		};
 		if(typeof(start) !== 'undefined') {
 		    prob.start = start;
@@ -208,7 +208,7 @@ define([
 					}
 					else if(ast.tokens.length > 0) {
 						//error object did not contain the token infos, try to find it
-						token = Finder.findToken(error.index, ast.tokens);	
+						token = Finder.findToken(error.index, ast.tokens);
 					}
 					var msg = error.message;
 					if(errorMap[error.index] === msg) {
@@ -228,7 +228,7 @@ define([
 								error.message = error.args.nls;
 								break;
 						}
-					} else if(!error.token) {
+					} else if(!token) {
 					    //an untyped error with no tokens, report the failure
 					    error.args = {0: error.message, nls: 'esprimaParseFailure'};
 					    error.message = error.args.nls;
