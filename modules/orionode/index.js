@@ -17,6 +17,7 @@ var connect = require('connect'),
     orionWorkspace = require('./lib/workspace'),
     orionNodeStatic = require('./lib/orionode_static'),
     orionStatic = require('./lib/orion_static'),
+    orionSearch = require('./lib/search'),
     term = require('term.js');
 
 var LIBS = path.normalize(path.join(__dirname, 'lib/')),
@@ -50,6 +51,10 @@ function startServer(options) {
 			.use(orionWorkspace({
 				root: '/workspace',
 				fileRoot: '/file',
+				workspaceDir: workspaceDir
+			}))
+			.use(orionSearch({
+				root: '/filesearch',
 				workspaceDir: workspaceDir
 			}))
 			.use(orionNode({
