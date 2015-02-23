@@ -15,8 +15,7 @@ define([
 	'orion/objects',
 	'orion/serialize',
 	'javascript/lru',
-	'estraverse'
-], function(Deferred, Objects, Serialize, LRU, Estraverse) {
+], function(Deferred, Objects, Serialize, LRU) {
 	/**
 	 * @description Object of error types
 	 * @since 5.0
@@ -31,78 +30,6 @@ define([
 		 */
 		EndOfInput: 2
 	};
-
-    /**
-		 * @description Write out the 'nodes', 'tokens' annd 'errors' arrays for a given AST.
-		 * Add this code to the AST managers' getAST() function to produce the test data from a target workspace
-		 * @param {Object} ast The AST
-		 */
-		function writeTestData(ast) {
-			var i = 0;
-			console.log('--- TEST OUTPUT ---');
-			var expected = [];
-			Estraverse.traverse(ast, {
-				/** override */
-				enter: function(node) {
-					if(node.type === 'Program') {
-						return;
-					}
-					var n = {};
-					n.type = node.type;
-					if (node.name) {
-						n.name = node.name;
-					}
-					if (node.kind) {
-						n.kind = node.kind;
-					}
-					if (node.range) {
-						n.range = node.range;
-					}
-					if (node.value && typeof node.value !== 'object') {
-						n.value = node.value;
-					}
-					expected.push(n);
-				}
-			});
-			var s = 'nodes: ';
-			s += JSON.stringify(expected);
-			s += ',\n\t\t\t\ttokens: ';
-			expected = [];
-			for(i = 0; i < ast.tokens.length; i++) {
-				var n = {};
-				var token = ast.tokens[i];
-				n.type = token.type;
-				n.range = token.range;
-				n.value = token.value;
-				expected.push(n);
-			}
-			s += JSON.stringify(expected);
-			s += ',\n\t\t\t\terrors: ';
-			expected = [];
-			for(i = 0; i < ast.errors.length; i++) {
-				var error = ast.errors[i];
-				expected.push({
-					lineNumber : error.lineNumber,
-					index : error.index,
-					message : error.message,
-					token : error.token
-				});
-			}
-			s += JSON.stringify(expected);
-			s += ',\n\t\t\t\tcomments: ';
-			expected = [];
-			for(i = 0; i < ast.comments.length; i++) {
-				var comment = ast.comments[i];
-				expected.push({
-					kind : comment.kind,
-					start : comment.range[0],
-					end : comment.range[1],
-					value : comment.value
-				});
-			}
-			s += JSON.stringify(expected);
-			console.log(s);
-		}
 
 	/**
 	 * Provides a shared AST.
@@ -137,7 +64,6 @@ define([
 				}
 				return editorContext.getText().then(function(text) {
 					ast = _self.parse(text);
-					writeTestData(ast);
 					_self.cache.put(loc, ast);
 					if(metadata.location) {
 					    //only set this if the original metadata has a real location
