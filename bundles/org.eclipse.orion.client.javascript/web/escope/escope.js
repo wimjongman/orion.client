@@ -46,27 +46,14 @@
  * @module
  */
 
-/*jslint bitwise:true */
-(function () {
-    'use strict';
-
-    var Syntax,
-        util,
-        extend,
-        estraverse,
-        esrecurse,
-        Map,
-        WeakMap;
-
-    util = require('util');
-    extend = require('util-extend');
-    estraverse = require('estraverse');
-    esrecurse = require('esrecurse');
-
-    Map = require('es6-map');
-    WeakMap = require('es6-weak-map');
-
-    Syntax = estraverse.Syntax;
+/*eslint-env amd, node*/
+define('escope', [
+'estraverse', 
+'orion/objects', 
+'escope/esrecurse'
+], function (estraverse, Objects, esrecurse) {
+    
+    var Syntax = estraverse.Syntax;
 
     function assert(cond, text) {
         if (!cond) {
@@ -922,7 +909,8 @@
         this.declaration = declaration;
         this.referencer = referencer;
     }
-    util.inherits(Importer, esrecurse.Visitor);
+    //ORION
+    Objects.mixin(Importer, esrecurse.Visitor);
 
     Importer.prototype.visitImport = function (id, specifier) {
         var that = this;
@@ -962,10 +950,10 @@
         this.parent = null;
         this.isInnerMethodDefinition = false;
     }
+    //ORION
+    Objects.mixin(Referencer, esrecurse.Visitor);
 
-    util.inherits(Referencer, esrecurse.Visitor);
-
-    extend(Referencer.prototype, {
+    Objects.mixin(Referencer.prototype, {
         currentScope: function () {
             return this.scopeManager.__currentScope;
         },
@@ -1396,17 +1384,13 @@
         return scopeManager;
     }
 
-    /** @name module:escope.version */
-    exports.version = require('./package.json').version;
-    /** @name module:escope.Reference */
-    exports.Reference = Reference;
-    /** @name module:escope.Variable */
-    exports.Variable = Variable;
-    /** @name module:escope.Scope */
-    exports.Scope = Scope;
-    /** @name module:escope.ScopeManager */
-    exports.ScopeManager = ScopeManager;
-    /** @name module:escope.analyze */
-    exports.analyze = analyze;
-}());
+    return {
+        version: '2.0.4',
+        Reference: Reference,
+        Variable: Variable,
+        Scope: Scope,
+        ScopeManager: ScopeManager,
+        analyze: analyze
+    };
+});
 /* vim: set sw=4 ts=4 et tw=80 : */
