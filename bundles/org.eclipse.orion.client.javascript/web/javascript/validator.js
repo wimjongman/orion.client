@@ -59,6 +59,9 @@ define([
 			'valid-typeof': 2,  //$NON-NLS-0$
 			'no-sparse-arrays': 1  //$NON-NLS-0$
 		},
+		ecmaFeatures: {
+		    blockBindings: true
+		},
 		/**
 		 * @description Sets the given rule to the given enabled value
 		 * @function
