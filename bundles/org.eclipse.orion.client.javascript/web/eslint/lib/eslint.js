@@ -369,6 +369,7 @@ module.exports = (function() {
         currentTextLines = [],
         currentConfig = null,
         currentTokens = null,
+        scopeManager = null,
         currentScopes = null,
         scopeMap = null,
         currentFilename = null,
@@ -501,6 +502,7 @@ module.exports = (function() {
         currentText = null;
         currentTextLines = [];
         currentTokens = null;
+        scopeManager = null;
         currentScopes = null;
         scopeMap = null;
         controller = null;
@@ -570,8 +572,13 @@ module.exports = (function() {
             currentText = textOrAST && typeof textOrAST === "string" ? textOrAST : textOrAST.source;
             controller = new estraverse.Controller();
 
+            scopeManager = escope.analyze(ast, {
+                ignoreEval: true,
+                ecmaVersion: 6
+            });
+
             // gather data that may be needed by the rules
-            currentScopes = escope.analyze(ast, { ignoreEval: true }).scopes;
+            currentScopes = scopeManager.scopes;
 
             /*
              * Index the scopes by the start range of their block for efficient
@@ -979,8 +986,7 @@ module.exports = (function() {
      */
     api.getScope = function() {
         var parents = controller.parents(),
-            innerBlock = null,
-            selectedScopeIndex;
+            scope = currentScopes[0];
 
         // Don't do this for Program nodes - they have no parents
         if (parents.length) {
@@ -994,28 +1000,16 @@ module.exports = (function() {
             // Ascend the current node's parents
             for (var i = parents.length - 1; i >= 0; --i) {
 
-                // The first node that requires a scope is the node that will be
-                // our current node's innermost scope.
-                if (escope.Scope.isScopeRequired(parents[i])) {
-                    innerBlock = parents[i];
-                    break;
+                scope = scopeManager.acquire(parents[i]);
+                if (scope) {
+                    return scope;
                 }
+
             }
 
-            // Find and return the innermost scope
-            selectedScopeIndex = scopeMap[innerBlock.range[0]];
-
-            // Named function expressions create two nested scope objects. The
-            // outer scope contains only the function expression name. We return
-            // the inner scope.
-            if (innerBlock.type === "FunctionExpression" && innerBlock.id && innerBlock.id.name) {
-                ++selectedScopeIndex;
-            }
-
-            return currentScopes[selectedScopeIndex];
-        } else {
-            return currentScopes[0];    // global scope
         }
+
+        return currentScopes[0];
     };
 
     /**

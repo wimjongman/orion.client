@@ -49,11 +49,79 @@
 /*eslint-env amd, node*/
 define('escope', [
 'estraverse', 
-'orion/objects', 
-'escope/esrecurse'
-], function (estraverse, Objects, esrecurse) {
+'orion/objects'
+], function (estraverse, Objects) {
     
     var Syntax = estraverse.Syntax;
+
+    //ORION esrecurse
+    function isNode(node) {
+        if (node == null) {
+            return false;
+        }
+        return typeof node === 'object' && typeof node.type === 'string';
+    }
+
+    function isProperty(nodeType, key) {
+        return (nodeType === estraverse.Syntax.ObjectExpression || nodeType === estraverse.Syntax.ObjectPattern) && key === 'properties';
+    }
+
+    function Visitor(visitor) {
+        this.__visitor = visitor;
+    }
+
+    /* Default method for visiting children.
+     * When you need to call default visiting operation inside custom visiting
+     * operation, you can use it with `this.visitChildren(node)`.
+     */
+    Visitor.prototype.visitChildren = function (node) {
+        var type, children, i, iz, j, jz, child;
+
+        if (node == null) {
+            return;
+        }
+
+        type = node.type || estraverse.Syntax.Property;
+
+        children = estraverse.VisitorKeys[type];
+        if (!children) {
+            //ORION
+            children = Object.keys(node);
+        }
+
+        for (i = 0, iz = children.length; i < iz; ++i) {
+            child = node[children[i]];
+            if (child) {
+                if (Array.isArray(child)) {
+                    for (j = 0, jz = child.length; j < jz; ++j) {
+                        if (child[j]) {
+                            if (isNode(child[j]) || isProperty(type, children[i])) {
+                                this.visit(child[j]);
+                            }
+                        }
+                    }
+                } else if (isNode(child)) {
+                    this.visit(child);
+                }
+            }
+        }
+    };
+
+    /* Dispatching node. */
+    Visitor.prototype.visit = function (node) {
+        var type;
+
+        if (node == null) {
+            return;
+        }
+
+        type = node.type || estraverse.Syntax.Property;
+        if (this.__visitor[type]) {
+            this.__visitor[type].call(this, node);
+            return;
+        }
+        this.visitChildren(node);
+    };
 
     function assert(cond, text) {
         if (!cond) {
@@ -905,12 +973,12 @@ define('escope', [
     // implementation dependent.
 
     function Importer(declaration, referencer) {
-        esrecurse.Visitor.call(this, this);
+        Visitor.call(this, this);
         this.declaration = declaration;
         this.referencer = referencer;
     }
     //ORION
-    Objects.mixin(Importer, esrecurse.Visitor);
+    Objects.mixin(Importer.prototype, Visitor.prototype);
 
     Importer.prototype.visitImport = function (id, specifier) {
         var that = this;
@@ -945,13 +1013,13 @@ define('escope', [
     // Referencing variables and creating bindings.
 
     function Referencer(scopeManager) {
-        esrecurse.Visitor.call(this, this);
+        Visitor.call(this, this);
         this.scopeManager = scopeManager;
         this.parent = null;
         this.isInnerMethodDefinition = false;
     }
     //ORION
-    Objects.mixin(Referencer, esrecurse.Visitor);
+    Objects.mixin(Referencer.prototype, Visitor.prototype);
 
     Objects.mixin(Referencer.prototype, {
         currentScope: function () {
