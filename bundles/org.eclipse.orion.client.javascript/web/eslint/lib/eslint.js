@@ -992,8 +992,8 @@ module.exports = (function() {
         if (parents.length) {
 
             // if current node is function declaration, add it to the list
-            var current = controller.current();
-            if (current.type === "FunctionDeclaration" || current.type === "FunctionExpression") {
+            var current = controller.current(), type = current.type;
+            if (type === "FunctionDeclaration" || type === "FunctionExpression" || type === "ArrowFunctionExpression") {
                 parents.push(current);
             }
 
