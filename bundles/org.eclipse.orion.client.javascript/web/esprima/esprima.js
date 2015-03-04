@@ -4410,6 +4410,12 @@ parseStatement: true, parseSourceElement: true */
     exports.tokenize = tokenize;
 
     exports.parse = parse;
+    
+  //ORION
+    exports.isIdentifierPart = isIdentifierPart;
+    exports.isIdentifierStart = isIdentifierStart;
+    //Acorn compat
+    exports.isIdentifierChar = isIdentifierPart;
 
     // Deep copy.
    /* istanbul ignore next */

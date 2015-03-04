@@ -16,6 +16,7 @@ define({//Default message bundle
 	'sourceOutlineTitle': 'JavaScript source outline',  //$NON-NLS-0$  //$NON-NLS-1$
 	'contentAssist' : 'JavaScript content assist', //$NON-NLS-0$  //$NON-NLS-1$
 	'eslintValidator' : 'JavaScript Validator', //$NON-NLS-0$  //$NON-NLS-1$
+	'ternContentAssist' : 'Tern JavaScript content assist',  //$NON-NLS-0$  //$NON-NLS-1$
 	'missingCurly' : 'Statements not enclosed in braces:', //$NON-NLS-0$  //$NON-NLS-1$
 	'noCaller' : 'Discouraged \'arguments.caller\' or \'arguments.callee\' use:', //$NON-NLS-0$  //$NON-NLS-1$
 	'noCommaDangle' : 'Trailing commas in object expressions:', //$NON-NLS-0$  //$NON-NLS-1$
