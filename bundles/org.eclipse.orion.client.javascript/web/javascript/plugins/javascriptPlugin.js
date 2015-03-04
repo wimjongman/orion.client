@@ -27,6 +27,7 @@ define([
 'javascript/contentAssist/indexFiles/expressIndex',
 'javascript/contentAssist/indexFiles/amqpIndex',
 'javascript/contentAssist/contentAssist',
+'javascript/contentAssist/tern/ternContentAssist',
 'javascript/validator',
 'javascript/occurrences',
 'javascript/hover',
@@ -40,7 +41,7 @@ define([
 'orion/editor/stylers/application_x-ejs/syntax',
 'i18n!javascript/nls/messages'
 ], function(Bootstrap, Esprima, ScriptResolver, ASTManager, QuickFixes, MongodbIndex, MysqlIndex, PostgresIndex, RedisIndex, ExpressIndex, AMQPIndex, ContentAssist, 
-			EslintValidator, Occurrences, Hover, Outliner,	Util, GenerateDocCommand, OpenDeclCommand, mJS, mJSON, mJSONSchema, mEJS, javascriptMessages) {
+			TernAssist, EslintValidator, Occurrences, Hover, Outliner,	Util, GenerateDocCommand, OpenDeclCommand, mJS, mJSON, mJSONSchema, mEJS, javascriptMessages) {
 
 	function Factory(provider) {
 		/**
@@ -373,6 +374,27 @@ define([
 			excludedStyles: "(string.*)"  //$NON-NLS-0$
 				});
 		
+		var ternAssist = new TernAssist.TernContentAssist(astManager);
+	    provider.registerService("orion.edit.contentassist", ternAssist,  //$NON-NLS-0$
+			{
+				contentType: ["application/javascript"],  //$NON-NLS-0$
+				nls: 'javascript/nls/messages',  //$NON-NLS-0$
+				name: 'ternContentAssist',  //$NON-NLS-0$
+				id: "orion.edit.contentassist.javascript.tern",  //$NON-NLS-0$
+				charTriggers: "[.]",  //$NON-NLS-0$
+				excludedStyles: "(string.*)"  //$NON-NLS-0$
+		});
+	
+	    /**
+		 * Register Tern assist as Model Change listener
+		 */
+		provider.registerService("orion.edit.model", {  //$NON-NLS-0$
+				onModelChanging: ternAssist.updated.bind(ternAssist),
+			},
+			{
+				contentType: ["application/javascript"],  //$NON-NLS-0$
+				types: ["ModelChanging"]  //$NON-NLS-0$
+		});
 		
 		/**
 		 * Register the ESLint validator
