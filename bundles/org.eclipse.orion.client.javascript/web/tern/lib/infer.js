@@ -1155,8 +1155,13 @@
 
   var parse = exports.parse = function(text, passes, options) {
     var ast;
-    try { ast = acorn.parse(text, options); }
-    catch(e) { ast = acorn_loose.parse_dammit(text, options); }
+    try {
+        ast = acorn.parse(text, options); 
+        ast.sourceFile  = Object.create(null);
+        ast.sourceFile.text = text;
+    }
+    //ORION
+    catch(e) { /*ast = acorn_loose.parse_dammit(text, options);*/ }
     runPasses(passes, "postParse", ast, text);
     return ast;
   };
@@ -1471,4 +1476,6 @@
 
   // Delayed initialization because of cyclic dependencies.
   def = exports.def = def.init({}, exports);
+  
+  return exports;
 });
