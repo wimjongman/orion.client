@@ -48,38 +48,40 @@ define([
 		 */
 		computeContentAssist: function(editorContext, params) {
 		    var that = this;
-		    return editorContext.getText().then(function(text) {
-		        return that._getServer().then(function(server) {
-		            var proposals = [];
-    			   if(server) {
-    			       //XXX hack, because we don't have access to the text of the file until now
-    			       server.addFile(params.file.name, text);
-    			       server.request({query: {
-    			                         type: "completions", 
-    			                         file: params.file.name,
-    			                         types: true, 
-    			                         origins: true,
-    			                         docs: true,
-    			                         end: params.offset,
-    			                         guess: true
-    			                       }}, 
-    			                         function(error, comps) {
-    			                             if(error) {
-    			                                    // 
-    			                             }
-    			                             if(comps && comps.completions) {
-    			                                 var completions = comps.completions;
-    			                                 for(var i = 0; i < completions.length; i++) {
-    			                                     var completion = completions[i];
-        			                                 proposals.push(that._formatTernProposal(completion));
-            							             }
-            							             return proposals;
-    			                             }
-    			                         }
-    			                      );
-    			   } 
-    			   return proposals;
-    			});
+		    return editorContext.getFileMetadata().then(function(meta) {
+		        return editorContext.getText().then(function(text) {
+    		        return that._getServer().then(function(server) {
+    		            var proposals = [];
+        			   if(server) {
+        			       //XXX hack, because we don't have access to the text of the file until now
+        			       server.addFile(meta.location, text);
+        			       server.request({query: {
+        			                         type: "completions", 
+        			                         file: meta.location,
+        			                         types: true, 
+        			                         origins: true,
+        			                         docs: true,
+        			                         end: params.offset,
+        			                         guess: true
+        			                       }}, 
+        			                         function(error, comps) {
+        			                             if(error) {
+        			                                    // 
+        			                             }
+        			                             if(comps && comps.completions) {
+        			                                 var completions = comps.completions;
+        			                                 for(var i = 0; i < completions.length; i++) {
+        			                                     var completion = completions[i];
+            			                                 proposals.push(that._formatTernProposal(completion));
+                							             }
+                							             return proposals;
+        			                             }
+        			                         }
+        			                      );
+        			   } 
+        			   return proposals;
+        			});
+    		    });
 		    });
 		},
 		
@@ -150,7 +152,7 @@ define([
 		_startServer: function _startServer() {
 		    if(!this.server) {
 		        var options = {
-    		        async: false,
+    		        async: true,
     		        debug:true,
     		        defs: [],
     		        projectDir: '/',
@@ -170,9 +172,10 @@ define([
 		 * @param {String} file The file to load
 		 * @returns {Object} The file object
 		 */
-		_getFile: function _getFile(file, func) {
+		_getFile: function _getFile(file) {
 		    if(this.server) {
 		        //TODO this is a callback from the server
+		        //TODO use the file client to get the contents
 		    }
 		},
 		
@@ -182,9 +185,8 @@ define([
 		 */
 		updated: function(event) {
 		    this._getServer().then(function(server) {
-		        if(typeof(event.file) !== 'undefined' && event.file.name) {
-		            //TODO we need access to the text of the file here
-    		        server.addFile(event.file.name);
+		        if(event.file.location) {
+    		        server.addFile(event.file.location);
     		    }
 		    });
 		}
