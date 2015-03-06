@@ -15,7 +15,7 @@
   },
   "optionalDependencies": {
     "pty.js": "0.2.5"
-    "nodegit": "*",
+    "nodegit": "https://github.com/nodegit/nodegit.git",
     "findit": "~2.0.0",
     "connect-redirection": "0.0.1",
     "mkdirp": "*",
