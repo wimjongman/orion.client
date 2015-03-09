@@ -390,21 +390,25 @@ define([
 					}
 					return false;
 				});
-				_self.getProjectJson(project).then(function(json) {
-					_self.showViewMode(!!json);
-					if (json) {
-						if (sidebar.getActiveViewModeId() === _self.id) {
-							_self.explorer.display(project);
+				if (project) {
+					_self.getProjectJson(project).then(function(json) {
+						_self.showViewMode(!!json);
+						if (json) {
+							if (sidebar.getActiveViewModeId() === _self.id) {
+								_self.explorer.display(project);
+							} else {
+								_self.project = project;
+								sidebar.setViewMode(_self.id);
+							}
 						} else {
-							_self.project = project;
-							sidebar.setViewMode(_self.id);
+							if (!sidebar.getActiveViewModeId()) {
+								sidebar.setViewMode(sidebar.getNavigationViewMode().id);
+							}
 						}
-					} else {
-						if (!sidebar.getActiveViewModeId()) {
-							sidebar.setViewMode(sidebar.getNavigationViewMode().id);
-						}
-					}
-				}, failed);
+					}, failed);
+				} else {
+					failed();
+				}
 			}, failed);
 			var handleDisplay = function (event) {
 				if(event.item === metadata) {
@@ -417,12 +421,7 @@ define([
 		this.editorInputManager.addEventListener("InputChanged", function(event) { //$NON-NLS-0$
 			openProject(event.metadata);
 		});
-//		this.sidebarNavInputManager.addEventListener("linkClick", function(event){ //$NON-NLS-0$
-//			openProject(event.item);
-//		});
-//		this.sidebarNavInputManager.addEventListener("itemExpanded", function(event){ //$NON-NLS-0$
-//			openProject(event.item);
-//		});
+
 		// Only show project view mode if selection is in a project
 		this.sidebarNavInputManager.addEventListener("selectionChanged", function(event){ //$NON-NLS-0$
 			if (sidebar.getActiveViewModeId() === _self.id) { return; }

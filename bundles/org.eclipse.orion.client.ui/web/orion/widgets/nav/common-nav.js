@@ -263,7 +263,6 @@ define([
 		},
 		expandItem: function(item, reroot) {
 			return mExplorer.FileExplorer.prototype.expandItem.call(this, item, reroot).then(function(expandedItem) {
-				this.sidebarNavInputManager.dispatchEvent({type: "itemExpanded", item: expandedItem}); //$NON-NLS-0$
 				return expandedItem;
 			}.bind(this));
 		},
