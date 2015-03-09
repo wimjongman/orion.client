@@ -421,7 +421,6 @@ define([
 		this.editorInputManager.addEventListener("InputChanged", function(event) { //$NON-NLS-0$
 			openProject(event.metadata);
 		});
-
 		// Only show project view mode if selection is in a project
 		this.sidebarNavInputManager.addEventListener("selectionChanged", function(event){ //$NON-NLS-0$
 			if (sidebar.getActiveViewModeId() === _self.id) { return; }
@@ -442,7 +441,7 @@ define([
 	}
 	objects.mixin(ProjectNavViewMode.prototype, {
 		label: messages["Project"],
-		id: "project", //$NON-NLS-0$
+		id: "projectNav", //$NON-NLS-0$
 		create: function() {
 			var _self = this;
 			this.explorer = new ProjectNavExplorer({
@@ -457,7 +456,7 @@ define([
 				rendererFactory: function(explorer) {
 					return new ProjectNavRenderer({
 						checkbox: false,
-						treeTableClass: "miniNavTreeTable",
+						treeTableClass: "miniNavTreeTable", //$NON-NLS-0$
 						cachePrefix: "ProjectNav" //$NON-NLS-0$
 					}, explorer, _self.commandRegistry, _self.contentTypeRegistry);
 				},

@@ -44,6 +44,7 @@ define([
 	'orion/PageUtil',
 	'orion/objects',
 	'orion/webui/littlelib',
+	'orion/Deferred',
 	'orion/projectClient'
 ], function(
 	messages, Sidebar, mInputManager, mGlobalCommands,
@@ -51,7 +52,7 @@ define([
 	mFolderView, mEditorView, mPluginEditorView , mMarkdownView, mMarkdownEditor,
 	mCommandRegistry, mContentTypes, mFileClient, mFileCommands, mSelection, mStatus, mProgress, mOperationsClient, mOutliner, mDialogs, mExtensionCommands, ProjectCommands, mSearchClient,
 	mProblems, mBlameAnnotation,
-	EventTarget, URITemplate, i18nUtil, PageUtil, objects, lib, mProjectClient
+	EventTarget, URITemplate, i18nUtil, PageUtil, objects, lib, Deferred, mProjectClient
 ) {
 
 var exports = {};
@@ -188,7 +189,7 @@ objects.mixin(EditorSetup.prototype, {
 	createBanner: function() {
 			// Do not collapse sidebar, https://bugs.eclipse.org/bugs/show_bug.cgi?id=418558
 		var collapseSidebar = false; //PageUtil.hash() !== ""
-		mGlobalCommands.generateBanner("orion-editor", this.serviceRegistry, this.commandRegistry, this.preferences, this.searcher, null, null, collapseSidebar, this.fileClient); //$NON-NLS-0$
+		return mGlobalCommands.generateBanner("orion-editor", this.serviceRegistry, this.commandRegistry, this.preferences, this.searcher, null, null, collapseSidebar, this.fileClient); //$NON-NLS-0$
 	},
 	
 	createTextModel: function() {
@@ -514,13 +515,14 @@ objects.mixin(EditorSetup.prototype, {
 
 exports.setUpEditor = function(serviceRegistry, pluginRegistry, preferences, isReadOnly) {
 	var setup = new EditorSetup(serviceRegistry, pluginRegistry, preferences, isReadOnly);
-	setup.createBanner();
-	setup.createTextModel();
-	setup.createInputManager();
-	setup.createMenuBar().then(function() {
-		setup.createEditorView();
-		setup.createSideBar();
-		setup.load();
+	Deferred.when(setup.createBanner(), function() {
+		setup.createTextModel();
+		setup.createInputManager();
+		setup.createMenuBar().then(function() {
+			setup.createEditorView();
+			setup.createSideBar();
+			setup.load();
+		});
 	});
 };
 return exports;
