@@ -21,10 +21,11 @@ define([
 	'orion/PageUtil',
 	'orion/URITemplate',
 	'orion/Deferred',
+	'orion/fileUtils',
 	'orion/customGlobalCommands'
 ], function(
 	messages, mCommands, i18nUtil, objects, lib, mExplorer, mCommonNav, ProjectCommands,
-	PageUtil, URITemplate, Deferred, mCustomGlobalCommands
+	PageUtil, URITemplate, Deferred, mFileUtils, mCustomGlobalCommands
 ) {
 	var CommonNavExplorer = mCommonNav.CommonNavExplorer;
 	var CommonNavRenderer = mCommonNav.CommonNavRenderer;
@@ -143,7 +144,7 @@ define([
 			if(!redisplay &&  parentProject && parentProject.Location === this.projectLocation){
 				return;
 			}
-			return this.projectClient.readProject(fileMetadata).then(function(projectData){
+			return this.projectClient.readProject(fileMetadata, this.workspaceMetadata).then(function(projectData){
 				this.projectLocation = parentProject ? parentProject.Location : null;
 				projectData.type = "Project"; //$NON-NLS-0$
 				projectData.Directory = true;
@@ -176,7 +177,6 @@ define([
 			return CommonNavExplorer.prototype.registerCommands.call(this).then(function() {
 				var commandRegistry = this.commandRegistry;
 				var fileActionsScope = this.fileActionsScope;
-				var additionalActionsScope = this.additionalActionsScope;
 				commandRegistry.registerCommandContribution("dependencyCommands", "orion.project.dependency.connect", 1); //$NON-NLS-1$ //$NON-NLS-0$
 				commandRegistry.registerCommandContribution("dependencyCommands", "orion.project.dependency.disconnect", 2); //$NON-NLS-1$ //$NON-NLS-0$
 				commandRegistry.registerCommandContribution(fileActionsScope, "orion.project.create.readme", 5, "orion.menuBarFileGroup/orion.newContentGroup"); //$NON-NLS-1$ //$NON-NLS-0$
@@ -371,15 +371,32 @@ define([
 			if(_self.lastCheckedLocation === metadata.Location){
 				return;
 			}
+			if (sidebar.getActiveViewModeId() === _self.id) {
+				return;
+			}
 			_self.lastCheckedLocation = metadata.Location;
-			if (metadata && metadata.Directory && ((metadata.parent && metadata.parent.Projects) || (metadata.Parents && metadata.Parents.length === 0))) {
-				_self.getProjectJson(metadata).then(function(json) {
+			function failed() {
+				if (!sidebar.getActiveViewModeId()) {
+					sidebar.setViewMode(sidebar.getNavigationViewMode().id);
+				}
+			}
+			_self.fileClient.loadWorkspace(mFileUtils.makeParentRelative("../file")).then(function(workspace) { //$NON-NLS-0$
+				_self.workspaceMetadata = workspace;
+				var project = null;
+				workspace.Children.some(function(p) {
+					if (metadata.Location.indexOf(p.Location) === 0) {
+						project = p;
+						return true;
+					}
+					return false;
+				});
+				_self.getProjectJson(project).then(function(json) {
 					_self.showViewMode(!!json);
 					if (json) {
 						if (sidebar.getActiveViewModeId() === _self.id) {
-							_self.explorer.display(metadata);
+							_self.explorer.display(project);
 						} else {
-							_self.project = metadata;
+							_self.project = project;
 							sidebar.setViewMode(_self.id);
 						}
 					} else {
@@ -387,25 +404,25 @@ define([
 							sidebar.setViewMode(sidebar.getNavigationViewMode().id);
 						}
 					}
-				});
-				var handleDisplay = function (event) {
-					if(event.item === metadata) {
-						sidebar.sidebarNavInputManager.removeEventListener("projectDisplayed", handleDisplay); //$NON-NLS-0$
-						sidebar.sidebarNavInputManager.dispatchEvent({type:"projectOpened", item: metadata}); //$NON-NLS-0$
-					}
-				};
-				sidebar.sidebarNavInputManager.addEventListener("projectDisplayed", handleDisplay);
-			}
+				}, failed);
+			}, failed);
+			var handleDisplay = function (event) {
+				if(event.item === metadata) {
+					sidebar.sidebarNavInputManager.removeEventListener("projectDisplayed", handleDisplay); //$NON-NLS-0$
+					sidebar.sidebarNavInputManager.dispatchEvent({type:"projectOpened", item: metadata}); //$NON-NLS-0$
+				}
+			};
+			sidebar.sidebarNavInputManager.addEventListener("projectDisplayed", handleDisplay); //$NON-NLS-0$
 		}
 		this.editorInputManager.addEventListener("InputChanged", function(event) { //$NON-NLS-0$
 			openProject(event.metadata);
 		});
-		this.sidebarNavInputManager.addEventListener("linkClick", function(event){ //$NON-NLS-0$
-			openProject(event.item);
-		});
-		this.sidebarNavInputManager.addEventListener("itemExpanded", function(event){ //$NON-NLS-0$
-			openProject(event.item);
-		});
+//		this.sidebarNavInputManager.addEventListener("linkClick", function(event){ //$NON-NLS-0$
+//			openProject(event.item);
+//		});
+//		this.sidebarNavInputManager.addEventListener("itemExpanded", function(event){ //$NON-NLS-0$
+//			openProject(event.item);
+//		});
 		// Only show project view mode if selection is in a project
 		this.sidebarNavInputManager.addEventListener("selectionChanged", function(event){ //$NON-NLS-0$
 			if (sidebar.getActiveViewModeId() === _self.id) { return; }
@@ -449,6 +466,7 @@ define([
 				toolbarNode: this.toolbarNode,
 				progressService: this.progressService
 			});
+			this.explorer.workspaceMetadata = this.workspaceMetadata;
 			this.explorer.display(this.project);
 			this.toolbarNode.parentNode.classList.add("projectNavSidebarWrapper"); //$NON-NLS-0$
 		},
@@ -475,7 +493,7 @@ define([
 				this.fileClient.fetchChildren(metadata.ChildrenLocation).then(function(children){
 					metadata.Children = children;
 					deferred.resolve(getJson(children));
-				});
+				}, deferred.reject);
 			}
 			return deferred;
 		},
@@ -489,6 +507,7 @@ define([
 			} else {
 				sidebar.removeViewMode(this.id);
 				sidebar.renderViewModeMenu();
+				this.lastCheckedLocation = null;
 			}
 		}
 	});
