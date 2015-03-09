@@ -374,18 +374,22 @@ define([
 			_self.lastCheckedLocation = metadata.Location;
 			if (metadata && metadata.Directory && ((metadata.parent && metadata.parent.Projects) || (metadata.Parents && metadata.Parents.length === 0))) {
 				_self.getProjectJson(metadata).then(function(json) {
+					_self.showViewMode(!!json);
 					if (json) {
-						_self.showViewMode(true);
 						if (sidebar.getActiveViewModeId() === _self.id) {
 							_self.explorer.display(metadata);
 						} else {
 							_self.project = metadata;
 							sidebar.setViewMode(_self.id);
 						}
+					} else {
+						if (!sidebar.getActiveViewModeId()) {
+							sidebar.setViewMode(sidebar.getNavigationViewMode().id);
+						}
 					}
 				});
 				var handleDisplay = function (event) {
-					if(event.item == metadata) {
+					if(event.item === metadata) {
 						sidebar.sidebarNavInputManager.removeEventListener("projectDisplayed", handleDisplay); //$NON-NLS-0$
 						sidebar.sidebarNavInputManager.dispatchEvent({type:"projectOpened", item: metadata}); //$NON-NLS-0$
 					}

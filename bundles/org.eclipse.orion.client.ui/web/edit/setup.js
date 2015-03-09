@@ -307,9 +307,9 @@ exports.setUpEditor = function(serviceRegistry, pluginRegistry, preferences, isR
 				if (mainSplitter) {
 					var classList = mainSplitter.splitter.$splitter.classList;
 					if (view.editor && view.editor.getTextView) {
-						classList.add("ruler");
+						classList.add("ruler"); //$NON-NLS-0$
 					} else {
-						classList.remove("ruler");
+						classList.remove("ruler"); //$NON-NLS-0$
 					}
 				}
 			
@@ -439,6 +439,7 @@ exports.setUpEditor = function(serviceRegistry, pluginRegistry, preferences, isR
 			serviceRegistry: serviceRegistry,
 			sidebarNavInputManager: sidebarNavInputManager,
 			switcherScope: "viewActions", //$NON-NLS-0$
+			editScope: "editActions", //$NON-NLS-0$
 			menuBar: menuBar,
 			toolbar: sidebarToolbar
 		});
@@ -448,7 +449,7 @@ exports.setUpEditor = function(serviceRegistry, pluginRegistry, preferences, isR
 				this.setInput(navigate);
 			}
 		};
-		sidebar.show();
+		sidebar.create();
 		sidebarNavInputManager.addEventListener("rootChanged", function(evt) { //$NON-NLS-0$
 			lastRoot = evt.root;
 		});
