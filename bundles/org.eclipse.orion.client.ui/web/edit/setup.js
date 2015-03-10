@@ -220,7 +220,7 @@ objects.mixin(EditorSetup.prototype, {
 		});
 		inputManager.addEventListener("InputChanged", function(evt) { //$NON-NLS-0$
 			var metadata = evt.metadata;
-			sessionStorage.lastFile = PageUtil.hash();
+			sessionStorage.lastFile = metadata ? PageUtil.hash() : null;
 			var view = this.getEditorView(evt.input, metadata);
 			this.setEditor(view ? view.editor : null);
 			evt.editor = this.editor;
