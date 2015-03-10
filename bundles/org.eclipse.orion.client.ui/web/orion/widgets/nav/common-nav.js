@@ -261,11 +261,6 @@ define([
 		scopeDown: function(item) {
 			this.scope(item.ChildrenLocation);
 		},
-		expandItem: function(item, reroot) {
-			return mExplorer.FileExplorer.prototype.expandItem.call(this, item, reroot).then(function(expandedItem) {
-				return expandedItem;
-			}.bind(this));
-		},
 		isCommandsVisible: function() {
 			var mainSplitter = mGlobalCommands.getMainSplitter();
 			if (mainSplitter) {
