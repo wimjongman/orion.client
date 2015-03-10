@@ -368,6 +368,15 @@ define([
 		var sidebar = this.sidebar;
 		// Switch to project view mode if a project is opened
 		function openProject(metadata){
+			function failed() {
+				if (!sidebar.getActiveViewModeId()) {
+					sidebar.setViewMode(sidebar.getNavigationViewMode().id);
+				}
+			}
+			if (!metadata) {
+				failed();
+				return;
+			}
 			if(_self.lastCheckedLocation === metadata.Location){
 				return;
 			}
@@ -375,11 +384,6 @@ define([
 				return;
 			}
 			_self.lastCheckedLocation = metadata.Location;
-			function failed() {
-				if (!sidebar.getActiveViewModeId()) {
-					sidebar.setViewMode(sidebar.getNavigationViewMode().id);
-				}
-			}
 			_self.fileClient.loadWorkspace(mFileUtils.makeParentRelative("../file")).then(function(workspace) { //$NON-NLS-0$
 				_self.workspaceMetadata = workspace;
 				var project = null;

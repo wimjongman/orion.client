@@ -278,14 +278,14 @@ objects.mixin(EditorSetup.prototype, {
 	},
 	
 	createMenuBar: function() {
-		this.menuBar = new MenuBar({
+		var menuBar = this.menuBar = new MenuBar({
 			parentNode: this.pageToolbar,
 			fileClient: this.fileClient,
 			inputManager: this.inputManager,
 			commandRegistry: this.commandRegistry,
 			serviceRegistry: this.serviceRegistry
 		});
-		return this.menuBar.createCommands();
+		return menuBar.createCommands();
 	},
 	
 	createSideBar: function() {
@@ -294,7 +294,7 @@ objects.mixin(EditorSetup.prototype, {
 			EventTarget.attach(this);
 		}
 		this.sidebarNavInputManager = new SidebarNavInputManager();
-		var sidebar = new Sidebar({
+		var sidebar = this.sidebar = new Sidebar({
 			commandRegistry: this.commandRegistry,
 			contentTypeRegistry: this.contentTypeRegistry,
 			editorInputManager: this.inputManager,
@@ -443,7 +443,7 @@ objects.mixin(EditorSetup.prototype, {
 			var mainSplitter = mGlobalCommands.getMainSplitter();
 				if (mainSplitter) {
 					var classList = mainSplitter.splitter.$splitter.classList;
-					if (view.editor && view.editor.getTextView) {
+					if (view && view.editor && view.editor.getTextView) {
 						classList.add("ruler"); //$NON-NLS-0$
 					} else {
 						classList.remove("ruler"); //$NON-NLS-0$
