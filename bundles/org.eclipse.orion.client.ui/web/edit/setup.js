@@ -486,15 +486,10 @@ objects.mixin(EditorSetup.prototype, {
 		var lastEditedFile = sessionStorage.lastFile;
 		var currentHash = PageUtil.hash();
 		// lastEditedFile exists in session storage and if the project didn't change.
-		if (lastEditedFile && lastEditedFile.lastIndexOf(currentHash, 0) === 0 &&
-				lastEditedFile !== currentHash) {
-			inputManager.setInput(lastEditedFile);
-			window.location.hash = lastEditedFile;
+		if (lastEditedFile && lastEditedFile.lastIndexOf(currentHash, 0) === 0 && lastEditedFile !== currentHash) {
+			window.location.hash = currentHash = lastEditedFile;
 		}
-		else {
-			inputManager.setInput(PageUtil.hash());
-		}
-		
+		inputManager.setInput(currentHash);
 		sidebarNavInputManager.processHash(PageUtil.hash());
 
 		window.addEventListener("hashchange", function() { //$NON-NLS-0$
