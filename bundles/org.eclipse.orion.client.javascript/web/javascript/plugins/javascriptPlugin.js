@@ -19,7 +19,6 @@ define([
 'orion/plugin',
 'orion/bootstrap',
 'orion/fileClient',
-'logger',
 'esprima',
 'javascript/scriptResolver',
 'javascript/astManager',
@@ -45,7 +44,7 @@ define([
 'orion/editor/stylers/application_x-ejs/syntax',
 'i18n!javascript/nls/messages',
 'orion/URL-shim' // exports into global, stays last
-], function(PluginProvider, Bootstrap, FileClient, Logger, Esprima, ScriptResolver, ASTManager, QuickFixes, MongodbIndex, MysqlIndex, PostgresIndex, RedisIndex, ExpressIndex, AMQPIndex, ContentAssist, 
+], function(PluginProvider, Bootstrap, FileClient, Esprima, ScriptResolver, ASTManager, QuickFixes, MongodbIndex, MysqlIndex, PostgresIndex, RedisIndex, ExpressIndex, AMQPIndex, ContentAssist, 
 			TernAssist, EslintValidator, Occurrences, Hover, Outliner,	Util, GenerateDocCommand, OpenDeclCommand, mJS, mJSON, mJSONSchema, mEJS, javascriptMessages) {
 
     return Bootstrap.startup().then(function(core) {
@@ -92,47 +91,23 @@ define([
 		 */
 		var astManager = new ASTManager.ASTManager(Esprima);
 		
-		/**
-		 * @description Loads the tern worker
-		 * @returns returns
-		 * @since 9.0
-		 */
-	    var framework;
-    	if (window !== window.parent) {
-    		framework = window.parent;
-    	}
-    	else {
-    		framework = window.opener;
-    	}
-    	if (!framework) {
-    		Logger.log(new Error("No valid plugin target"));
-        }
-    	addEventListener("message", onFrameworkMessage);
-    
     	// Start the worker
     	var ternWorker = new Worker(new URL("ternWorker.js", window.location.href).href);
-    	ternWorker.addEventListener("message", onTernMessage);
-    	ternWorker.addEventListener("error", onTernError);
-    
-    	function onTernError(err) {
-    	    Logger.log(err);
-    	}
-    
-    	function onTernMessage(event) {
-    		var msg = event.data;
-    		if (msg && (msg.method || msg.id)) {
-    			framework && framework.postMessage(event.data, "*");
-    			return;
-    		}
-    	}
-    
-    	function onFrameworkMessage(event) {
-    		if (event.source !== framework) {
-    			return;
-    		}
-    		ternWorker.postMessage(event.data);
-    	}
-		
+    	ternWorker.addEventListener('message', function(event) {
+    	    if(typeof(event.data) === 'object') {
+    	        var _d = event.data;
+    	        if(typeof(_d.request) === 'string' && _d.request === 'read') {
+    	            fileClient.read(_d.file).then(function(contents) {
+    	                ternWorker.postMessage({request: 'contents', args: {error: null, contents: contents, file:_d.file}});
+    	            },
+    	            function(error) {
+    	                ternWorker.postMessage({request: 'contents', args: {error: error, contents: null, file:_d.file}});
+    	            });
+    	        }
+    	    }
+    	});
+        ternWorker.postMessage();
+        
 		/**
 		 * Register AST manager as Model Change listener
 		 */
@@ -430,7 +405,7 @@ define([
 			excludedStyles: "(string.*)"  //$NON-NLS-0$
 				});
 		
-		var ternAssist = new TernAssist.TernContentAssist(fileClient, astManager);
+		var ternAssist = new TernAssist.TernContentAssist(fileClient, astManager, ternWorker);
 	    provider.registerService("orion.edit.contentassist", ternAssist,  //$NON-NLS-0$
 			{
 				contentType: ["application/javascript", "text/html"],  //$NON-NLS-0$

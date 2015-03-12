@@ -38,14 +38,14 @@ require({
     'javascript/signatures',
 	'tern/lib/tern',
 	'tern/plugin/doc_comment', //TODO must load them, they self-register with Tern
-	'tern/plugin/requirejs',
+	/*'tern/plugin/requirejs',*/
 	'tern/defs/ecma5',
 	'tern/defs/browser',
 	'doctrine'  //stays last - exports into global
 ],
-/* @callback */ function(Signatures, Tern, docPlugin, requirePlugin, ecma5, browser) {
+/* @callback */ function(Signatures, Tern, docPlugin, /*requirePlugin,*/ ecma5, browser) {
     
-    var ternserver;
+    var ternserver, pendingReads = Object.create(null);
     
     /**
      * @description Start up the Tern server, send a message after trying
@@ -76,30 +76,50 @@ require({
     }
     startServer();
     
-    onmessage = function(data) {
-        if(typeof(data) === 'object') {
-            if(typeof(data.request) === 'string') {
-                switch(data.request) {
+    onmessage = function(event) {
+        if(typeof(event.data) === 'object') {
+            var _d = event.data;
+            if(typeof(_d.request) === 'string') {
+                switch(_d.request) {
                     case 'assist': {
-                        doContentAssist(data.args);
+                        doContentAssist(_d.args);
                         break;
                     }
                     case 'occurrences': {
-                        doOccurrences(data.args);
+                        doOccurrences(_d.args);
                         break;
                     }
                     case 'decl': {
-                        doFindDeclaration(data.args);
+                        doFindDeclaration(_d.args);
                         break;
                     }
                     case 'hover': {
-                        doHover(data.args);
+                        doHover(_d.args);
+                        break;
+                    }
+                    case 'delfile': {
+                        deleteFile(_d.args);
+                        break;
+                    }
+                    case 'contents': {
+                        doContents(_d.args);
                         break;
                     }
                 }
             }
         }
     };
+    
+    function doContents(args) {
+        var err = args.error;
+        var contents = args.contents;
+        var file = args.file;
+        var read = pendingReads[file];
+        if(typeof(read) === 'function') {
+            read(err, contents);
+        }
+        delete pendingReads[file];
+    }
     
     /**
      * @description Handles the request for completion proposals
@@ -122,7 +142,7 @@ require({
 	           }}, 
 	           function(error, comps) {
 	               if(error) {
-	                   postMessage({status: 0, error: error, message: 'Failed to compute proposals'});
+	                   postMessage({error: error, message: 'Failed to compute proposals'});
 	               }
 	               if(comps && comps.completions) {
 	                   var completions = comps.completions;
@@ -130,12 +150,12 @@ require({
             	           var completion = completions[i];
             		       proposals.push(_formatTernProposal(completion));
         			   }
-        			   postMessage(proposals, [proposals]); //avoid copy-back
+        			   postMessage({request: 'assist', proposals:proposals});
 	               }
 	           });
 	       
 	   } else {
-	       postMessage({status: 0, message: 'failed to compute proposals, server not started'});
+	       postMessage({message: 'failed to compute proposals, server not started'});
 	   }
     }
     
@@ -155,8 +175,8 @@ require({
         };
         proposal.name = completion.name;
         if(typeof(completion.type) !== 'undefined') {
-            var type = completion.type.replaceAll('->', ':');
-            type = type.replaceAll('?', 'Any');
+            var type = completion.type.replace('->', ':');
+            type = type.replace('?', 'Any');
             if(/^fn/.test(type)) {
                 proposal.name = completion.name + type.slice(2);
             } else {
@@ -268,7 +288,7 @@ require({
 		        }
 	        }
 	        if(comment.node) {
-    	        var name = Signatures.computeSignature(comment.node);
+    	        var _name = Signatures.computeSignature(comment.node);
     	        var title = '###';
     	        if(format.isprivate) {
     	            title += 'private ';
@@ -276,7 +296,7 @@ require({
     	        if(format.iscon) {
     	            title += 'constructor ';
     	        }
-    	        title += name.sig+'###';
+    	        title += _name.sig+'###';
 	        }
 	        var hover = '';
 	        if(format.desc !== '') {
@@ -373,6 +393,18 @@ require({
 	}
     
     /**
+     * @description Removes a file from Tern
+     * @param {Object} args the request args
+     */
+    function deleteFile(args) {
+        if(ternserver && typeof(args.file) === 'string') {
+            ternserver.delFile(args.file);
+        } else {
+            postMessage('Failed to delete file from Tern: '+args.file);
+        }
+    }
+    
+    /**
      * @description Handles the request for occurrences
      * @param {Object} args The arguments from the framework
      * @returns Returns nothing, but posts the results back to the framework
@@ -405,8 +437,18 @@ require({
         postMessage(hover, [hover]); //avoid copy-back
     }
     
+    /**
+     * @description Read a file from the workspace into Tern
+     * @private
+     * @param {String} file The full path of the file
+     * @param {Function} callback The callback once the file has been read or failed to read
+     */
     function _getFile(file, callback) {
-        //TODO
-        return null;
+        if(ternserver) {
+           pendingReads[file] = callback;
+           postMessage({request: 'read', file:file});
+	    } else {
+	       postMessage('Failed to read file into Tern: '+file);
+	    }
     }
 });
