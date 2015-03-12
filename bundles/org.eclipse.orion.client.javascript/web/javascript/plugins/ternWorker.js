@@ -35,6 +35,7 @@ require({
 	]
 },
 [
+    'javascript/signatures',
 	'tern/lib/tern',
 	'tern/plugin/doc_comment', //TODO must load them, they self-register with Tern
 	'tern/plugin/requirejs',
@@ -42,7 +43,7 @@ require({
 	'tern/defs/browser',
 	'doctrine'  //stays last - exports into global
 ],
-/* @callback */ function(Tern, docPlugin, requirePlugin, ecma5, browser) {
+/* @callback */ function(Signatures, Tern, docPlugin, requirePlugin, ecma5, browser) {
     
     var ternserver;
     
