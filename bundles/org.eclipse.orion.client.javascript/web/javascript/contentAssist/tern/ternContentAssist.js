@@ -14,17 +14,25 @@ define([
 	'orion/Deferred',  //$NON-NLS-0$
 	'orion/objects',  //$NON-NLS-0$
 	'tern/lib/tern',  //$NON-NLS-0$
-	'javascript/contentAssist/tern/ternLoader' // //$NON-NLS-0$
-], function(Deferred, Objects, Tern, TernLoader) {
+	'tern/plugin/doc_comment', //TODO must load them, they self-register with Tern
+	'tern/plugin/requirejs',
+	'orion/fileClient',
+	'javascript/hover',
+	'tern/defs/ecma5',
+	'tern/defs/browser'
+], /* @callback */ function(Deferred, Objects, Tern, docPlugin, requirePlugin, FileClient, Hover, ecma5, browser) {
 
 	/**
 	 * @description Creates a new TernContentAssist object
 	 * @constructor
 	 * @public
+	 * @param {orion.FileClient} fileClient The Orion fileClient 
 	 * @param {javascript.ASTManager} astManager An AST manager to create ASTs with
 	 * @since 9.0
 	 */
-	function TernContentAssist(astManager) {
+	function TernContentAssist(fileClient, astManager, ternWorker) {
+	    this.fileclient = fileClient;
+	    var _self = this;
 		this.astManager = astManager;
 	}
 
@@ -49,39 +57,37 @@ define([
 		computeContentAssist: function(editorContext, params) {
 		    var that = this;
 		    return editorContext.getFileMetadata().then(function(meta) {
-		        return editorContext.getText().then(function(text) {
-    		        return that._getServer().then(function(server) {
-    		            var proposals = [];
-        			   if(server) {
-        			       //XXX hack, because we don't have access to the text of the file until now
-        			       server.addFile(meta.location, text);
-        			       server.request({query: {
-        			                         type: "completions", 
-        			                         file: meta.location,
-        			                         types: true, 
-        			                         origins: true,
-        			                         docs: true,
-        			                         end: params.offset,
-        			                         guess: true
-        			                       }}, 
-        			                         function(error, comps) {
-        			                             if(error) {
-        			                                    // 
-        			                             }
-        			                             if(comps && comps.completions) {
-        			                                 var completions = comps.completions;
-        			                                 for(var i = 0; i < completions.length; i++) {
-        			                                     var completion = completions[i];
-            			                                 proposals.push(that._formatTernProposal(completion));
-                							             }
-                							             return proposals;
-        			                             }
-        			                         }
-        			                      );
-        			   } 
-        			   return proposals;
-        			});
-    		    });
+		        return that._getServer().then(function(server) {
+		           var d = new Deferred();
+		           var proposals = [];
+    			   if(server) {
+    			       server.request({query: {
+    			                         type: "completions", 
+    			                         file: meta.location,
+    			                         types: true, 
+    			                         origins: true,
+    			                         urls: true,
+    			                         docs: true,
+    			                         end: params.offset,
+    			                         guess: true
+    			                       }}, 
+    			                         function(error, comps) {
+    			                             if(error) {
+    			                                 d.reject(error);
+    			                             }
+    			                             if(comps && comps.completions) {
+    			                                 var completions = comps.completions;
+    			                                 for(var i = 0; i < completions.length; i++) {
+    			                                     var completion = completions[i];
+        			                                 proposals.push(that._formatTernProposal(completion));
+            							         }
+            							         d.resolve(proposals);
+    			                             }
+    			                         }
+    			                      );
+    			   } 
+    			   return d;
+    			});
 		    });
 		},
 		
@@ -101,8 +107,10 @@ define([
             };
             proposal.name = completion.name;
             if(typeof(completion.type) !== 'undefined') {
-                if(completion.type.slice(0, 2) === 'fn') {
-                    proposal.name = completion.name + completion.type.slice(2);
+                var type = completion.type.replaceAll('->', ':');
+                type = type.replaceAll('?', 'Any');
+                if(/^fn/.test(type)) {
+                    proposal.name = completion.name + type.slice(2);
                 } else {
                     switch(completion.type) {
         		        case '{}': {
@@ -118,7 +126,7 @@ define([
         		            break;
         		        }
         		        case '?': {
-        		            proposal.name += ' : DOES NOT COMPUTE';
+        		            proposal.name += ' : Any';
         		            break;
         		        } 
         		        default: null;
@@ -126,9 +134,18 @@ define([
     		    }
             }
             proposal.proposal = proposal.name;
-            if(typeof(completion.doc) !== 'undefined') {
-                proposal.description = ' - ' + completion.doc;
+            var obj = Object.create(null);
+            obj.type = 'markdown';
+            obj.content = '';
+            if(!completion.doc) {
+                obj.content += proposal.name;
+            } else {
+                obj.content += Hover.formatMarkdownHover(completion.doc).content;
             }
+            if(completion.url) {
+                obj.content += '\n\n[Online documentation]('+completion.url+')';
+            }
+            proposal.hover = obj;
             return proposal;
 		},
 		
@@ -154,10 +171,17 @@ define([
 		        var options = {
     		        async: true,
     		        debug:true,
-    		        defs: [],
+    		        defs: [ecma5, browser],
     		        projectDir: '/',
-    		        plugins: TernLoader.getTernPlugins(),
-    		        getFile: this._getFile
+    		        plugins: {
+    		            doc_comment: {
+    		                fullDocs: true
+    		            },
+    		            requirejs: {
+    		                baseURL: '/'
+    		            }
+    		        },
+    		        getFile: this._getFile.bind(this)
     		    };
     		    this.server = new Tern.Server(options);
 		    }
@@ -170,12 +194,17 @@ define([
 		 * @function
 		 * @private
 		 * @param {String} file The file to load
+		 * @param {Function} callback The loaded callback
 		 * @returns {Object} The file object
 		 */
-		_getFile: function _getFile(file) {
+		_getFile: function _getFile(file, callback) {
 		    if(this.server) {
-		        //TODO this is a callback from the server
-		        //TODO use the file client to get the contents
+	           return this.fileclient.read(file).then(function(f) {
+	               callback(null, f);
+	           },
+	           function(error) {
+	               callback(error, null);
+	           });
 		    }
 		},
 		
@@ -186,10 +215,11 @@ define([
 		updated: function(event) {
 		    this._getServer().then(function(server) {
 		        if(event.file.location) {
-    		        server.addFile(event.file.location);
+    		        server.delFile(event.file.location);
     		    }
 		    });
 		}
+		
 	});
 	
 	return {

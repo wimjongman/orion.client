@@ -14,8 +14,9 @@ define([
 	'orion/Deferred',
 	'orion/objects',
 	'orion/serialize',
-	'javascript/lru'
-], function(Deferred, Objects, Serialize, LRU) {
+	'javascript/lru',
+	'estraverse'
+], function(Deferred, Objects, Serialize, LRU, Estraverse) {
 	/**
 	 * @description Object of error types
 	 * @since 5.0
@@ -43,6 +44,8 @@ define([
 		if (!this.parser) {
 			throw new Error("Missing parser");
 		}
+		//TODO Globally ignore recovered nodes for now
+		Estraverse.VisitorKeys.RecoveredNode = [];
 	}
 	
 	Objects.mixin(ASTManager.prototype, /** @lends javascript.ASTManager.prototype */ {

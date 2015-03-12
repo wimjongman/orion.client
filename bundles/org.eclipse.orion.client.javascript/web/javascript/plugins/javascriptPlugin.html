@@ -30,25 +30,7 @@
 			]
 		});
 
-		require(["javascript/plugins/javascriptPluginLoader"]);
-	</script>
-
-	<script type="text/javascript">
-		/*eslint-env browser*/
-		document.addEventListener("DOMContentLoaded", function(e) {
-			var checkbox = document.getElementById("useworker");
-			var key = "jstools.worker", value = localStorage.getItem(key), defaultState = false;
-			checkbox.checked = (value === null ? defaultState : JSON.parse(value));
-			checkbox.onchange = function(event) {
-				var newState = !!event.target.checked;
-				if (newState === defaultState) {
-					localStorage.removeItem(key);
-				}
-				else {
-					localStorage.setItem(key, JSON.stringify(newState));
-				}
-			};
-		});
+		require(["javascript/plugins/javascriptPlugin"]);
 	</script>
 	<style>
 	    table {

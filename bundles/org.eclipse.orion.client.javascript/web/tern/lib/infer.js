@@ -1158,10 +1158,12 @@
   var parse = exports.parse = function(text, passes, options) {
     var ast;
     try {
-        //TODO we need to hook in the AST manager here
+        //TODO ORION we need to hook in the AST manager here
         options.tolerant = true;
         options.tokens = true;
         options.comment = true;
+        options.range = true;
+        options.loc = true;
         ast = acorn.parse(text, options); 
         ast.sourceFile  = Object.create(null);
         ast.sourceFile.text = text;
