@@ -30,25 +30,7 @@
 			]
 		});
 
-		require(["javascript/plugins/javascriptPluginLoader"]);
-	</script>
-
-	<script type="text/javascript">
-		/*eslint-env browser*/
-		document.addEventListener("DOMContentLoaded", /* @callback */ function(e) {
-			var checkbox = document.getElementById("useworker");
-			var key = "jstools.worker", value = localStorage.getItem(key), defaultState = false;
-			checkbox.checked = (value === null ? defaultState : JSON.parse(value));
-			checkbox.onchange = function(event) {
-				var newState = !!event.target.checked;
-				if (newState === defaultState) {
-					localStorage.removeItem(key);
-				}
-				else {
-					localStorage.setItem(key, JSON.stringify(newState));
-				}
-			};
-		});
+		require(["javascript/plugins/javascriptPlugin"]);
 	</script>
 	<style>
 	    table {
@@ -101,9 +83,9 @@
                 <td><a href="https://github.com/Constellation/escope/blob/1.0.0/LICENSE.BSD">License</a></td>
             </tr>
             <tr>
-                <td>ESTraverse 1.9.0</td>
-                <td><a href="https://github.com/Constellation/estraverse/blob/1.9.0/README.md">Readme</a></td>
-                <td><a href="https://github.com/Constellation/estraverse/blob/1.9.0/LICENSE.BSD">License</a></td>
+                <td>ESTraverse 1.5.1</td>
+                <td><a href="https://github.com/Constellation/estraverse/blob/1.5.1/README.md">Readme</a></td>
+                <td><a href="https://github.com/Constellation/estraverse/blob/1.5.1/LICENSE.BSD">License</a></td>
             </tr>
         </table>
 	</div>

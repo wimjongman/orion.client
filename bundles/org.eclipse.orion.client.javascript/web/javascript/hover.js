@@ -20,7 +20,6 @@ define([
 'doctrine' //last, exports into global
 ], function(Objects, Finder, Signatures, CU, URITemplate) {
 	
-	
 	/**
 	 * @description Formats the hover info as markdown text
 	 * @param {Object} node The AST node or {@link Definition}

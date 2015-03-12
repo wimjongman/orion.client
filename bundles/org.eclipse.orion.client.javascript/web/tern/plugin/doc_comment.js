@@ -22,7 +22,8 @@
   });
 
   function postParse(ast, text) {
-    function attachComments(node) { comment.ensureCommentsBefore(text, node); }
+    function attachComments(node) {
+comment.ensureCommentsBefore(text, node); }
 
     walk.simple(ast, {
       VariableDeclaration: attachComments,
@@ -77,9 +78,9 @@
         type = null;
     }
 
-    var first = comments[0], dot = first.search(/\.\s/);
+    var first = comments[comments.length-1], dot = first.search(/\.\s/); //TODO ORION
     if (dot > 5) first = first.slice(0, dot + 1);
-    first = first.trim().replace(/\s*\n\s*\*\s*|\s{1,}/g, " ");
+    first = first.trim(); //.replace(/\s*\n\s*\*\s*|\s{1,}/g, " "); //TODO ORION
     if (aval instanceof infer.AVal) aval.doc = first;
     if (type) type.doc = first;
   }
@@ -215,7 +216,7 @@
   function jsdocInterpretComments(node, scope, aval, comments) {
     var type, args, ret, foundOne;
 
-    for (var i = 0; i < comments.length; ++i) {
+    for (var i = comments.length-1; i >= 0; i--) {  //TODO ORION
       var comment = comments[i];
       var decl = /(?:\n|$|\*)\s*@(type|param|arg(?:ument)?|returns?)\s+(.*)/g, m;
       while (m = decl.exec(comment)) {

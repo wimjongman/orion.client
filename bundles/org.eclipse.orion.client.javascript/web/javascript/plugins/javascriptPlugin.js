@@ -9,13 +9,17 @@
  * Contributors:
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
-/*eslint-env amd */
+/*eslint-env amd, browser*/
 /*
  * This module may be loaded in a web worker or a regular Window. Therefore it must NOT use the DOM or other
  * APIs not available in workers.
  */
+/*globals URL */
 define([
+'orion/plugin',
 'orion/bootstrap',
+'orion/fileClient',
+'logger',
 'esprima',
 'javascript/scriptResolver',
 'javascript/astManager',
@@ -39,43 +43,95 @@ define([
 'orion/editor/stylers/application_json/syntax',
 'orion/editor/stylers/application_schema_json/syntax',
 'orion/editor/stylers/application_x-ejs/syntax',
-'i18n!javascript/nls/messages'
-], function(Bootstrap, Esprima, ScriptResolver, ASTManager, QuickFixes, MongodbIndex, MysqlIndex, PostgresIndex, RedisIndex, ExpressIndex, AMQPIndex, ContentAssist, 
+'i18n!javascript/nls/messages',
+'orion/URL-shim' // exports into global, stays last
+], function(PluginProvider, Bootstrap, FileClient, Logger, Esprima, ScriptResolver, ASTManager, QuickFixes, MongodbIndex, MysqlIndex, PostgresIndex, RedisIndex, ExpressIndex, AMQPIndex, ContentAssist, 
 			TernAssist, EslintValidator, Occurrences, Hover, Outliner,	Util, GenerateDocCommand, OpenDeclCommand, mJS, mJSON, mJSONSchema, mEJS, javascriptMessages) {
 
-	function Factory(provider) {
+    return Bootstrap.startup().then(function(core) {
+            
+        var provider = new PluginProvider({
+			name: javascriptMessages['pluginName'], //$NON-NLS-0$
+			version: "1.0", //$NON-NLS-0$
+			description: javascriptMessages['pluginDescription'] //$NON-NLS-0$
+		});
+		
 		/**
 		 * Register the JavaScript content types
 		 */
 		provider.registerService("orion.core.contenttype", {}, { //$NON-NLS-0$
 			contentTypes: [
-			               {	id: "application/javascript", //$NON-NLS-0$
-			            	   "extends": "text/plain", //$NON-NLS-0$ //$NON-NLS-1$
-			            	   name: "JavaScript", //$NON-NLS-0$
-			            	   extension: ["js"], //$NON-NLS-0$
-			            	   imageClass: "file-sprite-javascript modelDecorationSprite" //$NON-NLS-0$
-			               }, {id: "application/json", //$NON-NLS-0$
-			            	   "extends": "text/plain", //$NON-NLS-0$ //$NON-NLS-1$
-			            	   name: "JSON", //$NON-NLS-0$
-			            	   extension: ["json", "pref"], //$NON-NLS-0$ //$NON-NLS-1$
-			            	   imageClass: "file-sprite-javascript modelDecorationSprite" //$NON-NLS-0$
-			               }, {id: "application/x-ejs", //$NON-NLS-0$
-			            	   "extends": "text/plain", //$NON-NLS-0$ //$NON-NLS-1$
-			            	   name: "Embedded Javascript", //$NON-NLS-0$
-			            	   extension: ["ejs"], //$NON-NLS-0$
-			            	   imageClass: "file-sprite-javascript modelDecorationSprite" //$NON-NLS-0$
-			               }
-			               ]
+		               {	id: "application/javascript", //$NON-NLS-0$
+		            	   "extends": "text/plain", //$NON-NLS-0$ //$NON-NLS-1$
+		            	   name: "JavaScript", //$NON-NLS-0$
+		            	   extension: ["js"], //$NON-NLS-0$
+		            	   imageClass: "file-sprite-javascript modelDecorationSprite" //$NON-NLS-0$
+		               }, {id: "application/json", //$NON-NLS-0$
+		            	   "extends": "text/plain", //$NON-NLS-0$ //$NON-NLS-1$
+		            	   name: "JSON", //$NON-NLS-0$
+		            	   extension: ["json", "pref"], //$NON-NLS-0$ //$NON-NLS-1$
+		            	   imageClass: "file-sprite-javascript modelDecorationSprite" //$NON-NLS-0$
+		               }, {id: "application/x-ejs", //$NON-NLS-0$
+		            	   "extends": "text/plain", //$NON-NLS-0$ //$NON-NLS-1$
+		            	   name: "Embedded Javascript", //$NON-NLS-0$
+		            	   extension: ["ejs"], //$NON-NLS-0$
+		            	   imageClass: "file-sprite-javascript modelDecorationSprite" //$NON-NLS-0$
+		               }
+		               ]
 		});
+		
+		var fileClient = new FileClient.FileClient(core.serviceRegistry);
+		
 		/**
 		 * Create the script resolver
 		 * @since 8.0
 		 */
-		var scriptresolver = new ScriptResolver.ScriptResolver(Bootstrap);
+		var scriptresolver = new ScriptResolver.ScriptResolver(fileClient);
 		/**
 		 * Create the AST manager
 		 */
 		var astManager = new ASTManager.ASTManager(Esprima);
+		
+		/**
+		 * @description Loads the tern worker
+		 * @returns returns
+		 * @since 9.0
+		 */
+	    var framework;
+    	if (window !== window.parent) {
+    		framework = window.parent;
+    	}
+    	else {
+    		framework = window.opener;
+    	}
+    	if (!framework) {
+    		Logger.log(new Error("No valid plugin target"));
+        }
+    	addEventListener("message", onFrameworkMessage);
+    
+    	// Start the worker
+    	var ternWorker = new Worker(new URL("ternWorker.js", window.location.href).href);
+    	ternWorker.addEventListener("message", onTernMessage);
+    	ternWorker.addEventListener("error", onTernError);
+    
+    	function onTernError(err) {
+    	    Logger.log(err);
+    	}
+    
+    	function onTernMessage(event) {
+    		var msg = event.data;
+    		if (msg && (msg.method || msg.id)) {
+    			framework && framework.postMessage(event.data, "*");
+    			return;
+    		}
+    	}
+    
+    	function onFrameworkMessage(event) {
+    		if (event.source !== framework) {
+    			return;
+    		}
+    		ternWorker.postMessage(event.data);
+    	}
 		
 		/**
 		 * Register AST manager as Model Change listener
@@ -374,10 +430,10 @@ define([
 			excludedStyles: "(string.*)"  //$NON-NLS-0$
 				});
 		
-		var ternAssist = new TernAssist.TernContentAssist(astManager);
+		var ternAssist = new TernAssist.TernContentAssist(fileClient, astManager);
 	    provider.registerService("orion.edit.contentassist", ternAssist,  //$NON-NLS-0$
 			{
-				contentType: ["application/javascript"],  //$NON-NLS-0$
+				contentType: ["application/javascript", "text/html"],  //$NON-NLS-0$
 				nls: 'javascript/nls/messages',  //$NON-NLS-0$
 				name: 'ternContentAssist',  //$NON-NLS-0$
 				id: "orion.edit.contentassist.javascript.tern",  //$NON-NLS-0$
@@ -711,7 +767,5 @@ define([
 		});
 		
 		provider.connect();
-	}
-
-	return Factory;
+	});
 });
