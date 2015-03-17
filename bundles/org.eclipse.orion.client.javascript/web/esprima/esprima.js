@@ -1599,6 +1599,7 @@ parseStatement: true, parseSourceElement: true */
         if (extra.range) {
             this.range = [startIndex, 0];
         }
+        this.sourceFile = extra.directSourceFile; //TODO ORION for tern
     }
 
     function WrappingNode(startToken) {
@@ -1608,6 +1609,7 @@ parseStatement: true, parseSourceElement: true */
         if (extra.range) {
             this.range = [startToken.start, 0];
         }
+        this.sourceFile = extra.directSourceFile; //TODO ORION for tern
     }
 
     WrappingNode.prototype = Node.prototype = {
@@ -1691,6 +1693,8 @@ parseStatement: true, parseSourceElement: true */
             if (extra.range) {
                 this.range[1] = lastIndex;
             }
+            this.start = this.range[0]; //TODO ORION tern
+            this.end = this.range[1]
             if (extra.attachComment) {
                 this.processComment();
             }
@@ -2541,7 +2545,7 @@ parseStatement: true, parseSourceElement: true */
         catch(e) {
             if (extra.errors) {
                 recordError(e);
-                return null;
+                return recoveredNode(node, Syntax.Identifier);
             } else {
                 throw e;
             }
@@ -4153,6 +4157,7 @@ parseStatement: true, parseSourceElement: true */
                 extra.trailingComments = [];
                 extra.leadingComments = [];
             }
+            extra.directSourceFile = options.directSourceFile;
         }
 
         try {
@@ -4341,9 +4346,11 @@ parseStatement: true, parseSourceElement: true */
      */
     function recoveredNode(node, expectedType, expectedVal) {
         var recovered = {
-            type: 'Recovered',
+            type: 'RecoveredNode',
             name: '',
-            recovered: true
+            recovered: true,
+            expectedtype: expectedType,
+            expectedvalue: expectedVal
         };
         if (extra.range) {
             recovered.range = node.range;
@@ -4373,24 +4380,24 @@ parseStatement: true, parseSourceElement: true */
             	catch(e) {
             	    token = extra.tokens[extra.tokens.length-1];    
             	    tolerateUnexpectedToken(token, Messages.UnexpectedToken, token.value);
-            		node.finishProperty('init', id, null, false, true);
+            		node.finishProperty('init', id, recoveredNode(prev, Syntax.AssignmentExpression), false, true);
             		return null;
             	}
 	        } else if(token.type === Token.Punctuator && token.value === '}') {
 	        	tolerateUnexpectedToken(prev, Messages.UnexpectedToken, prev.value);
-	        	node.finishProperty('init', id, false, true, true);
+	        	node.finishProperty('init', id, recoveredNode(prev, Syntax.AssignmentExpression), true, true);
 	        	return null;
 	        } else {
 	        	tolerateUnexpectedToken(prev, Messages.UnexpectedToken, prev.value);
 	        	if(token.type === Token.Identifier || token.type === Token.StringLiteral) {
 	        		//if the next token is an identifer / literal, start over
-	        		node.finishProperty('init', id, false, true);
+	        		node.finishProperty('init', id, recoveredNode(prev, Syntax.AssignmentExpression), false, true);
 	        		return null;
 	        	}
 	        	while(token.type !== Token.EOF) {
 	        		if(token.type === Token.Punctuator && (token.value === ',' || token.value === '}')) {
 		            	//entering a prop, not complete, return null
-	        			node.finishProperty('init', id, false, true);
+	        			node.finishProperty('init', id, recoveredNode(prev, Syntax.AssignmentExpression), false, true);
 	        			return null;
 		            } else {
 	        			token = lex(); // the token if we skipped it

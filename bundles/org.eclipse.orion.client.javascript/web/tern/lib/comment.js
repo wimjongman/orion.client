@@ -82,6 +82,6 @@
 
   exports.ensureCommentsBefore = function(text, node) {
     if (node.hasOwnProperty("commentsBefore")) return node.commentsBefore;
-    return node.commentsBefore = exports.commentsBefore(text, node.range[0]); //TODO ORION
+    return node.commentsBefore = exports.commentsBefore(text, node.start);
   };
 });

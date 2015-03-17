@@ -306,6 +306,9 @@
     c(node.body, st, "Expression");
   };
 
+    //ORION
+  base.RecoveredNode = ignore;
+  
   // A custom walker that keeps track of the scope chain and the
   // variables defined in it.
   function makeScope(prev, isCatch) {
