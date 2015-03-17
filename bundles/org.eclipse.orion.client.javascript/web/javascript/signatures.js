@@ -307,7 +307,7 @@ define([
 		 * @name getSignatureSourceRangeFrom
 		 * @description Computes the signature source range (start, end) for the given node 
 		 * @function
-		 * @ppublic
+		 * @public
 		 * @memberof javascript.Signatures.prototype
 		 * @param {Object} astnode The AST node to compute the range from
 		 * @returns {Array} The computed signature source range as an array [start, end] or <code>[-1, -1]</code> if it could not

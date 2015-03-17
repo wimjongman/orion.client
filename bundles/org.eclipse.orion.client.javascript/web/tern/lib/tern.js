@@ -6,6 +6,7 @@
 
 /*eslint-env node, amd, browser*/
 /*globals tern acorn*/
+/* eslint-disable eqeqeq */
 (function(mod) {
   if (typeof exports == "object" && typeof module == "object") // CommonJS
     return mod(exports, require("./infer"), require("./signal"),

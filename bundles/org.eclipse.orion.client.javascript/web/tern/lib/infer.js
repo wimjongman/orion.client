@@ -13,15 +13,15 @@
 // single type.
 
 /*eslint-env node, amd, browser*/
-/*globals acorn tern*/
+/*globals acorn tern acorn_loose*/
 (function(mod) {
   if (typeof exports == "object" && typeof module == "object") // CommonJS
     return mod(exports, require("esprima"), require("acorn/util/walk"),
                require("./def"), require("./signal"));
   if (typeof define == "function" && define.amd) // AMD
-    return define(["exports", "esprima", "acorn/util/walk", "./def", "./signal"], mod);
-  mod(self.tern || (self.tern = {}), acorn, acorn, acorn.walk, tern.def, tern.signal); // Plain browser env
-})(function(exports, acorn, walk, def, signal) {
+    return define(["exports", "esprima", /*"acorn/acorn_loose",*/ "acorn/util/walk", "./def", "./signal"], mod);
+  mod(self.tern || (self.tern = {}), acorn, acorn_loose, acorn.walk, tern.def, tern.signal); // Plain browser env
+})(function(exports, acorn, /*acorn_loose,*/ walk, def, signal) {
   "use strict";
 
   var toString = exports.toString = function(type, maxDepth, parent) {
@@ -1166,7 +1166,8 @@
         options.loc = true;
         ast = acorn.parse(text, options); 
         ast.sourceFile  = Object.create(null);
-        ast.sourceFile.text = text;
+        ast.sourceFile.text = ast.source;
+        ast.sourceFile.name = ast.fileLocation;
     }
     //ORION
     catch(e) { /*ast = acorn_loose.parse_dammit(text, options);*/ }

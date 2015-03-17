@@ -19,6 +19,7 @@ define([
 'orion/plugin',
 'orion/bootstrap',
 'orion/fileClient',
+'orion/Deferred',
 'esprima',
 'javascript/scriptResolver',
 'javascript/astManager',
@@ -30,7 +31,6 @@ define([
 'javascript/contentAssist/indexFiles/expressIndex',
 'javascript/contentAssist/indexFiles/amqpIndex',
 'javascript/contentAssist/contentAssist',
-'javascript/contentAssist/tern/ternContentAssist',
 'javascript/validator',
 'javascript/occurrences',
 'javascript/hover',
@@ -44,8 +44,8 @@ define([
 'orion/editor/stylers/application_x-ejs/syntax',
 'i18n!javascript/nls/messages',
 'orion/URL-shim' // exports into global, stays last
-], function(PluginProvider, Bootstrap, FileClient, Esprima, ScriptResolver, ASTManager, QuickFixes, MongodbIndex, MysqlIndex, PostgresIndex, RedisIndex, ExpressIndex, AMQPIndex, ContentAssist, 
-			TernAssist, EslintValidator, Occurrences, Hover, Outliner,	Util, GenerateDocCommand, OpenDeclCommand, mJS, mJSON, mJSONSchema, mEJS, javascriptMessages) {
+], function(PluginProvider, Bootstrap, FileClient, Deferred, Esprima, ScriptResolver, ASTManager, QuickFixes, MongodbIndex, MysqlIndex, PostgresIndex, RedisIndex, ExpressIndex, AMQPIndex, ContentAssist, 
+			EslintValidator, Occurrences, Hover, Outliner,	Util, GenerateDocCommand, OpenDeclCommand, mJS, mJSON, mJSONSchema, mEJS, javascriptMessages) {
 
     return Bootstrap.startup().then(function(core) {
             
@@ -90,23 +90,75 @@ define([
 		 * Create the AST manager
 		 */
 		var astManager = new ASTManager.ASTManager(Esprima);
+		/**
+		 * A deferred to use across callbacks to worker listener
+		 * @since 9.0
+		 */
+		var proposalDeferred = null;
 		
     	// Start the worker
     	var ternWorker = new Worker(new URL("ternWorker.js", window.location.href).href);
     	ternWorker.addEventListener('message', function(event) {
     	    if(typeof(event.data) === 'object') {
     	        var _d = event.data;
-    	        if(typeof(_d.request) === 'string' && _d.request === 'read') {
-    	            fileClient.read(_d.file).then(function(contents) {
-    	                ternWorker.postMessage({request: 'contents', args: {error: null, contents: contents, file:_d.file}});
-    	            },
-    	            function(error) {
-    	                ternWorker.postMessage({request: 'contents', args: {error: error, contents: null, file:_d.file}});
-    	            });
+    	        if(typeof(_d.request) === 'string') {
+    	            switch(_d.request) {
+    	                case 'read': {
+    	                   var file = _d.args.file;
+        	               if(file) {
+            	               fileClient.read(file).then(function(contents) {
+            	                   ternWorker.postMessage({request: 'contents', args: {error: null, contents: contents, file:file}});
+            	               },
+            	               function(error) {
+            	                   ternWorker.postMessage({request: 'contents', args: {error: error, contents: null, file:file}});
+            	               });
+        	               }
+        	               break;
+    	                }
+    	                case 'completions': {
+                            proposalDeferred.resolve(_d.proposals);
+    	                    break;
+    	                }
+    	            }
     	        }
     	    }
     	});
         ternWorker.postMessage();
+        
+	    provider.registerService("orion.edit.contentassist", {
+	           computeContentAssist: function(editorContext, params) {
+	               proposalDeferred = new Deferred();
+        		    return editorContext.getFileMetadata().then(function(meta) {
+        	           if(ternWorker) {
+        	               ternWorker.postMessage({request: 'completions', args: {meta: meta, params: params}});
+        	               return proposalDeferred;
+        	           }
+        		    });
+        		},
+	        },  //$NON-NLS-0$
+			{
+				contentType: ["application/javascript", "text/html"],  //$NON-NLS-0$
+				nls: 'javascript/nls/messages',  //$NON-NLS-0$
+				name: 'ternContentAssist',  //$NON-NLS-0$
+				id: "orion.edit.contentassist.javascript.tern",  //$NON-NLS-0$
+				charTriggers: "[.]",  //$NON-NLS-0$
+				excludedStyles: "(string.*)"  //$NON-NLS-0$
+		});
+	
+	    /**
+		 * Register Tern assist as Model Change listener
+		 */
+		provider.registerService("orion.edit.model", {  //$NON-NLS-0$
+				onModelChanging: function(event) {
+        	        if(ternWorker && event.file.location) {
+        		        ternWorker.postMessage({request: 'delfile', args: {file: event.file.location}});
+        		    }
+        		}
+			},
+			{
+				contentType: ["application/javascript"],  //$NON-NLS-0$
+				types: ["ModelChanging"]  //$NON-NLS-0$
+		});
         
 		/**
 		 * Register AST manager as Model Change listener
@@ -119,7 +171,7 @@ define([
 			contentType: ["application/javascript", "text/html"],  //$NON-NLS-0$
 			types: ["ModelChanging", 'Destroy', 'onSaving', 'onInputChanged']  //$NON-NLS-0$  //$NON-NLS-1$
 		});
-		
+		 
 		provider.registerServiceProvider("orion.edit.command",  //$NON-NLS-0$
 				new GenerateDocCommand.GenerateDocCommand(astManager), 
 				{
@@ -404,28 +456,6 @@ define([
 			charTriggers: "[.]",  //$NON-NLS-0$
 			excludedStyles: "(string.*)"  //$NON-NLS-0$
 				});
-		
-		var ternAssist = new TernAssist.TernContentAssist(fileClient, astManager, ternWorker);
-	    provider.registerService("orion.edit.contentassist", ternAssist,  //$NON-NLS-0$
-			{
-				contentType: ["application/javascript", "text/html"],  //$NON-NLS-0$
-				nls: 'javascript/nls/messages',  //$NON-NLS-0$
-				name: 'ternContentAssist',  //$NON-NLS-0$
-				id: "orion.edit.contentassist.javascript.tern",  //$NON-NLS-0$
-				charTriggers: "[.]",  //$NON-NLS-0$
-				excludedStyles: "(string.*)"  //$NON-NLS-0$
-		});
-	
-	    /**
-		 * Register Tern assist as Model Change listener
-		 */
-		provider.registerService("orion.edit.model", {  //$NON-NLS-0$
-				onModelChanging: ternAssist.updated.bind(ternAssist),
-			},
-			{
-				contentType: ["application/javascript"],  //$NON-NLS-0$
-				types: ["ModelChanging"]  //$NON-NLS-0$
-		});
 		
 		/**
 		 * Register the ESLint validator
