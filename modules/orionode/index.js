@@ -55,6 +55,7 @@ function startServer(options) {
 			}))
 			.use(orionSearch({
 				root: '/filesearch',
+				fileRoot: '/file',
 				workspaceDir: workspaceDir
 			}))
 			.use(orionNode({
