@@ -23,6 +23,7 @@ define([
 	var assert = chai.assert,
 	    ConfigAdminFactory = config.ConfigurationAdminFactory,
 	    MANAGED_SERVICE = 'orion.cm.managedservice';
+	var PREF_NAME = '/cm/configurations'; //$NON-NLS-0$
 
 	var serviceRegistry, prefsService, pluginRegistry, configAdmin;
 	
@@ -75,7 +76,14 @@ define([
 			configAdmin = null;
 		});
 	}
-	
+
+	function putAll(provider, pids) {
+		Object.keys(pids).forEach(function(pid) {
+			provider.put(PREF_NAME, pid, pids[pid]);
+		});
+	}
+
+
 	function setUpWithPrefs(prefData) {
 		var prefsServiceFactory = function() {
 			var ps = new mPreferences.PreferencesService(serviceRegistry, {userProvider: new MockPrefsProvider(prefData.user), localProvider: new MockPrefsProvider(), defaultsProvider: new MockPrefsProvider(prefData.defaults)});
@@ -184,6 +192,7 @@ define([
 			it("should use lazy Pref storage for Configurations", function() {
 				var pid = 'GRUNNUR';
 				var configuration = configAdmin.getConfiguration(pid);
+
 				return prefsService.get(configAdmin._prefName).then(function(preferences) {
 					assert.equal(_contains(preferences, pid), false, 'config data exists in Prefs');
 					configuration.update({foo: 'bar'}).then(function() {
@@ -252,6 +261,7 @@ define([
 					}
 				}).then(function() {
 					var configuration = configAdmin.getConfiguration("some_pid");
+
 					return configuration.update({ gak: 1, buzz: 1 }).then(function() {
 						
 						// default provider should be unchanged -- configuration updates should happen against user provider

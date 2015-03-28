@@ -785,6 +785,7 @@ var exports = {};
 						display.Message ="<span>" + display.Message +"</span>"; //$NON-NLS-1$ //$NON-NLS-0$
 					}
 
+
 					progressService.setProgressResult(display);
 					dispatchModelEventOn({type: "modelChanged", action: "merge", item: item, failed: display.Severity !== "Ok"}); //$NON-NLS-1$ //$NON-NLS-0$
 				}, function (error, ioArgs) {
@@ -911,7 +912,7 @@ var exports = {};
 						display.Message = "<span>" +  (msg ? msg : jsonData.Result) + "</span>"; //$NON-NLS-1$ //$NON-NLS-0$ 
 						d.reject(jsonData);
 					}
-					serviceRegistry.getService("orion.page.message").setProgressResult(display); //$NON-NLS-0$
+					progress.setProgressResult(display); //$NON-NLS-0$
 				}, function(error) {
 					displayErrorOnStatus(error);
 					d.reject();
