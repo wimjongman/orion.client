@@ -19,7 +19,7 @@ define([
 'javascript/lru',
 'orion/fileMap'
 ], function(Objects, Deferred, LRU, FileMap) {
-    
+	
     /**
      * @name ScriptResolver
      * @description Creates a new script resolver for finding workspace file based
@@ -32,9 +32,8 @@ define([
         this.fileclient = fileClient;
         this.cache = new LRU.LRU(10);
     }
-    
     Objects.mixin(ScriptResolver.prototype, {
-       /**
+       /** 
         * @description Tries to find the workspace file for the given logical name and options
         * @function
         * @param {String} logicalName The name of the file to look up, for example, 'orion/objects'

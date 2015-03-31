@@ -97,18 +97,18 @@ define([
 		 */
 		var proposalDeferred = null;
 		
-		function doRead(file, worker) {
+		function doRead(file, worker, logical) {
 			try {
                fileClient.read(file).then(function(contents) {
-                   worker.postMessage({request: 'contents', args: {error: null, contents: contents, file:file}});
+                   worker.postMessage({request: 'contents', args: {error: null, contents: contents, file:file, logical:logical}});
                },
                function(error) {
-                   worker.postMessage({request: 'contents', args: {error: error, contents: null, file:file}});
+                   worker.postMessage({request: 'contents', args: {error: error, contents: null, file:file, logical:logical}});
                });
            	}
            	catch(e) {
         	   Logger.log(e);
-        	   worker.postMessage({request: 'contents', args: {error: error, contents: null, file:file}});
+        	   worker.postMessage({request: 'contents', args: {error: error, contents: null, file:file, logical:logical}});
            	}
 		}
 		
@@ -126,9 +126,9 @@ define([
 	        	               		file = file.logical;
 	        	               		scriptresolver.getWorkspaceFile(file).then(function(files) {
 	        	               			if(files && files.length > 0) {
-	        	               				doRead(files[0].location, ternWorker);
+	        	               				doRead(files[0].location, ternWorker, file);
 	        	               			} else {
-	        	               				ternWorker.postMessage({request: 'contents', args: {error: error, contents: null, file:file}});
+	        	               				ternWorker.postMessage({request: 'contents', args: {error: error, contents: null, file:file, logical:file}});
 	        	               			}
 	        	               		});
 	        	               	} else {

@@ -164,7 +164,8 @@
     },
     finishAsyncAction: function(err) {
       if (err) this.asyncError = err;
-      if (--this.pending == 0) this.signal("everythingFetched");
+      this.pending = --this.pending > -1 ? this.pending : 0;
+      if (this.pending == 0) this.signal("everythingFetched");
     }
   });
 
@@ -291,13 +292,11 @@
     if (done) c();
   }
 
-  function waitOnFetch(srv, timeBudget, c, analyze) {
+  function waitOnFetch(srv, timeBudget, c) {
     var done = function() {
       srv.off("everythingFetched", done);
       clearTimeout(timeout);
-      if(analyze || analyze == null || typeof(analyze) === 'undefined') {
-      	analyzeAll(srv, timeBudget, c);
-      }
+      analyzeAll(srv, timeBudget, c);
     };
     srv.on("everythingFetched", done);
     var timeout = setTimeout(done, srv.options.fetchTimeout);

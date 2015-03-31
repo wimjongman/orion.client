@@ -38,7 +38,8 @@ require({
     'javascript/signatures',
 	'tern/lib/tern',
 	'tern/plugin/doc_comment', //TODO must load them, they self-register with Tern
-	'tern/plugin/requirejs',
+	//'tern/plugin/requirejs',
+	'tern/plugin/orion_requirejs',
 	'tern/defs/ecma5',
 	'tern/defs/browser',
 	'javascript/handlers/ternAssistHandler',
@@ -48,7 +49,7 @@ require({
 	'javascript/handlers/ternRenameHandler',
 	'doctrine'  //stays last - exports into global
 ],
-/* @callback */ function(Signatures, Tern, docPlugin, requirePlugin, ecma5, browser, AssistHandler, DeclHandler, HoverHandler, OccurrencesHandler, RenameHandler) {
+/* @callback */ function(Signatures, Tern, docPlugin, /*requirePlugin,*/ orionRequirePlugin, ecma5, browser, AssistHandler, DeclHandler, HoverHandler, OccurrencesHandler, RenameHandler) {
     
     var ternserver, pendingReads = Object.create(null);
     
@@ -64,6 +65,9 @@ require({
                 plugins: {
                     doc_comment: {
                         fullDocs: true
+                    },
+                    orion_requirejs: {
+                        baseURL: '../../'
                     },
                     requirejs: {
                         baseURL: '../../'
@@ -130,6 +134,11 @@ require({
         if(typeof(read) === 'function') {
             read(err, contents);
         }
+        file = args.logical;
+        read = pendingReads[file];
+        if(typeof(read) === 'function') {
+            read(err, {contents: contents, file:args.file, logical:args.logical});
+        }
         delete pendingReads[file];
     }
     
@@ -153,10 +162,14 @@ require({
      */
     function _getFile(file, callback) {
         if(ternserver) {
-           pendingReads[file] = callback;
+        	var _f = file;
+           if(typeof(file) === 'object') {
+           		_f = file.logical;
+           }
+           pendingReads[_f] = callback;
            postMessage({request: 'read', args: {file:file}});
 	    } else {
-	       postMessage('Failed to read file into Tern: '+file);
+	       postMessage('Failed to read file into Tern: '+_f);
 	    }
     }
 });

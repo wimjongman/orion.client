@@ -33,7 +33,7 @@ define([
 	           urls: true,
 	           docs: true,
 	           end: args.params.offset,
-	           guess: true
+	           sort:true
 	           }}, 
 	           function(error, comps) {
 	               if(error) {
