@@ -21,6 +21,7 @@ define([
 'orion/fileClient',
 'orion/Deferred',
 'esprima',
+'logger',
 'javascript/scriptResolver',
 'javascript/astManager',
 'javascript/quickFixes',
@@ -44,7 +45,7 @@ define([
 'orion/editor/stylers/application_x-ejs/syntax',
 'i18n!javascript/nls/messages',
 'orion/URL-shim' // exports into global, stays last
-], function(PluginProvider, Bootstrap, FileClient, Deferred, Esprima, ScriptResolver, ASTManager, QuickFixes, MongodbIndex, MysqlIndex, PostgresIndex, RedisIndex, ExpressIndex, AMQPIndex, ContentAssist, 
+], function(PluginProvider, Bootstrap, FileClient, Deferred, Esprima, Logger, ScriptResolver, ASTManager, QuickFixes, MongodbIndex, MysqlIndex, PostgresIndex, RedisIndex, ExpressIndex, AMQPIndex, ContentAssist, 
 			EslintValidator, Occurrences, Hover, Outliner,	Util, GenerateDocCommand, OpenDeclCommand, mJS, mJSON, mJSONSchema, mEJS, javascriptMessages) {
 
     return Bootstrap.startup().then(function(core) {
@@ -96,9 +97,24 @@ define([
 		 */
 		var proposalDeferred = null;
 		
+		function doRead(file, worker) {
+			try {
+               fileClient.read(file).then(function(contents) {
+                   worker.postMessage({request: 'contents', args: {error: null, contents: contents, file:file}});
+               },
+               function(error) {
+                   worker.postMessage({request: 'contents', args: {error: error, contents: null, file:file}});
+               });
+           	}
+           	catch(e) {
+        	   Logger.log(e);
+        	   worker.postMessage({request: 'contents', args: {error: error, contents: null, file:file}});
+           	}
+		}
+		
     	// Start the worker
     	var ternWorker = new Worker(new URL("ternWorker.js", window.location.href).href);
-    	ternWorker.addEventListener('message', function(event) {
+    	ternWorker.onmessage = function(event) {
     	    if(typeof(event.data) === 'object') {
     	        var _d = event.data;
     	        if(typeof(_d.request) === 'string') {
@@ -106,12 +122,18 @@ define([
     	                case 'read': {
     	                   var file = _d.args.file;
         	               if(file) {
-            	               fileClient.read(file).then(function(contents) {
-            	                   ternWorker.postMessage({request: 'contents', args: {error: null, contents: contents, file:file}});
-            	               },
-            	               function(error) {
-            	                   ternWorker.postMessage({request: 'contents', args: {error: error, contents: null, file:file}});
-            	               });
+	        	               	if(typeof(file) === 'object') {
+	        	               		file = file.logical;
+	        	               		scriptresolver.getWorkspaceFile(file).then(function(files) {
+	        	               			if(files && files.length > 0) {
+	        	               				doRead(files[0].location, ternWorker);
+	        	               			} else {
+	        	               				ternWorker.postMessage({request: 'contents', args: {error: error, contents: null, file:file}});
+	        	               			}
+	        	               		});
+	        	               	} else {
+	        	               		doRead(file, ternWorker);
+	        	               	}
         	               }
         	               break;
     	                }
@@ -122,8 +144,11 @@ define([
     	            }
     	        }
     	    }
-    	});
-        ternWorker.postMessage();
+    	};
+    	ternWorker.onerror = function(error) {
+    		Logger.log(error.message);
+    	};
+    	ternWorker.postMessage("start");
         
 	    provider.registerService("orion.edit.contentassist", {
 	           computeContentAssist: function(editorContext, params) {
@@ -179,6 +204,21 @@ define([
 			tooltip : javascriptMessages['generateDocTooltip'],  //$NON-NLS-0$
 			id : "generate.js.doc.comment",  //$NON-NLS-0$
 			key : [ "j", false, true, !Util.isMac, Util.isMac],  //$NON-NLS-0$
+			contentType: ['application/javascript', 'text/html']  //$NON-NLS-0$
+				}
+		);
+		
+		provider.registerServiceProvider("orion.edit.command",  //$NON-NLS-0$
+				{
+					execute: function(editorContext, options) {
+						ternWorker.postMessage('rename', options);
+					}
+				}, 
+				{
+			name: 'Rename Element',  //$NON-NLS-0$
+			tooltip : 'Renames the selected JavaScript element',  //$NON-NLS-0$
+			id : "rename.js.element",  //$NON-NLS-0$
+			key : [ "r", false, true, !Util.isMac, Util.isMac],  //$NON-NLS-0$
 			contentType: ['application/javascript', 'text/html']  //$NON-NLS-0$
 				}
 		);
@@ -434,7 +474,7 @@ define([
 		/**
 		 * Register the mark occurrences support
 		 */
-		provider.registerService("orion.edit.occurrences", new Occurrences.JavaScriptOccurrences(astManager),  //$NON-NLS-0$
+		provider.registerService("orion.edit.occurrences", new Occurrences.JavaScriptOccurrences(astManager, ternWorker),  //$NON-NLS-0$
 				{
 			contentType: ["application/javascript", "text/html"]	//$NON-NLS-0$ //$NON-NLS-1$
 				});

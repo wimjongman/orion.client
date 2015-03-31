@@ -22,7 +22,24 @@ define([
     * @since 9.0
     */
    function computeDeclaration(ternserver, postMessage, args) {
-       
+       if(ternserver) {
+	       ternserver.request({
+	           query: {
+		           type: "definition", 
+		           file: args.meta.location,
+		           end: args.params.offset,
+	           }}, 
+	           function(error, decl) {
+	               if(error) {
+	                   postMessage({error: error.message, message: 'Failed to compute declaration'});
+	               }
+	               if(Array.isArray(decl)) {
+        			   postMessage({request: 'decl', decl:decl});
+	               }
+	           });
+	   } else {
+	       postMessage({message: 'failed to compute declaration, server not started'});
+	   }
    }
    
    return {

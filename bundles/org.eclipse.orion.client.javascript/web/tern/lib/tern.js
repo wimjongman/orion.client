@@ -291,11 +291,13 @@
     if (done) c();
   }
 
-  function waitOnFetch(srv, timeBudget, c) {
+  function waitOnFetch(srv, timeBudget, c, analyze) {
     var done = function() {
       srv.off("everythingFetched", done);
       clearTimeout(timeout);
-      analyzeAll(srv, timeBudget, c);
+      if(analyze || analyze == null || typeof(analyze) === 'undefined') {
+      	analyzeAll(srv, timeBudget, c);
+      }
     };
     srv.on("everythingFetched", done);
     var timeout = setTimeout(done, srv.options.fetchTimeout);

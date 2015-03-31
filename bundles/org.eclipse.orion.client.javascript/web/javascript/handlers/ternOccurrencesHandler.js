@@ -21,7 +21,24 @@ define([
      * @since 9.0
      */
     function computeOccurrences(ternserver, postMessage, args) {
-        
+        if(ternserver) {
+	       ternserver.request({
+	           query: {
+		           type: "refs", 
+		           file: args.meta.location,
+		           end: args.params.selection.start,
+	           }}, 
+	           function(error, refs) {
+	               if(error) {
+	                   postMessage({error: error.message, message: 'Failed to compute occurrences'});
+	               }
+	               if(Array.isArray(refs)) {
+        			   postMessage({request: 'occurrences', refs:refs});
+	               }
+	           });
+	   } else {
+	       postMessage({message: 'failed to compute occurrences, server not started'});
+	   }
     }
     
     

@@ -21,7 +21,24 @@ define([
     * @since 9.0
     */
    function computeRename(ternserver, postMessage, args) {
-       
+        if(ternserver) {
+	       ternserver.request({
+	           query: {
+		           type: "rename", 
+		           file: args.meta.location,
+		           end: args.params.offset,
+	           }}, 
+	           function(error, changes) {
+	               if(error) {
+	                   postMessage({error: error.message, message: 'Failed to rename changes'});
+	               }
+	               if(Array.isArray(changes)) {
+        			   postMessage({request: 'rename', changes:changes});
+	               }
+	           });
+	   } else {
+	       postMessage({message: 'failed to rename, server not started'});
+	   }
    }
    
    return {

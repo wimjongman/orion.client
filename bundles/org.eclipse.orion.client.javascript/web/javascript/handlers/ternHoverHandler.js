@@ -21,7 +21,24 @@ define([
      * @since 9.0
      */
     function computeHover(ternserver, postMessage, args) {
-        
+        if(ternserver) {
+	       ternserver.request({
+	           query: {
+		           type: "documentation", 
+		           file: args.meta.location,
+		           end: args.params.offset,
+	           }}, 
+	           function(error, doc) {
+	               if(error) {
+	                   postMessage({error: error.message, message: 'Failed to compute documentation'});
+	               }
+	               if(Array.isArray(doc)) {
+        			   postMessage({request: 'hover', doc:doc});
+	               }
+	           });
+	   } else {
+	       postMessage({message: 'failed to compute documentation, server not started'});
+	   }
     }
     
     return {

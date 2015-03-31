@@ -23,8 +23,9 @@ define([
 	 * @public
 	 * @param {javascript.ASTManager} astManager
 	 */
-	function JavaScriptOccurrences(astManager) {
+	function JavaScriptOccurrences(astManager, ternWorker) {
 		this.astManager = astManager;
+		this.ternworker = ternWorker;
 	}
 	
 	Objects.mixin(JavaScriptOccurrences.prototype, /** @lends javascript.JavaScriptOccurrences.prototype*/ {
@@ -43,6 +44,7 @@ define([
 			return editorContext.getFileMetadata().then(function(meta) {
 			    if(meta.contentType.id === 'application/javascript') {
 			        return that.astManager.getAST(editorContext).then(function(ast) {
+			        	//TODO that.ternworker.postMessage({request:'occurrences', args: {meta: meta, params: ctxt}});
 						return Finder.findOccurrences(ast, ctxt);
 					});
 			    }

@@ -101,6 +101,10 @@ require({
                         HoverHandler.computeHover(ternserver, postMessage, _d.args);
                         break;
                     }
+                    case 'rename': {
+                        RenameHandler.computeRename(ternserver, postMessage, _d.args);
+                        break;
+                    }
                     case 'delfile': {
                         _deleteFile(_d.args);
                         break;

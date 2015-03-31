@@ -1,3 +1,5 @@
+/*eslint-env node, amd*/
+/*globals tern */
 (function(mod) {
   if (typeof exports == "object" && typeof module == "object") // CommonJS
     return mod(require("../lib/infer"), require("../lib/tern"));
@@ -18,26 +20,24 @@
   }
 
   function resolveName(name, data) {
-    var excl = name.indexOf("!");
-    if (excl > -1) name = name.slice(0, excl);
-
-    var opts = data.options;
-    var hasExt = /\.js$/.test(name);
-    if (hasExt || /^(?:\w+:|\/)/.test(name))
-      return name + (hasExt ? "" : ".js");
-
-    var base = opts.baseURL || "";
-    if (base && base.charAt(base.length - 1) != "/") base += "/";
-    if (opts.paths) {
-      var known = opts.paths[name];
-      if (known) return flattenPath(base + known + ".js");
-      var dir = name.match(/^([^\/]+)(\/.*)$/);
-      if (dir) {
-        var known = opts.paths[dir[1]];
-        if (known) return flattenPath(base + known + dir[2] + ".js");
-      }
-    }
-    return flattenPath(base + name + ".js");
+  	data.server.startAsyncAction();
+  	var _file = name;
+	data.server.options.getFile({logical: name}, function(err, _f) {
+		if(_f) {
+			_file = _f.file;
+		}
+		data.server.finishAsyncAction(err);
+	});
+  	var timeout = 0;
+  	var check = function() {
+		if(data.server.pending) {
+			timeout = setTimeout(check, data.server.options.fetchTimeout);
+		} else {
+			clearTimeout(timeout);
+		}
+	};
+	timeout = setTimeout(check, data.server.options.fetchTimeout);
+    return _file;
   }
 
   function getRequire(data) {
@@ -128,7 +128,7 @@
       var node = argNodes[args.length == 2 ? 0 : 1];
       var base = path.relative(server.options.projectDir, path.dirname(node.sourceFile.name));
       if (node.type == "Literal" && typeof node.value == "string") {
-        deps.push(getInterface(path.join(base, node.value), data));
+        deps.push(getInterface(/*path.join(base, */node.value,/*), */data)); //ORION
       } else if (node.type == "ArrayExpression") for (var i = 0; i < node.elements.length; ++i) {
         var elt = node.elements[i];
         if (elt.type == "Literal" && typeof elt.value == "string") {
@@ -137,7 +137,7 @@
             deps.push(exports);
             out.addType(exports, EXPORT_OBJ_WEIGHT);
           } else {
-            deps.push(getInterface(path.join(base, elt.value), data));
+            deps.push(getInterface(/*path.join(base, */elt.value/*)*/, data));
           }
         }
       }
