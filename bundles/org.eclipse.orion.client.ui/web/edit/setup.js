@@ -45,7 +45,7 @@ define([
 	'orion/objects',
 	'orion/webui/littlelib',
 	'orion/Deferred',
-	'orion/projectClient'
+//	'orion/projectClient'
 ], function(
 	messages, Sidebar, mInputManager, mGlobalCommands,
 	mTextModel, mUndoStack,
@@ -114,16 +114,16 @@ objects.mixin(MenuBar.prototype, {
 		var commandRegistry = this.commandRegistry;
 		var fileClient = this.fileClient;
 		return mFileCommands.createFileCommands(serviceRegistry, commandRegistry, fileClient).then(function() {
-			return mExtensionCommands.createFileCommands(serviceRegistry, null, "all", true, commandRegistry).then(function() { //$NON-NLS-0$
-				var projectClient = serviceRegistry.getService("orion.project.client"); //$NON-NLS-0$
-				return projectClient.getProjectHandlerTypes().then(function(dependencyTypes){
-					return projectClient.getProjectDeployTypes().then(function(deployTypes){
-						return ProjectCommands.createProjectCommands(serviceRegistry, commandRegistry, fileClient, projectClient, dependencyTypes, deployTypes);
-					}, function(){
-						return ProjectCommands.createProjectCommands(serviceRegistry, commandRegistry, fileClient, projectClient, dependencyTypes);
-					});
-				});
-			});
+			return mExtensionCommands.createFileCommands(serviceRegistry, null, "all", true, commandRegistry);//.then(function() { //$NON-NLS-0$
+//				var projectClient = serviceRegistry.getService("orion.project.client"); //$NON-NLS-0$
+//				return projectClient.getProjectHandlerTypes().then(function(dependencyTypes){
+//					return projectClient.getProjectDeployTypes().then(function(deployTypes){
+//						return ProjectCommands.createProjectCommands(serviceRegistry, commandRegistry, fileClient, projectClient, dependencyTypes, deployTypes);
+//					}, function(){
+//						return ProjectCommands.createProjectCommands(serviceRegistry, commandRegistry, fileClient, projectClient, dependencyTypes);
+//					});
+//				});
+//			});
 		});
 	},
 	setActiveExplorer: function(explorer) {
@@ -181,7 +181,7 @@ objects.mixin(EditorSetup.prototype, {
 		this.outlineService = new mOutliner.OutlineService({serviceRegistry: serviceRegistry, preferences: this.preferences});
 		this.contentTypeRegistry = new mContentTypes.ContentTypeRegistry(serviceRegistry);
 		this.fileClient = new mFileClient.FileClient(serviceRegistry);
-		this.projectClient = new mProjectClient.ProjectClient(serviceRegistry, this.fileClient);
+		this.projectClient = null; //new mProjectClient.ProjectClient(serviceRegistry, this.fileClient);
 		this.searcher = new mSearchClient.Searcher({serviceRegistry: serviceRegistry, commandService: this.commandRegistry, fileService: this.fileClient});
 		this.blameService = new mBlameAnnotation.BlameService(serviceRegistry);
 	},

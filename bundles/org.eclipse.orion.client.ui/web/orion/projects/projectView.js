@@ -108,11 +108,11 @@ define([
 					return;
 				}
 				if(parent){
-					_self.progress.progress(_self.projectClient.readAllProjects(parent), messages['listingProjects']).then(function(projects){
-						_self.workspace = parent;
-						_self.projects = projects;
-						_self.projectExplorer.loadProjects(projects);
-					});
+//					_self.progress.progress(_self.projectClient.readAllProjects(parent), messages['listingProjects']).then(function(projects){
+//						_self.workspace = parent;
+//						_self.projects = projects;
+//						_self.projectExplorer.loadProjects(projects);
+//					});
 				} else {
 					_self.progress.progress(_self.fileClient.loadWorkspace(), messages['gettingWorkspaceInfo']).then(function(workspace){
 						_self.progress.progress(_self.projectClient.readAllProjects(parent), messages['listingProjects']).then(function(projects){
