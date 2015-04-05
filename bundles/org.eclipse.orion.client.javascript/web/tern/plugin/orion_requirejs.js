@@ -73,13 +73,27 @@ define([
     }
     var name = data.currentFile;
     var out = getModule(name, data);
-	var _set = function(_t) {
+    var deps = [], fn;
+    var _set = function(_t) {
 		if(_t) {
  			deps.push(_t);
+ 			if (!fn) {
+		      fn = args[Math.min(args.length - 1, 2)];
+		      if (!fn.isEmpty() && !fn.getFunctionType()) {
+		      	fn = null;
+		      }
+		    }
+		
+		    if (fn) {
+		    	fn.propagate(new infer.IsCallee(infer.ANull, deps, null, out));
+		    }
+		    else if (args.length) {
+		    	args[0].propagate(out);
+			}
  		}
  		data.server.finishAsyncAction();
+ 		return infer.ANull;
 	}
-    var deps = [], fn;
     if (argNodes && args.length > 1) {
       var node = argNodes[args.length === 2 ? 0 : 1];
       if (node.type === "Literal" && typeof node.value === "string") {
@@ -102,26 +116,11 @@ define([
       // Simplified CommonJS call
       var exports = new infer.Obj(true);
       data.server.startAsyncAction();
+      out.addType(exports, EXPORT_OBJ_WEIGHT);
       getInterface("require", data, _set);
       deps.push(exports);
-      out.addType(exports, EXPORT_OBJ_WEIGHT);
       fn = args[0];
     }
-
-    if (!fn) {
-      fn = args[Math.min(args.length - 1, 2)];
-      if (!fn.isEmpty() && !fn.getFunctionType()) {
-      	fn = null;
-      }
-    }
-
-    if (fn) {
-    	fn.propagate(new infer.IsCallee(infer.ANull, deps, null, out));
-    }
-    else if (args.length) {
-    	args[0].propagate(out);
-	}
-    return infer.ANull;
   });
 
   // Parse simple ObjectExpression AST nodes to their corresponding JavaScript objects.

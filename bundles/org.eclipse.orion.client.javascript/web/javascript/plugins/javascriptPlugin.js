@@ -99,7 +99,7 @@ define([
 		
 		function doRead(file, worker, logical) {
 			try {
-               fileClient.read(file).then(function(contents) {
+               Deferred.when(fileClient.read(file), function(contents) {
                    worker.postMessage({request: 'contents', args: {error: null, contents: contents, file:file, logical:logical}});
                },
                function(error) {
@@ -124,7 +124,7 @@ define([
         	               if(file) {
 	        	               	if(typeof(file) === 'object') {
 	        	               		file = file.logical;
-	        	               		scriptresolver.getWorkspaceFile(file).then(function(files) {
+	        	               		Deferred.when(scriptresolver.getWorkspaceFile(file), function(files) {
 	        	               			if(files && files.length > 0) {
 	        	               				doRead(files[0].location, ternWorker, file);
 	        	               			} else {

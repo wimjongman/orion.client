@@ -38,8 +38,7 @@ define([
 	           function(error, comps) {
 	               if(error) {
 	                   postMessage({error: error.message, message: 'Failed to compute proposals'});
-	               }
-	               if(comps && comps.completions) {
+	               } else if(comps && comps.completions) {
         			   postMessage({request: 'completions', proposals:sortProposals(comps.completions, args)});
 	               }
 	           });
