@@ -373,6 +373,17 @@ hard-coded numbers elsewhere.
 	color: #555;
 }
 
+.editorHeaderSearchResults {
+	background-color: aliceblue;
+	border: blue solid 1px;
+	position: absolute;
+	overflow-y: scroll;
+	max-height: 350px;
+	top: 20px;
+	left: 28px;
+	z-index: 105;
+}
+
 .editorViewerContent {
 	position: absolute;
 	width: 100%;

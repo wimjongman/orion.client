@@ -48,13 +48,14 @@ define([
 	'orion/projectClient',
 	'orion/webui/splitter',
 	'orion/webui/SplitMenu',
+	'orion/util',
 	'orion/webui/tooltip'
 ], function(
 	messages, Sidebar, mInputManager, mCommands, mGlobalCommands,
 	mTextModel, mUndoStack,
 	mFolderView, mEditorView, mPluginEditorView , mMarkdownView, mMarkdownEditor,
 	mCommandRegistry, mContentTypes, mFileClient, mFileCommands, mEditorCommands, mSelection, mStatus, mProgress, mOperationsClient, mOutliner, mDialogs, mExtensionCommands, ProjectCommands, mSearchClient,
-	EventTarget, URITemplate, i18nUtil, PageUtil, objects, lib, Deferred, mProjectClient, mSplitter, mSplitMenu, mTooltip
+	EventTarget, URITemplate, i18nUtil, PageUtil, objects, lib, Deferred, mProjectClient, mSplitter, mSplitMenu, mUtil, mTooltip
 ) {
 
 var exports = {};
@@ -224,6 +225,62 @@ function EditorViewer(options) {
 	this.problemsServiceID = "orion.core.marker" + this.id; //$NON-NLS-0$
 	this.editContextServiceID = "orion.edit.context" + this.id; //$NON-NLS-0$
 	this.editModelContextServiceID = "orion.edit.model.context" + this.id; //$NON-NLS-0$
+
+	// ********** Header functions ***********/
+	var cacheOK = function() {
+		if (!this.searchField.value || !this.searchStr 
+			|| this.searchStr.length > this.searchField.value.length)
+				return false;
+		
+		// make sure that the input field still starts with the 'searchStr'
+		for (var i = 0; i < this.searchStr.length; i++) {
+			if (this.searchStr.charAt(i) !== this.searchField.value.charAt(i))
+				return false;
+		}
+		return true;
+	}.bind(this);
+	
+	var selectSearchResult = function(backwards) {
+		if (!this.searchResults)
+			return null;
+		
+		var curRow = this.curSearchRow;
+		if (!curRow) {
+			var table = lib.$("tbody", this.searchResults); //$NON-NLS-0$
+			curRow = backwards ? table.lastChild : table.firstChild;
+		} else {
+			curRow = backwards ? curRow.previousSibling : curRow.nextSibling;
+		}
+
+		while (curRow) {
+			if (curRow.style.display !== "none") {
+				this.curSearchRow = curRow;
+				var theLink = lib.$("a", this.curSearchRow);
+				theLink.focus();
+				return;
+			} else {
+				curRow = backwards ? curRow.previousSibling : curRow.nextSibling;
+			}
+		}
+		
+		// No next available, focus goes to the input field
+		this.curSearchRow = undefined;
+		this.searchField.focus();
+	}.bind(this);
+	
+	var hideSearch = function(includeSearchField) {
+		this.searchStr = undefined;
+		this.searchCache = undefined;
+		if (this.searchResults) {
+			this.searchResults.parentNode.removeChild(this.searchResults);
+			this.searchResults = null;
+			this.curSearchRow = null;
+		}
+		if (includeSearchField) {
+			this.searchField.value = "";
+			this.searchField.style.visibility = "hidden";
+		}
+	}.bind(this);
 	
 	var domNode = this.domNode = document.createElement("div"); //$NON-NLS-0$
 	domNode.className = "editorViewerFrame"; //$NON-NLS-0$
@@ -245,50 +302,143 @@ function EditorViewer(options) {
 	});
 
 	// Create search and filefields
-//	this.headerSearchButton = document.createElement("button"); //$NON-NLS-0$
-//	this.headerSearchButton.id = "Header Search";
-//	this.headerSearchButton.classList.add("core-sprite-search");
-//	this.headerSearchButton.style.width = "20px";
-//	
-//	this.headerSearchButton.addEventListener("click", function() { //$NON-NLS-0$
+	this.headerSearchButton = document.createElement("button"); //$NON-NLS-0$
+	this.headerSearchButton.id = "Header Search";
+	this.headerSearchButton.classList.add("core-sprite-search");
+	this.headerSearchButton.style.width = "20px";
+	
+	this.headerSearchButton.addEventListener("click", function() { //$NON-NLS-0$
 //		this.curFileNode.style.visibility = "hidden";
-//		this.searchField.style.visibility = "visible";
-//		this.searchField.focus();
-//	}.bind(this));
-//	
-//	headerNode.appendChild(this.headerSearchButton);//	this.searchField = document.createElement("input"); //$NON-NLS-0$
-//	this.searchField.id = "fileSearchField";
-//	this.searchField.style.display = "inline-block";
-//	this.searchField.style.position = "absolute";
-//	this.searchField.style.left = "25px";
-//	this.searchField.style.width = "75%";
-//	this.searchField.style.visibility = "hidden";
-//	this.searchField.addEventListener("keyup", function(e) { //$NON-NLS-0$
-//		if(e.defaultPrevented){// If the key event was handled by other listeners and preventDefault was set on(e.g. input completion handled ENTER), we do not handle it here
-//			return;
-//		}
-//		var keyCode= e.charCode || e.keyCode;
-//		if (keyCode === lib.KEY.ENTER) {
-//			this.curFileNode.style.visibility = "visible";
-//			this.searchField.style.visibility = "hidden";
-//		} else if (keyCode === lib.KEY.ESCAPE) {
-//			this.curFileNode.style.visibility = "visible";
-//			this.searchField.style.visibility = "hidden";
-//		} else {
-//			var searchParams = {
-//				keyword: this.searchField.value,
-//				nameSearch: true,
-//				resource: "/file",
-//				rows: 100,
-//				sort: "NameLower asc",
-//				start: 0
-//			};
-//			this.searcher.search(searchParams, null, function() {
-//				var result = arguments;
-//			}.bind(this));
-//		}
-//	}.bind(this));
-//	headerNode.appendChild(this.searchField);
+		this.searchField.style.visibility = "visible";
+		this.searchField.focus();
+	}.bind(this));
+	
+	headerNode.appendChild(this.headerSearchButton);//	this.searchField = document.createElement("input"); //$NON-NLS-0$
+
+	this.searchField = document.createElement("input"); //$NON-NLS-0$
+	this.searchField.id = "fileSearchField";
+	this.searchField.style.display = "inline-block";
+	this.searchField.style.position = "absolute";
+	this.searchField.style.left = "25px";
+	this.searchField.style.width = "75%";
+	this.searchField.style.visibility = "hidden";
+	this.searchField.addEventListener("keydown", function(evt) {
+		if (evt.keyCode === lib.KEY.ESCAPE) {
+			hideSearch(true);
+		}
+		
+		if (!this.searchResults)
+			return;
+			
+		if (evt.keyCode === lib.KEY.ENTER) {
+			var link = lib.$("a", this.searchResults); //$NON-NLS-0$
+			if (link) {
+				lib.stop(evt);
+				if(mUtil.isMac ? evt.metaKey : evt.ctrlKey){
+					window.open(link.href);
+				} else {
+					window.location.href = link.href;
+				}
+				hideSearch(true);
+			}
+		} else if (evt.keyCode === lib.KEY.UP) {
+			selectSearchResult(true);
+		} else if (evt.keyCode === lib.KEY.DOWN) {
+			selectSearchResult();
+		}
+	}.bind(this));
+		
+	this.searchField.addEventListener("input", function() {
+		var filterSearch = function() {
+			// Filter the cache
+			var fieldText = this.searchField.value.toLocaleLowerCase();
+			if (fieldText === "*")
+				return;
+			
+			var regExp = "^";
+			for (var i = 0; i < fieldText.length; i++) {
+				var ch = fieldText.charAt(i);
+				if (ch === '.') regExp += "\\.";
+				else if (ch === '*') regExp += ".*";
+				else if (ch === '?') regExp += ".";
+				else regExp += ch;
+			}
+			regExp += ".*$";
+			var searchRegEx = new RegExp(regExp);
+			
+			// Get the 'tbody'
+			var table = lib.$("tbody", this.searchResults);
+			for (var i = 0; i < table.childNodes.length; i++) {
+				var row = table.childNodes[i];
+				var a = lib.$("a", row);
+				var testStr = a.text.toLocaleLowerCase();
+				if (searchRegEx.test(testStr)) {
+					row.style.display = "block";
+				} else {
+					row.style.display = "none";
+				}
+			}
+		}.bind(this);
+		
+		if (!this.searchField.value) {
+			hideSearch();			
+			return;
+		}
+		
+		if (!cacheOK()) {
+			hideSearch();
+		}
+		if (!this.searchStr) {
+			this.searchCache = undefined;
+			if (this.searchResults) {
+				this.searchResults.parentNode.removeChild(this.searchResults);
+			}
+			this.searchResults = document.createElement("div");
+			this.searchResults.id = "Search Results";
+			this.searchResults.classList.add("editorHeaderSearchResults");
+			this.searchResults.addEventListener("keydown", function(evt) {
+				if (evt.keyCode === lib.KEY.UP) {
+					selectSearchResult(true);
+					lib.stop(evt);  // Prevent the cursor for going to thte start of the input field
+				} else if (evt.keyCode === lib.KEY.DOWN) {
+					selectSearchResult();
+				} else if (evt.keyCode === lib.KEY.ESCAPE) {
+					hideSearch(true);
+				}
+			}.bind(this));
+			this.searchResults.addEventListener("click", function(evt) {
+				if (evt.target && (evt.target.hash || evt.target.parentNode.hash)) {
+					hideSearch(true);
+				}
+			}.bind(this));
+			this.headerNode.appendChild(this.searchResults);
+			
+			// 'Prime' the search results
+			var searchParams = {
+				keyword: this.searchField.value,
+				nameSearch: true,
+				resource: "/file",
+				rows: 100,
+				sort: "NameLower asc",
+				start: 0
+			};
+			this.searcher.search(searchParams, null, function() {
+				this.searchCache = arguments[0];
+				var renderFunction = this.searcher.defaultRenderer.makeRenderFunction(this.contentTypeRegistry, 
+					this.searchResults, false);  //, this.decorateResult.bind(this));
+				renderFunction.apply(null, arguments).then(function () {
+					filterSearch();
+				}.bind(this));
+			}.bind(this));
+			this.searchStr = this.searchField.value;
+		}
+		
+		if (this.searchCache && this.searchField.value[0] === this.searchStr) {
+			filterSearch();
+		}
+	}.bind(this), false);
+	this.currentSearch = "";
+	headerNode.appendChild(this.searchField);
 
 	// Create a breadcrumb
 	this.localBreadcrumbNode = document.createElement("div"); //$NON-NLS-0$
@@ -951,3 +1101,4 @@ exports.setUpEditor = function(serviceRegistry, pluginRegistry, preferences, rea
 };
 return exports;
 });
+
