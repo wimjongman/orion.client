@@ -382,7 +382,7 @@ hard-coded numbers elsewhere.
 	top: 20px;
 	left: 28px;
 	z-index: 105;
-	line-height:15px;
+	line-height: normal;
 }
 
 .editorViewerContent {
