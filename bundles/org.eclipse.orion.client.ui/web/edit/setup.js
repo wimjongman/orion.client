@@ -240,7 +240,7 @@ function EditorViewer(options) {
 		return true;
 	}.bind(this);
 	
-	var selectSearchResult = function(backwards) {
+	var selectNextSearchResult = function(backwards) {
 		if (!this.searchResults)
 			return null;
 		
@@ -342,14 +342,17 @@ function EditorViewer(options) {
 				hideSearch(true);
 			}
 		} else if (evt.keyCode === lib.KEY.UP) {
-			selectSearchResult(true);
+			lib.stop(evt);
+			selectNextSearchResult(true);
 		} else if (evt.keyCode === lib.KEY.DOWN) {
-			selectSearchResult();
+			lib.stop(evt);
+			selectNextSearchResult();
 		}
 	}.bind(this));
 		
 	this.searchField.addEventListener("input", function() {
 		var filterSearch = function() {
+			this.curSearchRow = null;
 			// Filter the cache
 			var fieldText = this.searchField.value.toLocaleLowerCase();
 			if (fieldText === "*")
@@ -398,10 +401,11 @@ function EditorViewer(options) {
 			this.searchResults.classList.add("editorHeaderSearchResults");
 			this.searchResults.addEventListener("keydown", function(evt) {
 				if (evt.keyCode === lib.KEY.UP) {
-					selectSearchResult(true);
 					lib.stop(evt);  // Prevent the cursor for going to thte start of the input field
+					selectNextSearchResult(true);
 				} else if (evt.keyCode === lib.KEY.DOWN) {
-					selectSearchResult();
+					lib.stop(evt);
+					selectNextSearchResult();
 				} else if (evt.keyCode === lib.KEY.ESCAPE) {
 					hideSearch(true);
 				}
