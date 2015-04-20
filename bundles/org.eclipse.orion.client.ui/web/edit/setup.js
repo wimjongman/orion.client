@@ -220,9 +220,6 @@ objects.mixin(TextModelPool.prototype, {
 
 function EditorViewerHeader(options) {
 	objects.mixin(this, options);
-//	if (this.domNode) {
-//		this.create(this.domNode);
-//	}
 }
 EditorViewerHeader.prototype = {};
 objects.mixin(EditorViewerHeader.prototype, {
@@ -233,12 +230,9 @@ objects.mixin(EditorViewerHeader.prototype, {
 	
 		this.curFileNode = document.createElement("span"); //$NON-NLS-0$
 		this.curFileNode.className = "editorViewerHeaderTitle"; //$NON-NLS-0$
-	//	this.curFileNode.style.left = "25px";
-	//	this.curFileNode.style.position = "absolute";
 		headerNode.appendChild(this.curFileNode);
 		this.fileNodeTooltip = new mTooltip.Tooltip({
 			node: this.curFileNode,
-	//		text: "Test Tooltip",
 			position: ["below", "above", "right", "left"] //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 		});
 	
@@ -249,7 +243,6 @@ objects.mixin(EditorViewerHeader.prototype, {
 		this.headerSearchButton.style.width = "20px";
 		
 		this.headerSearchButton.addEventListener("click", function() { //$NON-NLS-0$
-	//		this.curFileNode.style.visibility = "hidden";
 			this.searchField.style.visibility = "visible";
 			this.searchField.focus();
 		}.bind(this));
@@ -362,10 +355,7 @@ objects.mixin(EditorViewerHeader.prototype, {
 				var searchParams = {
 					keyword: this.searchField.value,
 					nameSearch: true,
-					resource: "/file",
-					rows: 100,
-					sort: "NameLower asc",
-					start: 0
+					resource: "/file"
 				};
 				this.searcher.search(searchParams, null, function() {
 					this.searchCache = arguments[0];
@@ -467,6 +457,7 @@ function EditorViewer(options) {
 											searcher: this.searcher,
 											contentTypeRegistry: this.contentTypeRegistry});
 		this.viewHeader.create(domNode);
+		this.localBreadcrumbNode = this.viewHeader.localBreadcrumbNode
 	}
 	
 	// Create the editor content area
