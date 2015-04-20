@@ -218,16 +218,184 @@ objects.mixin(TextModelPool.prototype, {
 	}
 });
 
-function EditorViewer(options) {
+function EditorViewerHeader(options) {
 	objects.mixin(this, options);
-	this.id = this.id || ""; //$NON-NLS-0$
-	this.selection = this.id ? new mSelection.Selection(this.serviceRegistry, "orion.page.selection" + this.id) : this.selection; //$NON-NLS-0$
-	this.problemsServiceID = "orion.core.marker" + this.id; //$NON-NLS-0$
-	this.editContextServiceID = "orion.edit.context" + this.id; //$NON-NLS-0$
-	this.editModelContextServiceID = "orion.edit.model.context" + this.id; //$NON-NLS-0$
-
-	// ********** Header functions ***********/
-	var cacheOK = function() {
+//	if (this.domNode) {
+//		this.create(this.domNode);
+//	}
+}
+EditorViewerHeader.prototype = {};
+objects.mixin(EditorViewerHeader.prototype, {
+	create: function(domNode) {
+		// Create the header 
+		var headerNode = this.headerNode = document.createElement("div"); //$NON-NLS-0$
+		headerNode.className = "editorViewerHeader"; //$NON-NLS-0$
+	
+		this.curFileNode = document.createElement("span"); //$NON-NLS-0$
+		this.curFileNode.className = "editorViewerHeaderTitle"; //$NON-NLS-0$
+	//	this.curFileNode.style.left = "25px";
+	//	this.curFileNode.style.position = "absolute";
+		headerNode.appendChild(this.curFileNode);
+		this.fileNodeTooltip = new mTooltip.Tooltip({
+			node: this.curFileNode,
+	//		text: "Test Tooltip",
+			position: ["below", "above", "right", "left"] //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+		});
+	
+		// Create search and filefields
+		this.headerSearchButton = document.createElement("button"); //$NON-NLS-0$
+		this.headerSearchButton.id = "Header Search";
+		this.headerSearchButton.classList.add("core-sprite-search");
+		this.headerSearchButton.style.width = "20px";
+		
+		this.headerSearchButton.addEventListener("click", function() { //$NON-NLS-0$
+	//		this.curFileNode.style.visibility = "hidden";
+			this.searchField.style.visibility = "visible";
+			this.searchField.focus();
+		}.bind(this));
+		
+		headerNode.appendChild(this.headerSearchButton);//	this.searchField = document.createElement("input"); //$NON-NLS-0$
+	
+		this.searchField = document.createElement("input"); //$NON-NLS-0$
+		this.searchField.id = "fileSearchField";
+		this.searchField.style.display = "inline-block";
+		this.searchField.style.position = "absolute";
+		this.searchField.style.left = "25px";
+		this.searchField.style.width = "75%";
+		this.searchField.style.visibility = "hidden";
+		this.searchField.addEventListener("keydown", function(evt) {
+			if (evt.keyCode === lib.KEY.ESCAPE) {
+				this.hideSearch(true);
+			}
+			
+			if (!this.searchResults)
+				return;
+				
+			if (evt.keyCode === lib.KEY.ENTER) {
+				var link = lib.$("a", this.searchResults); //$NON-NLS-0$
+				if (link) {
+					lib.stop(evt);
+					if(mUtil.isMac ? evt.metaKey : evt.ctrlKey){
+						window.open(link.href);
+					} else {
+						window.location.href = link.href;
+					}
+					this.hideSearch(true);
+				}
+			} else if (evt.keyCode === lib.KEY.UP) {
+				lib.stop(evt);
+				this.selectNextSearchResult(true);
+			} else if (evt.keyCode === lib.KEY.DOWN) {
+				lib.stop(evt);
+				this.selectNextSearchResult();
+			}
+		}.bind(this));
+			
+		this.searchField.addEventListener("input", function() {
+			var filterSearch = function() {
+				this.curSearchRow = null;
+				// Filter the cache
+				var fieldText = this.searchField.value.toLocaleLowerCase();
+				if (fieldText === "*")
+					return;
+				
+				var regExp = "^";
+				for (var i = 0; i < fieldText.length; i++) {
+					var ch = fieldText.charAt(i);
+					if (ch === '.') regExp += "\\.";
+					else if (ch === '*') regExp += ".*";
+					else if (ch === '?') regExp += ".";
+					else regExp += ch;
+				}
+				regExp += ".*$";
+				var searchRegEx = new RegExp(regExp);
+				
+				// Get the 'tbody'
+				var table = lib.$("tbody", this.searchResults);
+				for (var i = 0; i < table.childNodes.length; i++) {
+					var row = table.childNodes[i];
+					var a = lib.$("a", row);
+					var testStr = a.text.toLocaleLowerCase();
+					if (searchRegEx.test(testStr)) {
+						row.style.display = "block";
+					} else {
+						row.style.display = "none";
+					}
+				}
+			}.bind(this);
+			
+			if (!this.searchField.value) {
+				this.hideSearch();			
+				return;
+			}
+			
+			if (!this.cacheOK()) {
+				this.hideSearch();
+			}
+			if (!this.searchStr) {
+				this.searchCache = undefined;
+				if (this.searchResults) {
+					this.searchResults.parentNode.removeChild(this.searchResults);
+				}
+				this.searchResults = document.createElement("div");
+				this.searchResults.id = "Search Results";
+				this.searchResults.classList.add("editorHeaderSearchResults");
+				this.searchResults.addEventListener("keydown", function(evt) {
+					if (evt.keyCode === lib.KEY.UP) {
+						lib.stop(evt);  // Prevent the cursor for going to thte start of the input field
+						this.selectNextSearchResult(true);
+					} else if (evt.keyCode === lib.KEY.DOWN) {
+						lib.stop(evt);
+						this.selectNextSearchResult();
+					} else if (evt.keyCode === lib.KEY.ESCAPE) {
+						this.hideSearch(true);
+					}
+				}.bind(this));
+				this.searchResults.addEventListener("click", function(evt) {
+					if (evt.target && (evt.target.hash || evt.target.parentNode.hash)) {
+						this.hideSearch(true);
+					}
+				}.bind(this));
+				this.headerNode.appendChild(this.searchResults);
+				
+				// 'Prime' the search results
+				var searchParams = {
+					keyword: this.searchField.value,
+					nameSearch: true,
+					resource: "/file",
+					rows: 100,
+					sort: "NameLower asc",
+					start: 0
+				};
+				this.searcher.search(searchParams, null, function() {
+					this.searchCache = arguments[0];
+					var renderFunction = this.searcher.defaultRenderer.makeRenderFunction(this.contentTypeRegistry, 
+						this.searchResults, false);  //, this.decorateResult.bind(this));
+					renderFunction.apply(null, arguments).then(function () {
+						filterSearch();
+					}.bind(this));
+				}.bind(this));
+				this.searchStr = this.searchField.value;
+			}
+			
+			if (this.searchCache && this.searchField.value[0] === this.searchStr) {
+				filterSearch();
+			}
+		}.bind(this), false);
+		this.currentSearch = "";
+		headerNode.appendChild(this.searchField);
+	
+		// Create a breadcrumb
+		this.localBreadcrumbNode = document.createElement("div"); //$NON-NLS-0$
+		var tipContainer = this.fileNodeTooltip.contentContainer();
+		tipContainer.appendChild(this.localBreadcrumbNode);
+		
+		domNode.appendChild(headerNode);
+	},
+	updateFile: function(newText) {
+		this.curFileNode.innerHTML = newText;
+	},
+	cacheOK: function() {
 		if (!this.searchField.value || !this.searchStr 
 			|| this.searchStr.length > this.searchField.value.length)
 				return false;
@@ -238,9 +406,8 @@ function EditorViewer(options) {
 				return false;
 		}
 		return true;
-	}.bind(this);
-	
-	var selectNextSearchResult = function(backwards) {
+	},
+	selectNextSearchResult: function(backwards) {
 		if (!this.searchResults)
 			return null;
 		
@@ -266,9 +433,8 @@ function EditorViewer(options) {
 		// No next available, focus goes to the input field
 		this.curSearchRow = undefined;
 		this.searchField.focus();
-	}.bind(this);
-	
-	var hideSearch = function(includeSearchField) {
+	},
+	hideSearch: function(includeSearchField) {
 		this.searchStr = undefined;
 		this.searchCache = undefined;
 		if (this.searchResults) {
@@ -280,176 +446,28 @@ function EditorViewer(options) {
 			this.searchField.value = "";
 			this.searchField.style.visibility = "hidden";
 		}
-	}.bind(this);
-	
+	},
+});
+
+function EditorViewer(options) {
+	objects.mixin(this, options);
+	this.id = this.id || ""; //$NON-NLS-0$
+	this.selection = this.id ? new mSelection.Selection(this.serviceRegistry, "orion.page.selection" + this.id) : this.selection; //$NON-NLS-0$
+	this.problemsServiceID = "orion.core.marker" + this.id; //$NON-NLS-0$
+	this.editContextServiceID = "orion.edit.context" + this.id; //$NON-NLS-0$
+	this.editModelContextServiceID = "orion.edit.model.context" + this.id; //$NON-NLS-0$
+
 	var domNode = this.domNode = document.createElement("div"); //$NON-NLS-0$
 	domNode.className = "editorViewerFrame"; //$NON-NLS-0$
 	this.parent.appendChild(domNode);
 	
-	// Create the header 
-	var headerNode = this.headerNode = document.createElement("div"); //$NON-NLS-0$
-	headerNode.className = "editorViewerHeader"; //$NON-NLS-0$
-
-	this.curFileNode = document.createElement("span"); //$NON-NLS-0$
-	this.curFileNode.className = "editorViewerHeaderTitle"; //$NON-NLS-0$
-//	this.curFileNode.style.left = "25px";
-//	this.curFileNode.style.position = "absolute";
-	headerNode.appendChild(this.curFileNode);
-	this.fileNodeTooltip = new mTooltip.Tooltip({
-		node: this.curFileNode,
-//		text: "Test Tooltip",
-		position: ["below", "above", "right", "left"] //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-	});
-
-	// Create search and filefields
-	this.headerSearchButton = document.createElement("button"); //$NON-NLS-0$
-	this.headerSearchButton.id = "Header Search";
-	this.headerSearchButton.classList.add("core-sprite-search");
-	this.headerSearchButton.style.width = "20px";
-	
-	this.headerSearchButton.addEventListener("click", function() { //$NON-NLS-0$
-//		this.curFileNode.style.visibility = "hidden";
-		this.searchField.style.visibility = "visible";
-		this.searchField.focus();
-	}.bind(this));
-	
-	headerNode.appendChild(this.headerSearchButton);//	this.searchField = document.createElement("input"); //$NON-NLS-0$
-
-	this.searchField = document.createElement("input"); //$NON-NLS-0$
-	this.searchField.id = "fileSearchField";
-	this.searchField.style.display = "inline-block";
-	this.searchField.style.position = "absolute";
-	this.searchField.style.left = "25px";
-	this.searchField.style.width = "75%";
-	this.searchField.style.visibility = "hidden";
-	this.searchField.addEventListener("keydown", function(evt) {
-		if (evt.keyCode === lib.KEY.ESCAPE) {
-			hideSearch(true);
-		}
-		
-		if (!this.searchResults)
-			return;
-			
-		if (evt.keyCode === lib.KEY.ENTER) {
-			var link = lib.$("a", this.searchResults); //$NON-NLS-0$
-			if (link) {
-				lib.stop(evt);
-				if(mUtil.isMac ? evt.metaKey : evt.ctrlKey){
-					window.open(link.href);
-				} else {
-					window.location.href = link.href;
-				}
-				hideSearch(true);
-			}
-		} else if (evt.keyCode === lib.KEY.UP) {
-			lib.stop(evt);
-			selectNextSearchResult(true);
-		} else if (evt.keyCode === lib.KEY.DOWN) {
-			lib.stop(evt);
-			selectNextSearchResult();
-		}
-	}.bind(this));
-		
-	this.searchField.addEventListener("input", function() {
-		var filterSearch = function() {
-			this.curSearchRow = null;
-			// Filter the cache
-			var fieldText = this.searchField.value.toLocaleLowerCase();
-			if (fieldText === "*")
-				return;
-			
-			var regExp = "^";
-			for (var i = 0; i < fieldText.length; i++) {
-				var ch = fieldText.charAt(i);
-				if (ch === '.') regExp += "\\.";
-				else if (ch === '*') regExp += ".*";
-				else if (ch === '?') regExp += ".";
-				else regExp += ch;
-			}
-			regExp += ".*$";
-			var searchRegEx = new RegExp(regExp);
-			
-			// Get the 'tbody'
-			var table = lib.$("tbody", this.searchResults);
-			for (var i = 0; i < table.childNodes.length; i++) {
-				var row = table.childNodes[i];
-				var a = lib.$("a", row);
-				var testStr = a.text.toLocaleLowerCase();
-				if (searchRegEx.test(testStr)) {
-					row.style.display = "block";
-				} else {
-					row.style.display = "none";
-				}
-			}
-		}.bind(this);
-		
-		if (!this.searchField.value) {
-			hideSearch();			
-			return;
-		}
-		
-		if (!cacheOK()) {
-			hideSearch();
-		}
-		if (!this.searchStr) {
-			this.searchCache = undefined;
-			if (this.searchResults) {
-				this.searchResults.parentNode.removeChild(this.searchResults);
-			}
-			this.searchResults = document.createElement("div");
-			this.searchResults.id = "Search Results";
-			this.searchResults.classList.add("editorHeaderSearchResults");
-			this.searchResults.addEventListener("keydown", function(evt) {
-				if (evt.keyCode === lib.KEY.UP) {
-					lib.stop(evt);  // Prevent the cursor for going to thte start of the input field
-					selectNextSearchResult(true);
-				} else if (evt.keyCode === lib.KEY.DOWN) {
-					lib.stop(evt);
-					selectNextSearchResult();
-				} else if (evt.keyCode === lib.KEY.ESCAPE) {
-					hideSearch(true);
-				}
-			}.bind(this));
-			this.searchResults.addEventListener("click", function(evt) {
-				if (evt.target && (evt.target.hash || evt.target.parentNode.hash)) {
-					hideSearch(true);
-				}
-			}.bind(this));
-			this.headerNode.appendChild(this.searchResults);
-			
-			// 'Prime' the search results
-			var searchParams = {
-				keyword: this.searchField.value,
-				nameSearch: true,
-				resource: "/file",
-				rows: 100,
-				sort: "NameLower asc",
-				start: 0
-			};
-			this.searcher.search(searchParams, null, function() {
-				this.searchCache = arguments[0];
-				var renderFunction = this.searcher.defaultRenderer.makeRenderFunction(this.contentTypeRegistry, 
-					this.searchResults, false);  //, this.decorateResult.bind(this));
-				renderFunction.apply(null, arguments).then(function () {
-					filterSearch();
-				}.bind(this));
-			}.bind(this));
-			this.searchStr = this.searchField.value;
-		}
-		
-		if (this.searchCache && this.searchField.value[0] === this.searchStr) {
-			filterSearch();
-		}
-	}.bind(this), false);
-	this.currentSearch = "";
-	headerNode.appendChild(this.searchField);
-
-	// Create a breadcrumb
-	this.localBreadcrumbNode = document.createElement("div"); //$NON-NLS-0$
-	var tipContainer = this.fileNodeTooltip.contentContainer();
-	tipContainer.appendChild(this.localBreadcrumbNode);
-	
-	domNode.appendChild(headerNode);
+	// Create the header if desired
+	if (enableSplitEditor) {
+		this.viewHeader = new EditorViewerHeader({domNode: domNode, 
+											searcher: this.searcher,
+											contentTypeRegistry: this.contentTypeRegistry});
+		this.viewHeader.create(domNode);
+	}
 	
 	// Create the editor content area
 	var contentNode = this.contentNode = document.createElement("div"); //$NON-NLS-0$
@@ -457,7 +475,6 @@ function EditorViewer(options) {
 	domNode.appendChild(contentNode);
 	
 	if (!enableSplitEditor) {
-		headerNode.style.display = "none"; //$NON-NLS-0$
 		contentNode.style.top = "0"; //$NON-NLS-0$
 	}
 	
@@ -504,8 +521,8 @@ objects.mixin(EditorViewer.prototype, {
 			var href = window.location.href;
 			this.activateContext.setActiveEditorViewer(this);
 			this.commandRegistry.processURL(href);
-			if (this.curFileNode) {
-				this.curFileNode.innerHTML = evt.name;
+			if (this.viewHeader) {
+				this.viewHeader.updateFile(evt.name);
 			}
 		}.bind(this));
 		inputManager.addEventListener("InputChanging", function(e) { //$NON-NLS-0$
