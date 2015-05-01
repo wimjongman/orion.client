@@ -295,17 +295,21 @@ define([
 					var actionID = editorActions[i];
 					var actionDescription = textView.getActionDescription(actionID);
 					var bindings = textView.getKeyBindings(actionID);
-					for (var j = 0; j < bindings.length; j++) {
-						binding = bindings[j];
-						var bindingString = mUIUtils.getUserKeyString(binding);
-						if (binding.scopeName) {
-							if (!scopes[binding.scopeName]) {
-								scopes[binding.scopeName] = [];
+					if (bindings.length > 0) {
+						for (var j = 0; j < bindings.length; j++) {
+							binding = bindings[j];
+							var bindingString = mUIUtils.getUserKeyString(binding);
+							if (binding.scopeName) {
+								if (!scopes[binding.scopeName]) {
+									scopes[binding.scopeName] = [];
+								}
+								scopes[binding.scopeName].push({bindingString: bindingString, name: actionDescription.name, execute: execute(actionID)});
+							} else {
+								keyAssist.createItem(bindingString, actionDescription.name, execute(actionID));
 							}
-							scopes[binding.scopeName].push({bindingString: bindingString, name: actionDescription.name, execute: execute(actionID)});
-						} else {
-							keyAssist.createItem(bindingString, actionDescription.name, execute(actionID));
 						}
+					} else {
+						keyAssist.createItem("---", actionDescription.name, execute(actionID));
 					}
 				}
 				for (var scopedBinding in scopes) {

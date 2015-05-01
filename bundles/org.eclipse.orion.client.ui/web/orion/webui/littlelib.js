@@ -368,6 +368,9 @@ define(["orion/util"], function(util) {
 		BKSPC: 8,
 		TAB: 9,
 		ENTER: 13,
+		SHIFT: 16,
+		CONTROL: 17,
+		ALT: 18,
 		ESCAPE: 27,
 		SPACE: 32,
 		PAGEUP: 33,
@@ -379,7 +382,8 @@ define(["orion/util"], function(util) {
 		RIGHT: 39,
 		DOWN: 40,
 		INSERT: 45,
-		DEL: 46
+		DEL: 46,
+		COMMAND: 991
 	};
 	/**
 	 * Maps a <code>keyCode</code> to <tt>KEY</tt> name. This is the inverse of {@link orion.webui.littlelib.KEY}.

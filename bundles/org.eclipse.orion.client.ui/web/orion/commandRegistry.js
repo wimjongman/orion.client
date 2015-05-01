@@ -12,6 +12,7 @@
  
 define([
 	'orion/commands',
+	'orion/keyBinding',
 	'orion/explorers/navigationUtils',
 	'orion/PageUtil',
 	'orion/uiUtils',
@@ -20,7 +21,7 @@ define([
 	'orion/webui/tooltip',
 	'text!orion/webui/submenutriggerbutton.html',
 	'orion/metrics'
-], function(Commands, mNavUtils, PageUtil, UIUtil, lib, mDropdown, mTooltip, SubMenuButtonFragment, mMetrics) {
+], function(Commands, mKeyBinding, mNavUtils, PageUtil, UIUtil, lib, mDropdown, mTooltip, SubMenuButtonFragment, mMetrics) {
 
 	/**
 	 * Constructs a new command registry with the given options.
@@ -402,6 +403,13 @@ define([
 					Commands.executeBinding(activeBinding);
 				};
 			}
+			var that = this;
+			function updateBinding(activeBinding) {
+				return function(newBinding) {
+					that.overrideKeyBinding(activeBinding.command.id, newBinding);
+				};
+			}
+			
 			var bindings = [];
 			for (var aBinding in this._activeBindings) {
 				binding = this._activeBindings[aBinding];
@@ -424,7 +432,7 @@ define([
 					scopes[binding.keyBinding.scopeName].push(binding);
 				} else {
 					bindingString = UIUtil.getUserKeyString(binding.keyBinding);
-					keyAssist.createItem(bindingString, binding.command.name || binding.command.tooltip, execute(binding));
+					keyAssist.createItem(bindingString, binding.command.name || binding.command.tooltip, execute(binding), updateBinding(binding));
 				}
 			}
 			for (var scopedBinding in scopes) {
@@ -432,10 +440,60 @@ define([
 					keyAssist.createHeader(scopedBinding);
 					scopes[scopedBinding].forEach(function(binding) {
 						bindingString = UIUtil.getUserKeyString(binding.keyBinding);
-						keyAssist.createItem(bindingString, binding.command.name || binding.command.tooltip, execute(binding));
+						keyAssist.createItem(bindingString, binding.command.name || binding.command.tooltip, execute(binding), updateBinding(binding));
 					});
 				}	
 			}
+		},
+		
+		_getBindingOverride: function(cmdId) {
+			var overridesJSONStr = localStorage.getItem("keyBindingOverrides");
+			if (overridesJSONStr) {
+				var overrides = JSON.parse(overridesJSONStr);
+				for (var i=0; i<overrides.length; i++) {
+					if (cmdId === overrides[i].id) {
+						var cb = overrides[i].binding;
+						var newBinding = new mKeyBinding.KeyStroke(cb.keyCode, cb.mod1,
+							cb.mod2, cb.mod3, cb.mod4, cb.type);
+						return newBinding;
+					}
+				}
+			}
+			return null;
+		},
+		
+		overrideKeyBinding: function(cmdId, newBinding) {
+			// Add the new binding (overrides any existing one)
+			var curBinding = this._activeBindings[cmdId];
+			if (curBinding) {
+				curBinding.keyBinding = newBinding;
+			} else {
+				this._addBinding(this.findCommand(cmdId), "key", newBinding);
+			}
+			
+			// Update the keybinding overrides cache
+			var overridesJSONStr = localStorage.getItem("keyBindingOverrides");
+			var overrides = [];
+			if (overridesJSONStr) {
+				overrides = JSON.parse(overridesJSONStr);
+			}
+			
+			// Modify the existing binding override (if any)
+			var foundBinding = false;
+			for (var i=0; i<overrides.length; i++) {
+				if (cmdId === overrides[i].id) {
+					overrides[i].binding = newBinding;
+					foundBinding = true;
+					break;
+				}
+			}
+			
+			// ...or create a new one if necessary
+			if (!foundBinding) {
+				overrides.push({id: cmdId, binding: newBinding});
+			}
+			
+			localStorage.setItem("keyBindingOverrides", JSON.stringify(overrides));
 		},
 		
 		/** 
@@ -595,6 +653,10 @@ define([
 			
 			var command;
 			// add to the bindings table now
+			var bindingOverride = this._getBindingOverride(commandId);
+			if (bindingOverride) {
+				keyBinding = bindingOverride;
+			}
 			if (keyBinding) {
 				command = this._commandList[commandId];
 				if (command) {

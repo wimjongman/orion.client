@@ -13,8 +13,9 @@
 define([
 	'i18n!orion/nls/messages',
 	'orion/webui/littlelib',
+	'orion/keyBinding',
 	'orion/util'
-], function (messages, lib, util) {
+], function (messages, lib, keyBinding, util) {
 
 	function KeyAssistPanel(options) {
 		this.commandRegistry = options.commandRegistry;
@@ -39,6 +40,75 @@ define([
 			keyAssistInput.type = "text"; //$NON-NLS-0$
 			keyAssistInput.placeholder = messages["Filter bindings"];
 			keyAssistDiv.appendChild(keyAssistInput);
+			var keyAssistKBEdit = this._keyAssistKBEdit = document.createElement("input"); //$NON-NLS-0$
+			keyAssistKBEdit.classList.add("keyAssistInput"); //$NON-NLS-0$
+			keyAssistKBEdit.type = "text"; //$NON-NLS-0$
+			keyAssistKBEdit.placeholder = "Enter a new key binding";
+
+			var formatKBEdit = function() {
+				var str = "";
+				if (this._ctrlDown)
+					str += "Ctrl";
+				if (this._shiftDown) {
+					if (str.length > 0)
+						str += "+";
+					str += "Shift";
+				}
+				if (this._altDown) {
+					if (str.length > 0)
+						str += "+";
+					str += "Alt";
+				}
+				if (this._keyCode) {
+					if (str.length > 0)
+						str += "+";
+					str += String.fromCharCode(this._keyCode);
+				}
+				keyAssistKBEdit.value = str;
+			}.bind(this);
+			
+			keyAssistKBEdit.addEventListener("keydown", function (e) { //$NON-NLS-0$
+				if (e.keyCode === lib.KEY.UP || e.keyCode === lib.KEY.DOWN || e.keyCode === lib.KEY.ESC)
+					return;
+					
+				if (e.keyCode === lib.KEY.ENTER) {
+					if (this._keyCode && this._selectedRow._updateBinding) {
+						var newBinding = new keyBinding.KeyStroke(this._keyCode, this._ctrlDown, this._shiftDown, this._altDown, this._commandDown);
+						this._selectedRow._updateBinding(newBinding);
+						this._selectedRow.childNodes[1].innerText = this._keyAssistKBEdit.value;
+						
+						this._keyCode = undefined;
+						this._altDown = undefined;
+						this._ctrlDown = undefined;
+						this._shiftDown = undefined;
+						this._commandDown = undefined;
+					}
+					keyAssistKBEdit.value = "";
+					keyAssistInput.focus();
+				} else if (e.keyCode === lib.KEY.ESCAPE) {
+					keyAssistKBEdit.value = "";
+					keyAssistInput.focus();
+				} else if (e.keyCode === lib.KEY.CONTROL) {
+					this._ctrlDown = !this._ctrlDown;
+					formatKBEdit();
+				} else if (e.keyCode === lib.KEY.SHIFT) {
+					this._shiftDown = !this._shiftDown;
+					formatKBEdit();
+				} else if (e.keyCode === lib.KEY.ALT) {
+					this._altDown = !this._altDown;
+					formatKBEdit();
+				} else if (util.isIOS &&  e.keyCode === lib.KEY.COMMAND) {
+					this._commandDown = !this._commandDown;
+					formatKBEdit();
+				} else {
+					this._keyCode = e.keyCode;
+					formatKBEdit();
+				}
+				lib.stop(e);
+			}.bind(this));
+			this._editMode = true;  // HACK !!
+			// keyAssistDiv.appendChild(keyAssistKBEdit);
+
 			var keyAssistContents = this._keyAssistContents = document.createElement("div"); //$NON-NLS-0$
 			keyAssistContents.classList.add("keyAssistContents"); //$NON-NLS-0$
 			if (util.isIOS || util.isAndroid) {
@@ -50,6 +120,7 @@ define([
 			keyAssistTable.classList.add("keyAssistList"); //$NON-NLS-0$
 			keyAssistContents.appendChild(keyAssistTable);
 			document.body.appendChild(keyAssistDiv);
+			
 			keyAssistInput.addEventListener("keydown", function (e) { //$NON-NLS-0$
 				this._keyDown(e);
 			}.bind(this));
@@ -84,7 +155,7 @@ define([
 			this.createHeader(messages["Global"]);
 			this.commandRegistry.showKeyBindings(this);
 		},
-		createItem: function (bindingString, name, execute) {
+		createItem: function (bindingString, name, execute, updateBinding) {
 			if (this._filterString) {
 				var s = this._filterString.toLowerCase(),
 					insensitive;
@@ -106,6 +177,7 @@ define([
 			row.id = "keyAssist-keyBinding-" + this._idCount++; //$NON-NLS-0$
 			row.setAttribute("role", "menuitem"); //$NON-NLS-1$ //$NON-NLS-0$
 			row._execute = execute;
+			row._updateBinding = updateBinding;
 			row.classList.add("keyAssistItem"); //$NON-NLS-0$
 			row.addEventListener("click", function (e) { //$NON-NLS-0$
 				this._selectedRow = row;
@@ -207,6 +279,15 @@ define([
 					}
 				} else if (rowRect.bottom > rect.bottom) {
 					row.scrollIntoView(false);
+				}
+				
+				if (this._editMode && this._keyAssistKBEdit) {
+					if (this._keyAssistKBEdit.parentNode) {
+						this._keyAssistKBEdit.parentNode.removeChild(this._keyAssistKBEdit);
+					}
+					this._keyAssistKBEdit.placeholder = "Enter a new key binding for: " + row.childNodes[0].innerText;
+					row.childNodes[1].appendChild(this._keyAssistKBEdit);
+					this._keyAssistKBEdit.focus();
 				}
 			}
 		},
