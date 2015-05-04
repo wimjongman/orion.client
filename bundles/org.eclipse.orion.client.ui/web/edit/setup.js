@@ -236,25 +236,20 @@ objects.mixin(EditorViewerHeader.prototype, {
 			position: ["below", "above", "right", "left"] //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 		});
 	
-		// Create search and filefields
-		this.headerSearchButton = document.createElement("button"); //$NON-NLS-0$
-		this.headerSearchButton.id = "Header Search";
-		this.headerSearchButton.classList.add("core-sprite-search");
-		this.headerSearchButton.style.width = "20px";
-		
-		this.headerSearchButton.addEventListener("click", function() { //$NON-NLS-0$
+		this.clickPrompt = document.createElement("span"); //$NON-NLS-0$
+		this.clickPrompt.innerText = messages["ChangeFilePrompt"];
+		this.clickPrompt.className = "editorViewHeaderPrompt"; //$NON-NLS-0$
+		this.clickPrompt.addEventListener("click", function(evt) {
 			this.searchField.style.visibility = "visible";
 			this.searchField.focus();
 		}.bind(this));
-		
-		headerNode.appendChild(this.headerSearchButton);//	this.searchField = document.createElement("input"); //$NON-NLS-0$
-	
+		headerNode.appendChild(this.clickPrompt);
+
+		// Create a search field	
 		this.searchField = document.createElement("input"); //$NON-NLS-0$
 		this.searchField.id = "fileSearchField";
-		this.searchField.style.display = "inline-block";
-		this.searchField.style.position = "absolute";
-		this.searchField.style.left = "25px";
-		this.searchField.style.width = "75%";
+		this.searchField.classList.add("editorViewHeaderFileField");
+ 		this.searchField.placeholder = messages["ChangeFileInputPrompt"];
 		this.searchField.style.visibility = "hidden";
 		this.searchField.addEventListener("keydown", function(evt) {
 			if (evt.keyCode === lib.KEY.ESCAPE) {
@@ -291,6 +286,10 @@ objects.mixin(EditorViewerHeader.prototype, {
 				var fieldText = this.searchField.value.toLocaleLowerCase();
 				if (fieldText === "*")
 					return;
+					
+				var filters = fieldText.split(' ');
+				fieldText = filters[0];
+				var auxFilter = filters[1];
 				
 				var regExp = "^";
 				for (var i = 0; i < fieldText.length; i++) {
@@ -302,18 +301,50 @@ objects.mixin(EditorViewerHeader.prototype, {
 				}
 				regExp += ".*$";
 				var searchRegEx = new RegExp(regExp);
-				
+
+				if (auxFilter) {
+					regExp = "^.*";
+					for (var i = 0; i < auxFilter.length; i++) {
+						var ch = auxFilter.charAt(i);
+						if (ch === '.') regExp += "\\.";
+						else if (ch === '*') regExp += ".*";
+						else if (ch === '?') regExp += ".";
+						else regExp += ch;
+					}
+					regExp += ".*$";
+					var auxRegEx = new RegExp(regExp);
+				}				
 				// Get the 'tbody'
-				var table = lib.$("tbody", this.searchResults);
+				var elementsShowing = false;
+				if (this.noResults) {
+					this.noResults.parentElement.removeChild(this.noResults);
+					this.noResults = undefined;
+				}
+				var table = lib.$("tbody", this.searchResults);				
 				for (var i = 0; i < table.childNodes.length; i++) {
 					var row = table.childNodes[i];
-					var a = lib.$("a", row);
-					var testStr = a.text.toLocaleLowerCase();
-					if (searchRegEx.test(testStr)) {
+					var td = row.firstChild;
+					var a = lib.$("a", td);
+					var filename = a.text.toLocaleLowerCase();
+					var matchesFileName = searchRegEx.test(filename);
+					var matchesAuxFilter = auxRegEx ? false : true;
+					
+					if (auxRegEx && td.childNodes.length > 1) {
+						var folderSpan = td.childNodes[1];
+						var extraInfoStr = folderSpan.textContent.toLocaleLowerCase();
+						matchesAuxFilter = auxRegEx ? auxRegEx.test(extraInfoStr) : true;
+					}
+					if (matchesFileName && matchesAuxFilter) {
 						row.style.display = "block";
+						elementsShowing = true;
 					} else {
 						row.style.display = "none";
 					}
+				}
+				if (!elementsShowing) {
+					this.noResults = document.createElement("div");
+					this.noResults.innerHTML = "No Results";
+					this.searchResults.appendChild(this.noResults);
 				}
 			}.bind(this);
 			
@@ -357,6 +388,7 @@ objects.mixin(EditorViewerHeader.prototype, {
 					nameSearch: true,
 					resource: "/file"
 				};
+				this.searchResults.innerHTML = "Searching...";
 				this.searcher.search(searchParams, null, function() {
 					this.searchCache = arguments[0];
 					var renderFunction = this.searcher.defaultRenderer.makeRenderFunction(this.contentTypeRegistry, 

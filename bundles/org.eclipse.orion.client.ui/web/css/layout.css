@@ -373,14 +373,28 @@ hard-coded numbers elsewhere.
 	color: #555;
 }
 
+.editorViewHeaderPrompt {
+	text-align: center;
+	width: 100%;
+	color: #BBB;
+}
+
+.editorViewHeaderFileField {
+	display: block;
+	position: absolute;
+	left: 0;
+	width: 100%;
+
+}
 .editorHeaderSearchResults {
 	background-color: aliceblue;
 	border: blue solid 1px;
 	position: absolute;
 	overflow-y: scroll;
 	max-height: 350px;
+	min-width: 350px;
 	top: 20px;
-	left: 28px;
+	left: 0;
 	z-index: 105;
 	line-height: normal;
 }
