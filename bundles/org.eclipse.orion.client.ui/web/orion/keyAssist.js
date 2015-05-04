@@ -251,16 +251,23 @@ define([
 				this._selectedIndex = -1;
 				return;
 			}
-			var selectedIndex = this._selectedIndex;
-			selectedIndex += forward ? 1 : -1;
-			selectedIndex %= rows.length;
-			if (selectedIndex < 0) {
-				selectedIndex = rows.length - 1;
-			}
 			if (this._selectedIndex !== -1) {
 				row = rows[this._selectedIndex];
 				row.classList.remove("selected"); //$NON-NLS-0$
 				this._selectedRow = null;
+				if (this._editMode && this._keyAssistKBEdit) {
+					if (this._keyAssistKBEdit.parentNode) {
+						this._keyAssistKBEdit.parentNode.removeChild(this._keyAssistKBEdit);
+					}
+				}
+			}
+			var selectedIndex = this._selectedIndex;
+			selectedIndex += forward ? 1 : -1;
+			//selectedIndex %= rows.length;
+			if (selectedIndex < 0 || selectedIndex >= rows.length) {
+				this._keyAssistInput.focus();
+				selectedIndex = -1;
+//				selectedIndex = rows.length - 1;
 			}
 			this._selectedIndex = selectedIndex;
 			if (this._selectedIndex !== -1) {
@@ -282,9 +289,6 @@ define([
 				}
 				
 				if (this._editMode && this._keyAssistKBEdit) {
-					if (this._keyAssistKBEdit.parentNode) {
-						this._keyAssistKBEdit.parentNode.removeChild(this._keyAssistKBEdit);
-					}
 					this._keyAssistKBEdit.placeholder = "Enter a new key binding for: " + row.childNodes[0].innerText;
 					row.childNodes[1].appendChild(this._keyAssistKBEdit);
 					this._keyAssistKBEdit.focus();

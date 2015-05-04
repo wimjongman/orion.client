@@ -290,6 +290,12 @@ define([
 						return textView.invokeAction(actionID);
 					};
 				};
+				var that = this;
+				function updateBinding(actionID) {
+					return function(newBinding) {
+						that.overrideKeyBinding(actionID, newBinding);
+					};
+				}
 				var scopes = {}, binding;
 				for (var i = 0; i < editorActions.length; i++) {
 					var actionID = editorActions[i];
@@ -305,11 +311,11 @@ define([
 								}
 								scopes[binding.scopeName].push({bindingString: bindingString, name: actionDescription.name, execute: execute(actionID)});
 							} else {
-								keyAssist.createItem(bindingString, actionDescription.name, execute(actionID));
+								keyAssist.createItem(bindingString, actionDescription.name, execute(actionID), updateBinding(actionID));
 							}
 						}
 					} else {
-						keyAssist.createItem("---", actionDescription.name, execute(actionID));
+						keyAssist.createItem("---", actionDescription.name, execute(actionID), updateBinding(actionID));
 					}
 				}
 				for (var scopedBinding in scopes) {
@@ -322,6 +328,39 @@ define([
 					}
 				}
 			}
+		},
+		overrideKeyBinding: function(actionID, newBinding) {
+			// Add the new binding (overrides any existing one)
+			var curBinding = this._activeBindings[actionID];
+			if (curBinding) {
+				curBinding.keyBinding = newBinding;
+			} else {
+				this._addBinding(this.findCommand(actionID), "key", newBinding);
+			}
+			
+			// Update the keybinding overrides cache
+			var overridesJSONStr = localStorage.getItem("editorBindingOverrides");
+			var overrides = [];
+			if (overridesJSONStr) {
+				overrides = JSON.parse(overridesJSONStr);
+			}
+			
+			// Modify the existing binding override (if any)
+			var foundBinding = false;
+			for (var i=0; i<overrides.length; i++) {
+				if (actionID === overrides[i].id) {
+					overrides[i].binding = newBinding;
+					foundBinding = true;
+					break;
+				}
+			}
+			
+			// ...or create a new one if necessary
+			if (!foundBinding) {
+				overrides.push({id: actionID, binding: newBinding});
+			}
+			
+			localStorage.setItem("editorBindingOverrides", JSON.stringify(overrides));
 		},
 		_createSettingsCommand: function() {
 			var that = this;
