@@ -280,70 +280,61 @@ objects.mixin(EditorViewerHeader.prototype, {
 		}.bind(this));
 			
 		this.searchField.addEventListener("input", function() {
-			var filterSearch = function() {
-				this.curSearchRow = null;
-				// Filter the cache
-				var fieldText = this.searchField.value.toLocaleLowerCase();
-				if (fieldText === "*")
-					return;
-					
-				var filters = fieldText.split(' ');
-				fieldText = filters[0];
-				var auxFilter = filters[1];
-				
-				var regExp = "^";
-				for (var i = 0; i < fieldText.length; i++) {
-					var ch = fieldText.charAt(i);
+			var makeRegEx = function(regExStr, fromStart) {
+				if (!regExStr) {
+					return null;
+				}
+				var regExp = fromStart ? "^" : "^.*";
+				for (var i = 0; i < regExStr.length; i++) {
+					var ch = regExStr.charAt(i);
 					if (ch === '.') regExp += "\\.";
 					else if (ch === '*') regExp += ".*";
 					else if (ch === '?') regExp += ".";
 					else regExp += ch;
 				}
 				regExp += ".*$";
-				var searchRegEx = new RegExp(regExp);
+				return new RegExp(regExp);
+			}
+			var filterSearch = function() {
+				this.curSearchRow = null;
+				// Filter the cache
+				var fieldText = this.searchField.value.toLocaleLowerCase();
+				if (fieldText === "*")
+					return;
+				
+				// Do we have a folder filter ?
+				var filters = fieldText.split(' ');
+				var fileRegEx = makeRegEx(filters[0], true);
+				var folderRegEx = makeRegEx(filters[1], false);
 
-				if (auxFilter) {
-					regExp = "^.*";
-					for (var i = 0; i < auxFilter.length; i++) {
-						var ch = auxFilter.charAt(i);
-						if (ch === '.') regExp += "\\.";
-						else if (ch === '*') regExp += ".*";
-						else if (ch === '?') regExp += ".";
-						else regExp += ch;
-					}
-					regExp += ".*$";
-					var auxRegEx = new RegExp(regExp);
-				}				
-				// Get the 'tbody'
 				var elementsShowing = false;
 				if (this.noResults) {
 					this.noResults.parentElement.removeChild(this.noResults);
 					this.noResults = undefined;
 				}
+				this.firstVisibleElement = undefined;
+
+				// Get the 'tbody'
 				var table = lib.$("tbody", this.searchResults);				
-				for (var i = 0; i < table.childNodes.length; i++) {
+				for (var i = 0; i < this.searchCache.length; i++) {
 					var row = table.childNodes[i];
-					var td = row.firstChild;
-					var a = lib.$("a", td);
-					var filename = a.text.toLocaleLowerCase();
-					var matchesFileName = searchRegEx.test(filename);
-					var matchesAuxFilter = auxRegEx ? false : true;
+					var cacheEntry = this.searchCache[i];
+					var matchesFileName = fileRegEx.test(cacheEntry.name.toLocaleLowerCase());					
+					var matchesFolder = folderRegEx ? folderRegEx.test(cacheEntry.path.toLocaleLowerCase()) : true;
 					
-					if (auxRegEx && td.childNodes.length > 1) {
-						var folderSpan = td.childNodes[1];
-						var extraInfoStr = folderSpan.textContent.toLocaleLowerCase();
-						matchesAuxFilter = auxRegEx ? auxRegEx.test(extraInfoStr) : true;
-					}
-					if (matchesFileName && matchesAuxFilter) {
+					if (matchesFileName && matchesFolder) {
 						row.style.display = "block";
-						elementsShowing = true;
+						if (!this.firstVisibleElement) {
+							this.firstVisibleElement = row;
+						}
 					} else {
 						row.style.display = "none";
 					}
 				}
-				if (!elementsShowing) {
+				if (!this.firstVisibleElement) {
 					this.noResults = document.createElement("div");
 					this.noResults.innerHTML = "No Results";
+					this.noResults.style.padding = "5px";
 					this.searchResults.appendChild(this.noResults);
 				}
 			}.bind(this);
@@ -391,6 +382,11 @@ objects.mixin(EditorViewerHeader.prototype, {
 				this.searchResults.innerHTML = "Searching...";
 				this.searcher.search(searchParams, null, function() {
 					this.searchCache = arguments[0];
+					this.searchCache.sort(function(a,b) {
+						var lca = a.name.toLocaleLowerCase();
+						var lcb = b.name.toLocaleLowerCase();
+						return lca.localeCompare(lcb);
+					});
 					var renderFunction = this.searcher.defaultRenderer.makeRenderFunction(this.contentTypeRegistry, 
 						this.searchResults, false);  //, this.decorateResult.bind(this));
 					renderFunction.apply(null, arguments).then(function () {
