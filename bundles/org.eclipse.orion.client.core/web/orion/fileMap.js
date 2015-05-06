@@ -181,7 +181,23 @@ define([], function() {
 		return {candidate: newPathname, trimmed: trimmedPath};
 	}
 	
-	function getWSPath(deployedPath) {
+	function getWSPath(deployedPath, fileClient) {
+		if (!this.filePrefix) {
+           fileClient.search(
+                {
+                    'resource': fileClient.fileServiceRootURL(),
+                    'keyword': "fileMap.js",
+                    'nameSearch': true,
+                    'fileType': "js",
+                }
+           ).then(function(res) {
+				var loc = res.response.docs[0].Location;
+				var pathSegs = loc.split('/');
+				if (pathSegs.length > 4) {
+					this.filePrefix = '/' + pathSegs[1] + '/' + pathSegs[2] + '/' + pathSegs[3] + '/' + pathSegs[4] + '/';
+				}
+           }.bind(this));
+		}
 		var match = codeMap[deployedPath]; //fast hash lookup
 		if(!match) {
     		var segments = deployedPath.split('/');
@@ -194,7 +210,7 @@ define([], function() {
     		}
 		}
 		if (match) {
-			match = "bundles/" + match.source;
+			match = this.filePrefix + match.source;
 			if(splitPath) {
 			    match += splitPath.trimmed;
 			}

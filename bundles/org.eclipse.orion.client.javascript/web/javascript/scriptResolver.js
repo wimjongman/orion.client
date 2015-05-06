@@ -65,17 +65,14 @@ define([
            var type = opts.type ? opts.type : 'JavaScript';
            var dotext = '.'+ext;
            //first check the file map
-           var file = FileMap.getWSPath(name);
+           var file = FileMap.getWSPath(name, this.fileclient);
            if(!file) {
-               file = FileMap.getWSPath(name+dotext);
+               file = FileMap.getWSPath(name+dotext, this.fileclient);
            }
            if(file && file.indexOf(dotext) > -1) {
-               return this.fileclient.loadWorkspace().then(function(workspace) {
-                   //TODO hack - right now we know the index always is talking about the orion client,could differ later
-                   files = [that._newFileObj(name, '/file/'+workspace.Id+'/org.eclipse.orion.client/'+file, that._trimName(file), icon, type, this.fileclient)];
-                   that.cache.put(name, files);
-                   return files;
-               });
+               files = [that._newFileObj(name, file, that._trimName(file), icon, type, this.fileclient)];
+               that.cache.put(name, files);
+               return files;
            }
            var filename = name.replace(/^i18n!/, '');
            var idx = filename.lastIndexOf('/');
