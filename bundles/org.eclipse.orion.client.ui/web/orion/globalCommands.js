@@ -454,14 +454,14 @@ define([
 		}
 		
 		// If the viewer has a node for breadcrumbs replace it as well
-		var viewer = options.viewer;
-		if (viewer && viewer.localBreadcrumbNode) {
-			if (viewer.currentBreadcrumb) {
-				viewer.currentBreadcrumb.destroy();
+		var localBreadcrumbContainer = options.localBreadcrumbContainer;
+		if (localBreadcrumbContainer) {
+			if (localBreadcrumbContainer.currentBreadcrumb) {
+				localBreadcrumbContainer.currentBreadcrumb.destroy();
 			}
-			breadcrumbOptions.id = "headerBreadcrumb" + viewer.id;
-			breadcrumbOptions.container = viewer.localBreadcrumbNode;
-			viewer.currentBreadcrumb = new mBreadcrumbs.BreadCrumbs(breadcrumbOptions);
+			breadcrumbOptions.id = "headerBreadcrumb" + localBreadcrumbContainer.id;
+			breadcrumbOptions.container = localBreadcrumbContainer;
+			localBreadcrumbContainer.currentBreadcrumb = new mBreadcrumbs.BreadCrumbs(breadcrumbOptions);
 		}
 	}
 
