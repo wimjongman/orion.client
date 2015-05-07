@@ -13,7 +13,7 @@ define([
 	'orion/EventTarget',
 	'orion/util',
 	'orion/metrics',
-	'orion/webui/littlelib'
+'orion/webui/littlelib'
 ], function(EventTarget, util, metrics, lib) {
 
 	var ORIENTATION_HORIZONTAL = 1;

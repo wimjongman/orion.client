@@ -376,6 +376,7 @@ hard-coded numbers elsewhere.
 .editorViewHeaderPrompt {
 	text-align: center;
 	width: 100%;
+	height: 24px;
 	color: #BBB;
 }
 
@@ -383,8 +384,8 @@ hard-coded numbers elsewhere.
 	display: block;
 	position: absolute;
 	left: 0;
+	top: 0;
 	width: 100%;
-
 }
 .editorHeaderSearchResults {
 	background-color: aliceblue;

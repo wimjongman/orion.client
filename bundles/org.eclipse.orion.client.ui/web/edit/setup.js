@@ -237,7 +237,7 @@ objects.mixin(EditorViewerHeader.prototype, {
 		});
 	
 		this.clickPrompt = document.createElement("span"); //$NON-NLS-0$
-		this.clickPrompt.innerText = messages["ChangeFilePrompt"];
+		this.clickPrompt.innerHTML = messages["ChangeFilePrompt"];
 		this.clickPrompt.className = "editorViewHeaderPrompt"; //$NON-NLS-0$
 		this.clickPrompt.addEventListener("click", function(evt) {
 			this.searchField.style.visibility = "visible";
@@ -254,6 +254,7 @@ objects.mixin(EditorViewerHeader.prototype, {
 		this.searchField.addEventListener("keydown", function(evt) {
 			if (evt.keyCode === lib.KEY.ESCAPE) {
 				this.hideSearch(true);
+				lib.stop(evt);
 			}
 			
 			if (!this.searchResults)
