@@ -11,7 +11,7 @@
  *******************************************************************************/
 /*eslint-env browser, amd*/
 /*global escape*/
-define([], function() {
+define(['orion/Deferred'], function(Deferred) {
     var codeMap = {
         "androidapp": {source: "org.eclipse.orion.client.ui/web/androidapp"},
         "auth"		: {source: "org.eclipse.orion.client.ui/web/auth"},
