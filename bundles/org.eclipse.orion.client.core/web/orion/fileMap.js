@@ -181,9 +181,15 @@ define([], function() {
 		return {candidate: newPathname, trimmed: trimmedPath};
 	}
 	
-	function getWSPath(deployedPath, fileClient) {
+	/**
+	 * @description Computes the file prefix for the current file service root URL
+	 * @param [orion.FileClient] fileClient The file client to use to resolve the prefix
+	 * @returns [orion.Deferred] returns a deferred that will resolve the prefix or return null
+	 * @since 9.0
+	 */
+	function getFilePrefix(fileClient) {
 		if (!this.filePrefix) {
-           fileClient.search(
+           return fileClient.search(
                 {
                     'resource': fileClient.fileServiceRootURL(),
                     'keyword': "fileMap.js",
@@ -195,9 +201,16 @@ define([], function() {
 				var pathSegs = loc.split('/');
 				if (pathSegs.length > 4) {
 					this.filePrefix = '/' + pathSegs[1] + '/' + pathSegs[2] + '/' + pathSegs[3] + '/' + pathSegs[4] + '/';
+					return this.filePrefix;
 				}
-           }.bind(this));
+				return null;
+			});
+		} else {
+			return new Deferred().resolve(this.filePrefix);
 		}
+	}
+	
+	function getWSPath(deployedPath, fileClient, prefix) {
 		var match = codeMap[deployedPath]; //fast hash lookup
 		if(!match) {
     		var segments = deployedPath.split('/');
@@ -210,14 +223,16 @@ define([], function() {
     		}
 		}
 		if (match) {
-			match = this.filePrefix + match.source;
+			match = prefix + match.source;
 			if(splitPath) {
 			    match += splitPath.trimmed;
 			}
 		}
-		
 		return match;
 	}
 	
-	return {getWSPath: getWSPath};
+	return {
+		getWSPath: getWSPath,
+		getFilePrefix: getFilePrefix
+	};
 });
