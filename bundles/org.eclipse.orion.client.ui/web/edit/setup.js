@@ -47,13 +47,14 @@ define([
 	'orion/Deferred',
 	'orion/projectClient',
 	'orion/webui/splitter',
+	'orion/util',
 	'orion/webui/tooltip'
 ], function(
 	messages, Sidebar, mInputManager, mCommands, mGlobalCommands,
 	mTextModel, mUndoStack,
 	mFolderView, mEditorView, mPluginEditorView , mMarkdownView, mMarkdownEditor,
 	mCommandRegistry, mContentTypes, mFileClient, mFileCommands, mEditorCommands, mSelection, mStatus, mProgress, mOperationsClient, mOutliner, mDialogs, mExtensionCommands, ProjectCommands, mSearchClient,
-	EventTarget, URITemplate, i18nUtil, PageUtil, objects, lib, Deferred, mProjectClient, mSplitter, mTooltip
+	EventTarget, URITemplate, i18nUtil, PageUtil, objects, lib, Deferred, mProjectClient, mSplitter, mUtil, mTooltip
 ) {
 
 var exports = {};
@@ -263,7 +264,7 @@ objects.mixin(EditorViewerHeader.prototype, {
 				return;
 				
 			if (evt.keyCode === lib.KEY.ENTER) {
-				var link = lib.$("a", this.searchResults); //$NON-NLS-0$
+				var link =  this.firstVisibleElement ? lib.$("a", this.firstVisibleElement) : null; //$NON-NLS-0$
 				if (link) {
 					lib.stop(evt);
 					if(mUtil.isMac ? evt.metaKey : evt.ctrlKey){
@@ -390,7 +391,7 @@ objects.mixin(EditorViewerHeader.prototype, {
 						var lcb = b.name.toLocaleLowerCase();
 						return lca.localeCompare(lcb);
 					});
-					var renderFunction = this.searcher.defaultRenderer.makeRenderFunction(this.contentTypeRegistry, 
+					var renderFunction = this.searcher.defaultRenderer.makeRenderFunction(this.viewer.contentTypeRegistry, 
 						this.searchResults, false);  //, this.decorateResult.bind(this));
 					renderFunction.apply(null, arguments).then(function () {
 						filterSearch();
@@ -412,6 +413,7 @@ objects.mixin(EditorViewerHeader.prototype, {
 		var tipContainer = this.fileNodeTooltip.contentContainer();
 		tipContainer.appendChild(this.localBreadcrumbContainer);
 		
+		lib.addAutoDismiss([this.headerNode], this.hideSearch.bind(this));
 		domNode.appendChild(headerNode);
 	},
 	updateFile: function(newText) {
