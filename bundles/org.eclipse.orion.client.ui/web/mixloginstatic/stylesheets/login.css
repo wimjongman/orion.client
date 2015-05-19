@@ -223,8 +223,6 @@ input::-ms-reveal {
     -ms-flex-item-align: auto;
             -webkit-align-self: auto;
             align-self: auto;
-    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.15);
-    background: linear-gradient(to right, #FFF 0%, #FFF 47%, #F7F7F7 50%);
 }
 
 .buffer-space{
