@@ -24,6 +24,7 @@ define({//Default message bundle
 	"Theme Settings": "Theme Settings",
 	"General": "General",
 	"Navigation": "Navigation",
+	"StayAtRoot": "Show all projects in navigation side panel:",
 	"Font": "Font",
 	"Family": "Family",
 	"Sans Serif": "Sans Serif",

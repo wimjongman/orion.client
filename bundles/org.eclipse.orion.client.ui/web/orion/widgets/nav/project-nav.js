@@ -345,24 +345,67 @@ define([
 			};
 			sidebar.sidebarNavInputManager.addEventListener("projectDisplayed", handleDisplay); //$NON-NLS-0$
 		}
-		this.editorInputManager.addEventListener("InputChanged", function(event) { //$NON-NLS-0$
-			openProject(event.metadata);
-		});
-		// Only show project view mode if selection is in a project
-		this.sidebarNavInputManager.addEventListener("selectionChanged", function(event){ //$NON-NLS-0$
-			if (sidebar.getActiveViewModeId() === _self.id) { return; }
-			_self.project = null;
-			var item = event.selections && event.selections.length > 0 ? event.selections[0] : null;
-			if (item) {
-				_self.getProject(item).then(function(project) {
-					_self.getProjectJson(project).then(function(json) {
-						_self.project = project;
-						_self.showViewMode(!!json);
-					});
+		/**
+		 * @name checkStayAtRoot
+		 * @description Checks the preferences to see if navigation should set the project or the workspace at teh root
+		 * @param callback function that will be called with a boolean for whether to stay at the workspace root
+		 * @returns returns
+		 */
+		function checkStayAtRoot(callback){
+			if (_self.preferences){
+				// TODO
+				return _self.preferences.getPreferences("/cm/configurations").then(function(prefs){ //$NON-NLS-1$
+					var props = prefs.get("nav.config"); //$NON-NLS-1$
+					var stayAtRoot;
+					if (props && props["stayAtRoot"] !== "undefined"){
+						stayAtRoot = props["stayAtRoot"];
+					} else {
+						stayAtRoot = false;
+					}
+					callback(stayAtRoot);
 				});
 			} else {
-				_self.showViewMode(false);
+				callback(false);
 			}
+		}
+		// If we are displaying project root, update the project.  Otherwise check setting and set the new nav root
+		this.editorInputManager.addEventListener("InputChanged", function(event) { //$NON-NLS-0$
+			if (sidebar.getActiveViewModeId() === _self.id) {
+				openProject(event.metadata);
+			} else {
+				checkStayAtRoot(function(stayAtRoot){
+					// If no mode set, change to default nav
+					if (stayAtRoot){
+						if (!sidebar.getActiveViewModeId()){
+							sidebar.setViewMode(sidebar.getNavigationViewMode().id);
+						}
+					} else {
+						openProject(event.metadata);
+					}
+				});
+			}
+		});
+		// If we are displaying project root, continue. Otherwise check setting and only show project view if the selection is a project
+		this.sidebarNavInputManager.addEventListener("selectionChanged", function(event){ //$NON-NLS-0$
+			if (sidebar.getActiveViewModeId() === _self.id) { return; }
+			checkStayAtRoot(function(stayAtRoot){
+				if (stayAtRoot){
+					_self.showViewMode(false);
+				} else {
+					_self.project = null;
+					var item = event.selections && event.selections.length > 0 ? event.selections[0] : null;
+					if (item) {
+						_self.getProject(item).then(function(project) {
+							_self.getProjectJson(project).then(function(json) {
+								_self.project = project;
+								_self.showViewMode(!!json);
+							});
+						});
+					} else {
+						_self.showViewMode(false);
+					}
+				}
+			});
 		});
 	}
 	objects.mixin(ProjectNavViewMode.prototype, {
