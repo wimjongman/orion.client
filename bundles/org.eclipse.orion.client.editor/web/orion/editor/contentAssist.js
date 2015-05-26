@@ -17,12 +17,13 @@ define("orion/editor/contentAssist", [ //$NON-NLS-0$
 	'orion/editor/eventTarget', //$NON-NLS-0$
 	'orion/Deferred', //$NON-NLS-0$
 	'orion/objects', //$NON-NLS-0$
+	'orion/progress',
 	'orion/editor/tooltip', //$NON-NLS-0$
 	'orion/editor/util', //$NON-NLS-0$
 	'orion/util', //$NON-NLS-0$
 	'orion/webui/littlelib', //$NON-NLS-0$
 	'orion/metrics' //$NON-NLS-0$
-], function(messages, mKeyBinding, mKeyModes, mEventTarget, Deferred, objects, mTooltip, textUtil, util, lib, mMetrics) {
+], function(messages, mKeyBinding, mKeyModes, mEventTarget, Deferred, objects, mProgress, mTooltip, textUtil, util, lib, mMetrics) {
 	/**
 	 * @name orion.editor.ContentAssistProvider
 	 * @class Interface defining a provider of content assist proposals.
@@ -271,6 +272,44 @@ define("orion/editor/contentAssist", [ //$NON-NLS-0$
 			this._initialCaretOffset = Math.min(offset, selectionStart);
 			this._computedProposals = null;
 			
+			var self = this;
+			
+			
+//				var serviceRegistry = that.serviceRegistry;
+//					var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
+//			
+			
+			this.setProgress({progress: function(promise, name){
+				// TODO Progress
+				console.log(name);
+				
+				if (!self._loadingDiv){
+					
+					
+					var caretLocation = self.textView.getLocationAtOffset(self._initialCaretOffset);
+					caretLocation.y += self.textView.getLineHeight();
+					var document = self.textView.getOptions("parent").ownerDocument; //$NON-NLS-0$
+					self._loadingDiv = util.createElement(document, "div"); //$NON-NLS-1$
+					self._loadingDiv.classList.add("contentAssistProgress"); //$NON-NLS-1$
+					self._loadingDiv.style.left = caretLocation.x + "px";
+					self._loadingDiv.style.top = caretLocation.y + "px";
+					self._loadingDiv.textContent = name;
+					
+					var body = document.getElementsByTagName("body")[0]; //$NON-NLS-0$
+					if (body) {
+						body.appendChild(self._loadingDiv);
+					} else {
+						throw new Error("parentNode is required"); //$NON-NLS-0$
+					}
+					
+						
+				}
+				
+				
+				
+				return promise;
+			}});
+			
 			this._computeProposals(this._initialCaretOffset).then(function(proposals) {
 				if (this.isActive()) {
 					var flatProposalArray = this._flatten(proposals);
@@ -371,7 +410,7 @@ define("orion/editor/contentAssist", [ //$NON-NLS-0$
 			// TODO should we allow error to propagate instead of handling here?
 			return Deferred.all(promises, this.handleError);
 		},
-
+		
 		filterProposals: function(force) {
 			if (this._computedProposals && (this._latestModelChangingEvent || force)) {
 				var model = this.textView.getModel();
@@ -383,6 +422,7 @@ define("orion/editor/contentAssist", [ //$NON-NLS-0$
 				var prefixText = defaultPrefix;
 				// filter proposals based on prefixes and _filterText
 				var proposals = []; //array of arrays of proposals
+				
 				this._computedProposals.forEach(function(proposalArray) {
 					if (proposalArray && Array.isArray(proposalArray)) {
 						var includedProposals = proposalArray.filter(function(proposal) {

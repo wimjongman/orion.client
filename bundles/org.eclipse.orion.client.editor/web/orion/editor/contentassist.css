@@ -96,3 +96,8 @@
 .contentassist.cloneWrapper:hover {
 	overflow: visible;
 }
+
+.contentAssistProgress {
+	display: float;
+	
+}
