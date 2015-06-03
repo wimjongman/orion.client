@@ -242,26 +242,27 @@ define([
 		},
 		registerContextMenuCommands: function() {
 			var commandRegistry = this.commandService;
+			// main context menu
 			commandRegistry.addCommandGroup(this.editorContextMenuId, "orion.editorContextMenuGroup", 100, null, null, null, null, null, "dropdownSelection"); //$NON-NLS-1$ //$NON-NLS-0$
 			
-			//commandRegistry.registerCommandContribution("settingsActions", "orion.edit.settings", 1, null, false, new mKeyBinding.KeyBinding("s", true, true), null, this); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.undo", 400, "orion.editorContextMenuGroup", false);
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.redo", 401, "orion.editorContextMenuGroup", false);
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.searchFiles", 1, "orion.editorContextMenuGroup", false);
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.save", 1, "orion.editorContextMenuGroup", false);
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.gotoLine", 3, "orion.editorContextMenuGroup", false);
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.find", 0,"orion.editorContextMenuGroup", false);
-			commandRegistry.registerCommandContribution(this.editorContextMenuId , "orion.edit.blame", 1, "orion.editorContextMenuGroup", false);
-			commandRegistry.registerCommandContribution(this.editorContextMenuId , "orion.edit.diff", 2, "orion.editorContextMenuGroup", false);
-			commandRegistry.registerCommandContribution(this.editorContextMenuId , "orion.edit.showTooltip", 3, "orion.editorContextMenuGroup", false);
+			var index = 1;
+			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.undo", index++, "orion.editorContextMenuGroup/orion.edit.undoGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
+			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.redo", index++, "orion.editorContextMenuGroup/orion.edit.undoGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
+			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.find", index++,"orion.editorContextMenuGroup/orion.findGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
+			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.searchFiles", index++, "orion.editorContextMenuGroup/orion.findGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
+			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.gotoLine", index++, "orion.editorContextMenuGroup/orion.findGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
 
-			// Register the commands
+			// 'Tools' cascade
+			commandRegistry.addCommandGroup(this.editorContextMenuId, "orion.editorContextMenuToolsGroup", 400, messages["Tools"], "orion.editorContextMenuGroup"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+			commandRegistry.registerCommandContribution(this.editorContextMenuId , "orion.edit.blame", 1, "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup", false);
+			commandRegistry.registerCommandContribution(this.editorContextMenuId , "orion.edit.diff", 2, "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup", false);
+
+			// Register extra tools commands
 			var commands = this.getEditCommands();
 			for (var i = 0, position = 100; i < commands.length; i++, position++) {
 				var command = commands[i], info = command.editInfo;
-				this.commandService.registerCommandContribution(this.editorContextMenuId, command.id, position, "orion.editorContextMenuGroup"); //, info.bindingOnly, createKeyBinding(info.key), null, this); //$NON-NLS-0$
+				this.commandService.registerCommandContribution(this.editorContextMenuId, command.id, position, "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup");
 			}
-//			this.commandService.registerCommandContribution(this.editorContextMenuId , "orion.edit.blame", 1, "orion.editorContextMenuGroup", false); //, new mKeyBinding.KeyBinding('b', true, true), new mCommandRegistry.URLBinding("blame", "blame"), this); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 		},
 		overwriteKeyBindings: function(editor) {
 			var that = this;
