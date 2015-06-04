@@ -23,6 +23,8 @@ define({
 	'orionRedisPluginDescription': 'Plugin that contributes type information and code templates for Redis',
 	'orionComponentPluginName': 'Orion ComponentJS',
 	'orionComponentPluginDescription': 'Plugin that allows Orion to resolve ComponentJS dependencies',
+	'orionExpressPluginName': 'Orion ExpressJS',
+	'orionExpressPluginDescription': 'Plugin that allows Orion to resolve ExpressJS dependencies',
 	'unknownError': 'An unknown error occurred.',
 	'failedDeleteRequest': 'Failed to delete file from Tern: ${0}',
 	'failedReadRequest': 'Failed to read file into Tern: ${0}'

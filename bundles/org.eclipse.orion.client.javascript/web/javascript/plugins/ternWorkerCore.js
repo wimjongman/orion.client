@@ -25,6 +25,7 @@ require({
 	'tern/plugin/orionNode',
 	'tern/plugin/orionAngular',
 	'tern/plugin/orionComponent',
+	'tern/plugin/orionExpress',
 	'tern/plugin/ternPlugins',
 	'tern/defs/ecma5',
 	'tern/defs/browser',
@@ -37,7 +38,7 @@ require({
 	'i18n!javascript/nls/workermessages',
 	'orion/i18nUtil'
 ],
-/* @callback */ function(Tern, docPlugin, orionRequirePlugin, orionNodePlugin, orionAngularPlugin, orionComponentPlugin, ternPluginsPlugin, 
+/* @callback */ function(Tern, docPlugin, orionRequirePlugin, orionNodePlugin, orionAngularPlugin, orionComponentPlugin, orionExpressPlugin, ternPluginsPlugin, 
 							ecma5, browser, AssistHandler, DeclarationHandler, HoverHandler, OccurrencesHandler, RenameHandler, PluginsHandler, 
 							Messages, i18nUtil) {
     
@@ -68,6 +69,11 @@ require({
                    	orionNode: {
                     	name: Messages['orionNodePluginName'],
                     	description: Messages['orionNodePluginDescription'],
+                    	removable: true
+                    },
+                    orionExpress: {
+                    	name: Messages['orionExpressPluginName'],
+                    	description: Messages['orionExpressPluginDescription'],
                     	removable: true
                     },
                   /*  orionAngular: {
