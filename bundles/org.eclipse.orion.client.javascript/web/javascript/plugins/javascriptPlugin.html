@@ -4,33 +4,7 @@
 	<meta charset="UTF-8">
 	<title>Orion JavaScript Support</title>
 	<script src="../../requirejs/require.js"></script>
-	<script type="text/javascript">
-		/*eslint-env amd*/
-		require({
-			baseUrl: "../../",
-			paths: {
-				i18n: 'requirejs/i18n',
-				esprima: "esprima/esprima",
-				estraverse: "estraverse/estraverse",
-				escope: "escope/escope",
-				logger: "javascript/logger",
-				doctrine: 'doctrine/doctrine'
-			},
-			packages: [
-				{
-					name: "eslint/conf",
-					location: "eslint/conf"
-				},
-				{
-					name: "eslint",
-					location: "eslint/lib",
-					main: "eslint"
-				},
-			]
-		});
-
-		require(["javascript/plugins/javascriptPlugin"]);
-	</script>
+	<script src="load-javascriptPlugin.js"></script>
 </head>
 <body>
 	<h1>JavaScript Tools Support</h1>
