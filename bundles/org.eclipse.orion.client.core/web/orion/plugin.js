@@ -72,7 +72,7 @@
         var lastHeartbeat;
         var startTime = new Date().getTime();
         function log(state) {
-            if (typeof(localStorage) !== "undefined" && localStorage.pluginLogging) console.log(state + "(" + (new Date().getTime() - startTime) + "ms)=" + self.location); //$NON-NLS-1$ //$NON-NLS-0$
+            if (typeof(localStorage) !== "undefined" && localStorage.getItem("pluginLogging")) console.log(state + "(" + (new Date().getTime() - startTime) + "ms)=" + self.location); //$NON-NLS-1$ //$NON-NLS-0$
         }
         function heartbeat() {
             var time = new Date().getTime();

@@ -11,7 +11,6 @@
  *******************************************************************************/
 /*eslint-env browser, amd*/
 define(['orion/plugin',
-'orion/localStorage!',
 'orion/bootstrap',
 'orion/fileClient',
 'orion/metrics',
@@ -29,7 +28,7 @@ define(['orion/plugin',
 'webtools/cssResultManager',
 'orion/editor/stylers/text_css/syntax',
 'i18n!webtools/nls/messages'
-], function(PluginProvider, localStorage, Bootstrap, FileClient, Metrics, HtmlAstManager, htmlHover, ScriptResolver, htmlContentAssist, htmlOutliner, 
+], function(PluginProvider, Bootstrap, FileClient, Metrics, HtmlAstManager, htmlHover, ScriptResolver, htmlContentAssist, htmlOutliner, 
             mHTML, cssContentAssist, mCssValidator, mCssOutliner, cssHover, cssQuickFixes, cssResultManager, mCSS, messages) {
 	
 	/**

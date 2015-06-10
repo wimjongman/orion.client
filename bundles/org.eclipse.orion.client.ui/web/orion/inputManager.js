@@ -210,7 +210,7 @@ define([
 				var metadataURI = resource;
 				if (!this._isSameParent(metadataURI)) {
 					var uri = new URL(metadataURI);
-					uri.query.set("tree", localStorage.useCompressedTree ? "compressed" : "decorated"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$
+					uri.query.set("tree", localStorage.getItem("useCompressedTree") ? "compressed" : "decorated"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$
 					metadataURI = uri.href;
 				}
 				progress(this._read(metadataURI, true), messages.ReadingMetadata, resource).then(function(metadata) {

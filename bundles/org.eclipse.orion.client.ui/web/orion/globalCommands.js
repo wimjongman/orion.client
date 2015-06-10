@@ -567,7 +567,7 @@ define([
 	 * @param {Boolean} closeSplitter true to make the splitter's initial state "closed".
 	 */
 	function generateBanner(parentId, serviceRegistry, commandRegistry, prefsService, searcher, handler, /* optional */ editor, closeSplitter, fileClient) {
-		if (localStorage.consoleMetrics) {
+		if (localStorage.getItem("consoleMetrics")) {
 			serviceRegistry.registerService("orion.metrics", {
 				/** @callback */
 				logEvent: function(category, action, label, value) {

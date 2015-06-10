@@ -57,7 +57,10 @@
 			                _keys = null;
 			                chrome.storage.local.clear();			                
 			            }
-        			};
+        			};        			
+        			Object.defineProperty(result, 'length', {
+					  get: function() { return _getKeys().length; }
+					});
         			onLoad(result);
         		});
         	} else {

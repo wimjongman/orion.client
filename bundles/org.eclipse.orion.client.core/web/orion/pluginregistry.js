@@ -946,7 +946,7 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/localStorage!', 'orion/spl
                 };
 
                 function log(state) {
-                    if (localStorage.pluginLogging) console.log(state + "(" + (new Date().getTime() - channel._startTime) + "ms)=" + url); //$NON-NLS-1$ //$NON-NLS-0$
+                    if (localStorage.getItem("pluginLogging")) console.log(state + "(" + (new Date().getTime() - channel._startTime) + "ms)=" + url); //$NON-NLS-1$ //$NON-NLS-0$
                 }
 
                 function sendTimeout(message) {
@@ -986,11 +986,11 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/localStorage!', 'orion/spl
 
                 var isWorker = !!(url.match(workerRegex) && typeof(Worker) !== "undefined");
                 var isSharedWorker = !!(url.match(sharedWorkerRegex) && typeof(SharedWorker) !== "undefined");
-                if ((!localStorage.useSharedWorkers || !isSharedWorker) && url.match(sharedWorkerRegex)) {
+                if ((!localStorage.getItem("useSharedWorkers") || !isSharedWorker) && url.match(sharedWorkerRegex)) {
                     url = url.replace(sharedWorkerRegex, workerJS);
                     isSharedWorker = false;
                 }
-                if ((!localStorage.useWorkers || !isWorker) && url.match(workerRegex)) {
+                if ((!localStorage.getItem("useWorkers") || !isWorker) && url.match(workerRegex)) {
                     url = url.replace(workerRegex, pluginHtml);
                     isWorker = isSharedWorker = false;
                 }
