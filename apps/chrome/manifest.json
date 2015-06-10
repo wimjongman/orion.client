@@ -14,9 +14,12 @@
     "128": "assets/icon_128.png"
   },
 
+  "permissions": ["storage"],
+
   "app": {
     "background": {
       "scripts": ["background.js"]
     }
   }
 }
+
