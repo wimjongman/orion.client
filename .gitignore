@@ -19,3 +19,8 @@ node_modules/
 
 # Mac Development
 .DS_Store
+
+#Chrome App
+/apps/chrome/orionClient/
+
+*~

@@ -1,0 +1,15 @@
+<project name="Build Chrome" >
+	<target name="default">
+		<property name="builder" value="${basedir}/releng/org.eclipse.orion.client.releng/builder/"/>
+		<property name="requirejsHome" value="${requirejsHome}"/>
+		<property name="buildConfig" value="${builder}/scripts/orion.build.js" />
+		<property name="buildDirectory" value="${basedir}"/>
+		<property name="orionClient" value="${buildDirectory}"/>
+		<property name="staging" value="${basedir}/apps/chrome/orionClient"/>
+
+		<ant antfile="${builder}/orion.mini.xml">
+			<target name="buildChromeApp"/>
+		</ant>
+		
+	</target>
+</project>

@@ -407,6 +407,12 @@
 		</delete>
 	</target>
 
+	<target name="buildChromeApp" depends="checkDirs, cleanStaging">
+		<mkdir dir="${staging}" />
+		<!-- Stage files for optimization -->
+		<stageBundles todir="${staging}" buildfile="${buildConfig}" />
+	</target>
+
 	<target name="requirejs" depends="checkDirs, cleanStaging, cleanOptimized">
 	    <echo message="requirejs build started..."/>
 
