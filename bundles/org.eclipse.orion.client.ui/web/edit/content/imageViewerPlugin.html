@@ -7,18 +7,7 @@
 		<title>Image Viewer</title>
 		<link rel="stylesheet" type="text/css" href="imageViewerPlugin.css" />
 		<script src="../../requirejs/require.js"></script>
-		<script type="text/javascript">
-			/*eslint-env browser, amd*/		
-			require({
-				baseUrl: '../..',
-				paths: {
-					text: 'requirejs/text',
-					i18n: 'requirejs/i18n',
-					domReady: 'requirejs/domReady'    
-				}
-			});
-			require(["edit/content/imageViewerPlugin"]);
-		</script>
+		<script src="load-imageViewerPlugin.js"></script>
     </head>
 	<body>
 		<div class = "imageContainer" id="imageContainer">
