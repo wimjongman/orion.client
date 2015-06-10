@@ -349,7 +349,6 @@ define(["orion/util"], function(util) {
 		} else if (window.document.all) { 
 			event.keyCode = 0;
 		}
-		}
 	}
 	
 	function setFramesEnabled(enable) {
