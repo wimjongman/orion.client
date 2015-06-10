@@ -12,7 +12,7 @@
 
 /*eslint-env browser, amd*/
 /*global URL*/
-define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"], function(Deferred, EventTarget, splash) {
+define(["orion/Deferred", "orion/EventTarget", 'orion/localStorage', 'orion/splash', "orion/URL-shim"], function(Deferred, EventTarget, localStorage, splash) {
     
     function _equal(obj1, obj2) {
         var keys1 = Object.keys(obj1);
