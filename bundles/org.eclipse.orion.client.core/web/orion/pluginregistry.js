@@ -64,7 +64,7 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/localStorage!', 'orion/spl
                 return _getKeys()[index];
             },
             getItem: function(key) {
-                return obj[key];
+                return obj[key] || null;
             },
             setItem: function(key, value) {
                 obj[key] = value;
