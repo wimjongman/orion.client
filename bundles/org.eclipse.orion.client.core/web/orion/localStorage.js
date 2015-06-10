@@ -20,48 +20,51 @@
         root.orion.Deferred = factory();
     }
 }(this, function() {
-	    function _asStorage(obj) {
-        var _keys = null;
+    return {
+    	load: function(name, parentRequire, onLoad, config) {
+	    	if (typeof(chrome) !== "undefined" && typeof(chrome.storage) !== "undefined" && typeof(chrome.storage.local) !== "undefined") {
+				chrome.storage.local.get(null, function(items) {
+					var _keys = null;
+					var obj = items;
 
-        function _getKeys() {
-            return (_keys = _keys || Object.keys(obj));
-        }
-
-        var result = {
-            key: function(index) {
-                return _getKeys()[index];
-            },
-            getItem: function(key) {
-                return obj[key];
-            },
-            setItem: function(key, value) {
-                obj[key] = value;
-                _keys = null;
-            },
-            removeItem: function(key) {
-                delete obj[key];
-                _keys = null;
-            },
-            clear: function() {
-                _getKeys().forEach(function(key) {
-                    delete obj[key];
-                }.bind(this));
-                _keys = null;
-            }
-        };
-        Object.defineProperty(result, "length", {
-            get: function() {
-                return _getKeys().length;
-            }
-        });
-        return result;
-    }
-    
-	if (typeof(chrome) !== "undefined" && typeof(chrome.app) !== "undefined" && typeof(chrome.app.runtime) !== "undefined") {
-		var fakeLocalStorage = _asStorage({});
-		return fakeLocalStorage;
-	}
-	return localStorage;
+			        function _getKeys() {
+			            return (_keys = _keys || Object.keys(obj));
+			        }
+			
+			        var result = {
+			            key: function(index) {
+			                return _getKeys()[index];
+			            },
+			            getItem: function(key) {
+			                return obj[key];
+			            },
+			            setItem: function(key, value) {
+			                obj[key] = value;
+			                _keys = null;
+			                var temp = {};
+			                temp[key] = value;
+			                chrome.storage.local.set(temp);
+			            },
+			            removeItem: function(key) {
+			                delete obj[key];
+			                _keys = null;
+			                chrome.storage.local.remove(key);
+			            },
+			            clear: function() {
+			                _getKeys().forEach(function(key) {
+			                    delete obj[key];
+			                }.bind(this));
+			                _keys = null;
+			                chrome.storage.local.clear();			                
+			            }
+        			};
+        			onLoad(result);
+        		});
+        	} else {
+				onLoad(localStorage);
+			}
+	    }
+    };
 }));
 
 
