@@ -11,11 +11,12 @@
 /*eslint-env browser, amd*/
 define([
 	'orion/objects',
+	'orion/localStorage!',
 	'orion/webui/littlelib',
 	'text!orion/widgets/input/ComboTextInput.html',
 	'i18n!orion/widgets/nls/messages',
 	'orion/inputCompletion/inputCompletion'
-], function(objects, lib, ComboTextInputTemplate, messages, InputCompletion) {
+], function(objects, localStorage, lib, ComboTextInputTemplate, messages, InputCompletion) {
 
 	/**
 	 * Creates a text input box combined with:

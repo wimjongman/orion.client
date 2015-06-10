@@ -10,7 +10,16 @@
  ******************************************************************************/
 
 /*eslint-env browser, amd*/
-define(['i18n!orion/stringexternalizer/nls/messages', 'orion/section', 'orion/webui/littlelib', 'orion/commands', 'orion/webui/dialogs/DirectoryPrompterDialog'], function(messages, mSection, lib, mCommands, DirPrompter) {
+define([
+	'i18n!orion/stringexternalizer/nls/messages',
+	'orion/localStorage!',
+	'orion/section', 
+	'orion/webui/littlelib', 
+	'orion/commands', 
+	'orion/webui/dialogs/DirectoryPrompterDialog'
+	], function(
+		messages, localStorage, mSection, lib, mCommands, DirPrompter
+	) {
 	function StringExternalizerConfig(options) {
 		this.parent = lib.node(options.parent);
 		this.fileClient = options.fileClient;

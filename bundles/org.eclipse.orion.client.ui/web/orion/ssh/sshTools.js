@@ -9,7 +9,7 @@
  * Contributors: IBM Corporation - initial API and implementation
  ******************************************************************************/
 /*eslint-env browser, amd*/
-define(['orion/Deferred', 'orion/xhr'], function(Deferred, xhr){
+define(['orion/Deferred', 'orion/localStorage!','orion/xhr'], function(Deferred, localStorage, xhr){
 
 	var eclipse = eclipse || {};
 	eclipse.SshService = (function() {

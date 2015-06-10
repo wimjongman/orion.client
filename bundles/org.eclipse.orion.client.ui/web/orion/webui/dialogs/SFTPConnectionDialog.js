@@ -9,7 +9,7 @@
  * Contributors: IBM Corporation - initial API and implementation
  ******************************************************************************/
 /*eslint-env browser, amd*/
-define(['i18n!orion/widgets/nls/messages', 'orion/webui/littlelib', 'orion/webui/popupdialog', 'orion/webui/dialog'], function(messages, lib, popupdialog, dialog) {
+define(['i18n!orion/widgets/nls/messages', 'orion/localStorage!', 'orion/webui/littlelib', 'orion/webui/popupdialog', 'orion/webui/dialog'], function(messages, localStorage, lib, popupdialog, dialog) {
 
 	if (!localStorage.getItem("orion.sftpConnections")) { //$NON-NLS-0$
 		var defaultItems = { 

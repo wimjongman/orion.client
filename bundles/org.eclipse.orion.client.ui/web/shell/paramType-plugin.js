@@ -8,8 +8,8 @@
  *******************************************************************************/
 
 /*eslint-env browser, amd*/
-define(["i18n!orion/shell/nls/messages", "require", "orion/shell/Shell", "orion/i18nUtil", "orion/Deferred"],
-	function(messages, require, mShell, i18nUtil, Deferred) {
+define(["i18n!orion/shell/nls/messages", 'orion/localStorage!', "require", "orion/shell/Shell", "orion/i18nUtil", "orion/Deferred"],
+	function(messages, localStorage, require, mShell, i18nUtil, Deferred) {
 
 	var NAME_ALL = "all"; //$NON-NLS-0$
 

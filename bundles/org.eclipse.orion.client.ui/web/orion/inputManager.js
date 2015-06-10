@@ -13,6 +13,7 @@
 /*eslint-env browser, amd*/
 define([
 	'i18n!orion/edit/nls/messages',
+	'orion/localStorage!',
 	'orion/explorers/navigatorRenderer',
 	'orion/i18nUtil',
 	'orion/Deferred',
@@ -20,7 +21,7 @@ define([
 	'orion/objects',
 	'orion/PageUtil',
 	'orion/metrics'
-], function(messages, mNavigatorRenderer, i18nUtil, Deferred, EventTarget, objects, PageUtil, mMetrics) {
+], function(messages, localStorage, mNavigatorRenderer, i18nUtil, Deferred, EventTarget, objects, PageUtil, mMetrics) {
 
 	function Idle(options){
 		this._document = options.document || document;

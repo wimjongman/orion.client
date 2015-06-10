@@ -10,7 +10,7 @@
  ******************************************************************************/
 
 /*eslint-env browser, amd*/
-define(['require', 'orion/Deferred', 'orion/xhr', 'orion/metrics'], function(require, Deferred, xhr, mMetrics){
+define(['require', 'orion/localStorage!', 'orion/Deferred', 'orion/xhr', 'orion/metrics'], function(require, localStorage, Deferred, xhr, mMetrics){
 
 	/**
 	 * Constructs a new preferences instance. This constructor is not

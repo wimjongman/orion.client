@@ -11,10 +11,11 @@
 /*eslint-env browser, amd*/
 define([
 	'i18n!orion/widgets/nls/messages',
+	'orion/localStorage!',
 	'orion/webui/littlelib',
 	'orion/PageLinks',
 	'orion/webui/dropdown'
-], function(messages, lib, PageLinks, Dropdown) {
+], function(messages, localStorage, lib, PageLinks, Dropdown) {
 	
 	function UserMenu(options) {
 		this._displaySignOut = true;

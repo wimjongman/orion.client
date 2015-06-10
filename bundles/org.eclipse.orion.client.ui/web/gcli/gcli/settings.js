@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-define(function(require, exports, module) {
+define('orion/localStorage!', function(localStorage, require, exports, module) {
 
 'use strict';
 
 var util = require('util/util');
 var types = require('gcli/types');
+
 
 
 /**

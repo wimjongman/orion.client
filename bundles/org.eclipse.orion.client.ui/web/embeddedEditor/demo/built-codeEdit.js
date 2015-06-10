@@ -10,8 +10,8 @@
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
 /*eslint-env browser, amd*/
-define(['embeddedEditor/builder/embeddedEditor'],
-function(mEmbeddedEditor) {
+define(['embeddedEditor/builder/embeddedEditor', 'orion/localStorage!'],
+function(mEmbeddedEditor, localStorage) {
 	var defaultPluginURLs = [
 		"../../javascript/plugins/javascriptPlugin_embed_dev.html",
 		"../../webtools/plugins/webToolsPlugin_embed_dev.html",

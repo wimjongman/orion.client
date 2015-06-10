@@ -11,10 +11,11 @@
 /*eslint-env browser, amd*/
 define([
 	'orion/EventTarget',
+	'orion/localStorage!',
 	'orion/util',
 	'orion/metrics',
 	'orion/webui/littlelib'
-], function(EventTarget, util, metrics, lib) {
+], function(EventTarget, localStorage, util, metrics, lib) {
 
 	var ORIENTATION_HORIZONTAL = 1;
 	var ORIENTATION_VERTICAL = 2;

@@ -13,6 +13,7 @@
 
 define([
 	'i18n!orion/edit/nls/messages',
+	'orion/localStorage!',
 	'orion/sidebar',
 	'orion/inputManager',
 	'orion/commands',
@@ -49,7 +50,7 @@ define([
 	'orion/webui/splitter',
 	'orion/webui/tooltip'
 ], function(
-	messages, Sidebar, mInputManager, mCommands, mGlobalCommands,
+	messages, localStorage, Sidebar, mInputManager, mCommands, mGlobalCommands,
 	mTextModel, mUndoStack,
 	mFolderView, mEditorView, mPluginEditorView , mMarkdownView, mMarkdownEditor,
 	mCommandRegistry, mContentTypes, mFileClient, mFileCommands, mEditorCommands, mSelection, mStatus, mProgress, mOperationsClient, mOutliner, mDialogs, mExtensionCommands, ProjectCommands, mSearchClient,

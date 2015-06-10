@@ -11,9 +11,10 @@
 /*eslint-env browser, amd, mocha*/
 define([
 	"chai/chai",
+	'orion/localStorage!',
 	"orion/Deferred",
 	"mocha/mocha"
-], function(chai, Deferred) {
+], function(chai, localStorage, Deferred) {
 	var assert = chai.assert;
 
 	function saveStorage(storage) {
