@@ -465,7 +465,11 @@ define([
 				that.recordSession();
 			};
 			inputManager.addEventListener("InputChanging", recordListener); //$NON-NLS-0$
-			window.addEventListener("beforeunload", recordListener); //$NON-NLS-0$
+			if (typeof(window) !== "undefined" && typeof(window.beforeunload) !== "undefined") {
+				window.addEventListener("beforeunload", recordListener);
+			} else if (typeof(chrome) !== "undefined" && typeof(chrome.runtime) !== "undefined" && typeof(chrome.runtime.onSuspend) !== "undefined") {
+				chrome.runtime.onSuspend.addListener(recordListener);
+			}
 			inputManager.addEventListener("InputChanged", function(event) { //$NON-NLS-0$
 				that.loadSession(event);
 				var textView = editor.getTextView();

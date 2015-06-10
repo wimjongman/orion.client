@@ -810,7 +810,7 @@ objects.mixin(EditorSetup.prototype, {
 			this.setInput(PageUtil.hash());
 		}.bind(this));
 
-		window.onbeforeunload = function() {
+		var unloadFunction = function() {
 			var dirty, autoSave;
 			this.editorViewers.forEach(function(viewer) {
 				var editor = viewer.editor;
@@ -824,6 +824,11 @@ objects.mixin(EditorSetup.prototype, {
 			});
 			return dirty ? (autoSave ? messages.unsavedAutoSaveChanges : messages.unsavedChanges) : undefined;
 		}.bind(this);
+		if (typeof(window) !== "undefined" && typeof(window.onbeforeunload) !== "undefined") {
+			window.onbeforeunload = unloadFunction;
+		} else if (typeof(chrome) !== "undefined" && typeof(chrome.runtime) !== "undefined" && typeof(chrome.runtime.onSuspend) !== "undefined") {
+			chrome.runtime.onSuspend.addListener(unloadFunction);
+		}
 	},
 
 	renderToolbars: function(metadata) {
