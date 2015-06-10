@@ -10,7 +10,9 @@
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
 /*eslint-env browser, amd*/
-define(function(){
+define(["orion/URL-shim"], function(){
+	var href = window.location.href;
+	var pageURL = new URL(href);
 	function hash() {
 		/* See https://bugzilla.mozilla.org/show_bug.cgi?id=483304 */
 		var result = window.location.href.split("#")[1]; //$NON-NLS-0$
@@ -45,19 +47,14 @@ define(function(){
 	var httpOrHttps = new RegExp("^http[s]?","i");
 
 	function validateURLScheme(url, optAllowedSchemes) {
-		var absoluteURL = url;
-		if (url.indexOf("://") === -1) { //$NON-NLS-0$
-			var temp = document.createElement('a'); //$NON-NLS-0$
-			temp.href = url;
-	        absoluteURL = temp.href;
-		}
+		var absoluteURL = new URL(url, href);
 		var match = false;
 		if (optAllowedSchemes) {
 			match = optAllowedSchemes.some(function(scheme){
-				return new RegExp("^" + scheme + ":", "i").test(absoluteURL);
+				return new RegExp("^" + scheme + ":", "i").test(absoluteURL.protocol);
 			});
 		} else {
-			match = httpOrHttps.test(absoluteURL);
+			match = absoluteURL.protocol === pageURL.protocol || httpOrHttps.test(absoluteURL.protocol);
 		}
 		if (match) {
 			return url;
