@@ -12,14 +12,14 @@
 /*eslint-env browser, amd, node*/
 (function(root, factory) { // UMD
     if (typeof define === "function" && define.amd) { //$NON-NLS-0$
-        define(["orion/Deferred"], factory);
+        define(["orion/Deferred", "orion/localStorage!"], factory);
     } else if (typeof exports === "object") { //$NON-NLS-0$
         module.exports = factory(require("orion/Deferred"));
     } else {
         root.orion = root.orion || {};
         root.orion.PluginProvider = factory(root.orion.Deferred);
     }
-}(this, function(Deferred) {
+}(this, function(Deferred, localStorage) {
     function ObjectReference(objectId, methods) {
         this.__objectId = objectId;
         this.__methods = methods;
