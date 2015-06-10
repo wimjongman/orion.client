@@ -67,7 +67,7 @@ define([
 			}
 		});
 
-		describe.skip("DISABLING FOR NOW test storage eventing", function() {
+		it.skip("DISABLING FOR NOW test storage eventing", function() {
 			var d = new Deferred();	
 			function handleStorage(event) {
 				event = event || window.event;
