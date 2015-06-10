@@ -6,7 +6,7 @@
  */
 chrome.app.runtime.onLaunched.addListener(function(launchData) {
   chrome.app.window.create(
-    'orionClient/edit/edit.html',
+    'orionClient/js-tests/core/coreTests.html',
     {
       id: 'mainWindow',
       bounds: {width: 800, height: 600}
