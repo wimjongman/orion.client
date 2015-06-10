@@ -343,9 +343,7 @@ define(["orion/util"], function(util) {
 	 * @param {Event} event
 	 */
 	function stop(event) {
-		if (window.document.all) { 
-			event.keyCode = 0;
-		}
+		event.keyCode = 0;
 		if (event.preventDefault) {
 			event.preventDefault();
 			event.stopPropagation();
