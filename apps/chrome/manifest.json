@@ -14,7 +14,7 @@
     "128": "assets/icon_128.png"
   },
 
-  "permissions": ["storage"],
+  "permissions": ["storage", {"fileSystem": ["write", "retainEntries", "directory"]} ],
 
   "app": {
     "background": {
