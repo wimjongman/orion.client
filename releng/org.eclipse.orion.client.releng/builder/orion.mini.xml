@@ -47,6 +47,7 @@
 	<scriptdef name="stageBundles" language="javascript" src="${builder}/scripts/stageBundles.js">
 		<attribute name="buildfile" />
 		<attribute name="todir" />
+		<attribute name="verbose" />
 	</scriptdef>
 
 	<scriptdef name="copyBackBundles" language="javascript" src="${builder}/scripts/copyBackBundles.js">
@@ -409,13 +410,23 @@
 
 	<target name="buildChromeApp" depends="checkDirs, cleanStaging">
 		<mkdir dir="${staging}" />
-		<!-- Stage files for optimization -->
 		<stageBundles todir="${staging}" buildfile="${buildConfig}" />
 
 		<echo message="Copy overrides..." />
 		<copy todir="${staging}" overwrite="true" includeEmptyDirs="false">
 			<fileset dir="${buildDirectory}/apps/chrome/overrides" includes="**/*.pref, **/*.js, **/*.html, **/*.css" />
 		</copy>
+
+		<echo message="Remove junk..." />
+		<delete includeemptydirs="true">
+			<fileset dir="${staging}" defaultexcludes="false">
+				<include name="androidapp/**" />
+				<include name="embeddedEditor/**" />
+				<include name="globalization/**" />
+				<include name="examplePages/**" />
+				<include name="webapp/**" />
+			</fileset>
+		</delete>
 	</target>
 
 	<target name="requirejs" depends="checkDirs, cleanStaging, cleanOptimized">
@@ -428,7 +439,7 @@
 		</antcall>
 
 		<!-- Stage files for optimization -->
-		<stageBundles todir="${staging}" buildfile="${buildConfig}" />
+		<stageBundles todir="${staging}" buildfile="${buildConfig}" verbose="true" />
 
 		<!-- build Orion pages and plugins (unless skipOrionUI is set) -->
 		<antcall target="orionOptimize">

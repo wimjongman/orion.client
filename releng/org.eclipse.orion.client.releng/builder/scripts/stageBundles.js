@@ -26,6 +26,7 @@
 var Project = Packages.org.apache.tools.ant.Project;
 var buildFile = attributes.get("buildfile");
 var todir = attributes.get("todir");
+var verbose = /^(true|yes)$/i.test(attributes.get("verbose")) ? true : false;
 
 if (!buildFile || !todir)
 	throw new Error("Missing attribute");
@@ -52,6 +53,6 @@ filesets.forEach(function(fileset, i) {
 	task.addFileset(fileset);
 	task.setTodir(new Packages.java.io.File(todir));
 	task.setOverwrite(true); // overwrite destination files, even if newer
-	task.setVerbose(true);
+	task.setVerbose(verbose);
 	task.perform();
 });
