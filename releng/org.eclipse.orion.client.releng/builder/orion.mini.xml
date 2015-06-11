@@ -411,6 +411,11 @@
 		<mkdir dir="${staging}" />
 		<!-- Stage files for optimization -->
 		<stageBundles todir="${staging}" buildfile="${buildConfig}" />
+
+		<echo message="Copy overrides..." />
+		<copy todir="${staging}" overwrite="true" includeEmptyDirs="false">
+			<fileset dir="${buildDirectory}/apps/chrome/overrides" includes="**/*.pref, **/*.js, **/*.html, **/*.css" />
+		</copy>
 	</target>
 
 	<target name="requirejs" depends="checkDirs, cleanStaging, cleanOptimized">

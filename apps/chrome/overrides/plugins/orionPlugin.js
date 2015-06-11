@@ -12,8 +12,7 @@
 /*eslint-env browser, amd*/
 define([
 	"orion/plugin", 
-	"plugins/fileClientPlugin",
-	"plugins/authenticationPlugin",
+	"plugins/chromeFileClientPlugin",
 	"plugins/jslintPlugin",
 	"plugins/googleAnalyticsPlugin",
 	"plugins/languageToolsPlugin",
