@@ -221,16 +221,40 @@
     init: function() { this.origin = cx.curOrigin; }
   });
 
-  var constraint = exports.constraint = function(props, methods) {
-    var body = "this.init();";
-    props = props ? props.split(", ") : [];
-    for (var i = 0; i < props.length; ++i)
-      body += "this." + props[i] + " = " + props[i] + ";";
-    var ctor = Function.apply(null, props.concat([body]));
-    ctor.prototype = Object.create(Constraint.prototype);
-    for (var m in methods) if (methods.hasOwnProperty(m)) ctor.prototype[m] = methods[m];
-    return ctor;
-  };
+  // Check if `eval` is forbidden
+  var canEval = (function() {
+    try {
+      Function("");
+      return true;
+    } catch (e) {
+       return false;
+    }
+  }());
+  var constraint;
+  if (canEval) {
+    constraint = exports.constraint = function(props, methods) {
+      var body = "this.init();";
+      props = props ? props.split(", ") : [];
+      for (var i = 0; i < props.length; ++i)
+        body += "this." + props[i] + " = " + props[i] + ";";
+      var ctor = Function.apply(null, props.concat([body]));
+      ctor.prototype = Object.create(Constraint.prototype);
+      for (var m in methods) if (methods.hasOwnProperty(m)) ctor.prototype[m] = methods[m];
+      return ctor;
+    };
+  } else {
+    constraint = exports.constraint = function(props, methods) {
+      var ctor = function(/*propValues..*/) {
+        this.init();
+        props = props ? props.split(", ") : [];
+        for (var i = 0; i < props.length; i++)
+          this[props[i]] = arguments[i];
+      };
+      ctor.prototype = Object.create(Constraint.prototype);
+      for (var m in methods) if (methods.hasOwnProperty(m)) ctor.prototype[m] = methods[m];
+      return ctor;
+    }
+  }
 
   var PropIsSubset = constraint("prop, target", {
     addType: function(type, weight) {
