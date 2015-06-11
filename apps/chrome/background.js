@@ -6,10 +6,9 @@
  */
 chrome.app.runtime.onLaunched.addListener(function(launchData) {
   chrome.app.window.create(
-    'orionClient/edit/edit.html',
+    'index.html',
     {
-      id: 'mainWindow',
-      bounds: {width: 800, height: 600}
+      id: 'mainWindow'
     }
   );
 });
