@@ -64,7 +64,7 @@
         			onLoad(result);
         		});
         	} else {
-				onLoad(localStorage);
+				onLoad(typeof localStorage === "undefined" ? {} : localStorage); //$NON-NLS-1$
 			}
 	    }
     };
