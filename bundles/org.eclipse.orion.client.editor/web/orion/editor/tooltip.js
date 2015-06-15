@@ -429,8 +429,8 @@ function Tooltip (view) {
 					tooltipDiv.style.resize = "none"; //$NON-NLS-0$
 					tooltipDiv.style.top = (info.tooltipArea.top) + "px"; //$NON-NLS-0$
 					tooltipDiv.style.left = (info.tooltipArea.left) + "px"; //$NON-NLS-0$
-					tooltipDiv.style.height = (info.tooltipArea.height - padding) + "px"; //$NON-NLS-0$
-					tooltipDiv.style.width = (info.tooltipArea.width - padding) + "px"; //$NON-NLS-0$
+					tooltipDiv.style.height = (info.tooltipArea.height) + "px"; //$NON-NLS-0$
+					tooltipDiv.style.width = (info.tooltipArea.width) + "px"; //$NON-NLS-0$
 					return info.tooltipArea;
 			}
 			
@@ -452,7 +452,7 @@ function Tooltip (view) {
 			var defWidth = viewportWidth;
 			if (!info.allowFullWidth){
 				defWidth = Math.min(viewportWidth/2, 600);
-				var defHeight = Math.min(viewportHeight/2, 250);
+				var defHeight = Math.min(viewportHeight/2, 450);
 				tipRect.width = Math.min(tipRect.width, defWidth);
 				tipRect.height = Math.min(tipRect.height, defHeight);
 			}
@@ -529,10 +529,10 @@ function Tooltip (view) {
 			tipRect.maxHeight = Math.min(viewportHeight + viewportTop - tipRect.top, viewportHeight);
 			
 			// Adjust sizes for div padding, but not the actual tooltip box.
-			tooltipDiv.style.maxWidth = (tipRect.maxWidth - padding) + "px"; //$NON-NLS-0$
-			tooltipDiv.style.maxHeight = (tipRect.maxHeight - padding) + "px"; //$NON-NLS-0$
-			tooltipDiv.style.width = (tipRect.width - padding) + "px"; //$NON-NLS-1$
-			tooltipDiv.style.height = (tipRect.height - padding) + "px"; //$NON-NLS-1$
+			tooltipDiv.style.maxWidth = (tipRect.maxWidth) + "px"; //$NON-NLS-0$
+			tooltipDiv.style.maxHeight = (tipRect.maxHeight) + "px"; //$NON-NLS-0$
+			tooltipDiv.style.width = (tipRect.width) + "px"; //$NON-NLS-1$
+			tooltipDiv.style.height = (tipRect.height) + "px"; //$NON-NLS-1$
 			tooltipDiv.style.left = tipRect.left + "px"; //$NON-NLS-0$
 			tooltipDiv.style.top = tipRect.top + "px"; //$NON-NLS-0$
 			return tipRect;
