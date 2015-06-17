@@ -36,23 +36,24 @@ define(["orion/xhr", "orion/Deferred", "orion/encoding-shim", "orion/URL-shim"],
 		},
 		fetchChildren: function(location) {
 			var fetchLocation = location;
+			var that = this;
+
 			if (fetchLocation===this.fileBase) {
 				return new Deferred().resolve([]);
 			}
-			//If fetch location does not have ?depth=, then we need to add the depth parameter. Otherwise server will not return any children
-			if (fetchLocation.indexOf("?depth=") === -1) { //$NON-NLS-0$
-				fetchLocation += "?depth=1"; //$NON-NLS-0$
-			}
-			return xhr("GET", fetchLocation,{ //$NON-NLS-0$
-				headers: {
-					"Orion-Version": "1", //$NON-NLS-0$  //$NON-NLS-1$
-					"Content-Type": "charset=UTF-8" //$NON-NLS-0$  //$NON-NLS-1$
-				},
-				timeout: GIT_TIMEOUT
-			}).then(function(result) {
-				var jsonData = result.response ? JSON.parse(result.response) : {};
-				return jsonData.Children || [];
+
+			return this.readEntries(this.rootDir).then(function(entries) {
+				for (var i = 0; i < entries.length; i++) {
+					if (entries[i].fullPath === location.substring(that.fileBase.length, location.indexOf("?") || location.length)) {
+						console.out("HI");
+						return Deferred.when(that.loadEntry(entries[i]), d.resolve, d.reject);
+					}	
+				}
 			});
+
+		},
+		_getEntry: function(location) {
+			return resolveEntryURL(location || this._rootLocation);
 		},
 		loadEntry: function(dirEntry, getChildren) {
 			var that = this;
@@ -110,7 +111,7 @@ define(["orion/xhr", "orion/Deferred", "orion/encoding-shim", "orion/URL-shim"],
 			result.Name = entry.name;
 			result.Directory = entry.isDirectory;
 			if (entry.isDirectory) {
-				result.ChildrenLocation = result.Location + "/?depth=1";
+				result.ChildrenLocation = result.Location;
 			}
 			return result;
 		},
