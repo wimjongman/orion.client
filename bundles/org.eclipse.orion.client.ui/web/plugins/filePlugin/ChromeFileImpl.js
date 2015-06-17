@@ -65,6 +65,7 @@ define(["orion/xhr", "orion/Deferred", "orion/encoding-shim", "orion/URL-shim"],
 					if (children) {
 						result.Children = children;
 					}
+					return result;
 				});	
 			}
 			return result;
@@ -76,26 +77,11 @@ define(["orion/xhr", "orion/Deferred", "orion/encoding-shim", "orion/URL-shim"],
 			var that = this;
 			var d = new Deferred();
 
-			function createWS(dirEntry) {
-					var result = that.createJSONFromEntry(dirEntry);
-			 		if (dirEntry.isDirectory) {
-						that.readEntries(dirEntry).then(function(entries) {
-							//return Deferred.all(entries.map(that.createJSONFromEntry));
-							return entries.map(that.createJSONFromEntry);
-						}).then(function(children) {
-							if (children) {
-								result.Children = children;
-							}
-							return d.resolve(result);
-						});
-					}
-			};
-
 			chrome.storage.local.get("loadedDir", function (value) {
 				if (value.loadedDir) {
 					chrome.fileSystem.restoreEntry(value.loadedDir, function(restoredEntry) {
-						createWS(restoredEntry);
-						//Deferred.when(that.loadEntry(restoredEntry), d.resolve, d.reject);
+						that.rootDir = restoredEntry;
+						Deferred.when(that.loadEntry(restoredEntry), d.resolve, d.reject);
 					});
 				} else {
 					chrome.fileSystem.chooseEntry(
@@ -108,8 +94,8 @@ define(["orion/xhr", "orion/Deferred", "orion/encoding-shim", "orion/URL-shim"],
 				 			return;
 				 		}
 				 			chrome.storage.local.set({"loadedDir": chrome.fileSystem.retainEntry(dirEntry)});
-				 			createWS(dirEntry);
-				 			//Deferred.when(that.loadEntry(dirEntry), d.resolve, d.reject);
+				 			that.rootDir = dirEntry;
+				 			Deferred.when(that.loadEntry(dirEntry), d.resolve, d.reject);
 						});
 				}
 
@@ -151,49 +137,39 @@ define(["orion/xhr", "orion/Deferred", "orion/encoding-shim", "orion/URL-shim"],
 		read: function(location, isMetadata) {
 			var that = this;
 			var d = new Deferred();
-			if (isMetadata) {
+		
 
-			} else {
-
-			}
-
-			chrome.storage.local.get("loadedDir", function (value) {
-				if (value.loadedDir) {
-					chrome.fileSystem.restoreEntry(value.loadedDir, function(restoredEntry) {
-						that.readEntries(restoredEntry).then(function(entries) {
-							
-							for (var i = 0; i < entries.length; i++) {
-								if (entries[i].fullPath === location.substring(that.fileBase.length, location.indexOf("?") || location.length)) {
-									console.out("HI");
-									//Deferred.when(that.loadEntry(entries[i]), d.resolve, d.reject);
-								}	
-							}
-						});
+			if (this.rootDir) {
+				if (isMetadata) {
+					this.readEntries(this.rootDir).then(function(entries) {
+						for (var i = 0; i < entries.length; i++) {
+							if (entries[i].fullPath === location.substring(that.fileBase.length, location.indexOf("?") || location.length)) {
+								console.out("HI");
+								Deferred.when(that.loadEntry(entries[i]), d.resolve, d.reject);
+							}	
+						}
 					});
+				} else {
+
 				}
-			});
-			// chrome.storage.local.get("loadedDir", function (value) {
-			// 	if (value.loadedDir) {
-			// 		chrome.fileSystem.restoreEntry(value.loadedDir, function(restoredEntry) {
-			// 			that.readEntries(restoredEntry).then(function(entries) {
-			// 				// for (var i = 0; i < entries.length; i++) {
-			// 				// 	if (entries[i].fullPath === location.substring(that.fileBase.length)) {
-			// 				// 		entries[i].file(function(file) {
-			// 				// 			var reader = new FileReader();
-			// 				// 			reader.readAsText(file);
-			// 				// 			reader.onload = function() {
-			// 				// 				d.resolve(reader.result);
-			// 				// 			};
-			// 				// 			reader.onerror = function() {
-			// 				// 				d.reject(reader.error);
-			// 				// 			};
-			// 				// 		});
-			// 				// 	}
-			// 				// }
-			// 			});
-			// 		});
-			// 	}
-			// });
+			} else {
+				chrome.storage.local.get("loadedDir", function (value) {
+					if (value.loadedDir) {
+						chrome.fileSystem.restoreEntry(value.loadedDir, function(restoredEntry) {
+							that.readEntries(restoredEntry).then(function(entries) {
+								for (var i = 0; i < entries.length; i++) {
+									if (entries[i].fullPath === location.substring(that.fileBase.length, location.indexOf("?") || location.length)) {
+										console.out("HI");
+										Deferred.when(that.loadEntry(entries[i]), d.resolve, d.reject);
+									}	
+								}
+							});
+						});
+					}
+				});
+			}
+			
+		
 			return d;
 
 			
