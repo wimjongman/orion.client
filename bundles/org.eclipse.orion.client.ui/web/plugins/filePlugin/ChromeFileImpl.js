@@ -13,13 +13,27 @@
 /*global URL*/
 define(["orion/xhr", "orion/Deferred", "orion/encoding-shim", "orion/URL-shim"], function(xhr, Deferred) {
 	
-	function GitFileImpl(fileBase) {
+	function ChromeFileImpl(fileBase) {
 		this.fileBase = fileBase;
 	}
 	
-	var GIT_TIMEOUT = 60000;
 
-	GitFileImpl.prototype = {
+	ChromeFileImpl.prototype = {
+		readEntries: function (dirEntry) {
+			var deferred = new Deferred();
+			var reader = dirEntry.createReader();
+			var entries = [];
+			function handleEntries(results) {
+				if (results.length) {
+					entries = entries.concat(Array.prototype.slice.call(results));
+					reader.readEntries(handleEntries, deferred.reject);
+				} else {
+					deferred.resolve(entries);
+				}
+			}
+			reader.readEntries(handleEntries, deferred.reject);
+			return deferred;
+		},
 		fetchChildren: function(location) {
 			var fetchLocation = location;
 			if (fetchLocation===this.fileBase) {
@@ -40,32 +54,89 @@ define(["orion/xhr", "orion/Deferred", "orion/encoding-shim", "orion/URL-shim"],
 				return jsonData.Children || [];
 			});
 		},
+		loadEntry: function(dirEntry, getChildren) {
+			var that = this;
+			var result = this.createJSONFromEntry(dirEntry);
+			if (dirEntry.isDirectory) {
+				return this.readEntries(dirEntry).then(function(entries) {
+					//return Deferred.all(entries.map(that.createJSONFromEntry));
+					return entries.map(that.createJSONFromEntry);
+				}).then(function(children) {
+					if (children) {
+						result.Children = children;
+					}
+				});	
+			}
+			return result;
+		},
 		loadWorkspaces: function() {
-			return this.loadWorkspace(this._repoURL);
+			return this.loadWorkspace("");
 		},
 		loadWorkspace: function(location) {
-			if (location === "/gitapi/") {
-				location += "tree/";
-			}
-			
-			return xhr("GET", location,{ //$NON-NLS-0$
-				headers: {
-					"Orion-Version": "1", //$NON-NLS-0$  //$NON-NLS-1$
-					"Content-Type": "charset=UTF-8" //$NON-NLS-0$  //$NON-NLS-1$
-				},
-				timeout: GIT_TIMEOUT
-			}).then(function(result) {
-				var jsonData = result.response ? JSON.parse(result.response) : {};
-				return jsonData || {};
+			var that = this;
+			var d = new Deferred();
+
+			function createWS(dirEntry) {
+					var result = that.createJSONFromEntry(dirEntry);
+			 		if (dirEntry.isDirectory) {
+						that.readEntries(dirEntry).then(function(entries) {
+							//return Deferred.all(entries.map(that.createJSONFromEntry));
+							return entries.map(that.createJSONFromEntry);
+						}).then(function(children) {
+							if (children) {
+								result.Children = children;
+							}
+							return d.resolve(result);
+						});
+					}
+			};
+
+			chrome.storage.local.get("loadedDir", function (value) {
+				if (value.loadedDir) {
+					chrome.fileSystem.restoreEntry(value.loadedDir, function(restoredEntry) {
+						createWS(restoredEntry);
+						//Deferred.when(that.loadEntry(restoredEntry), d.resolve, d.reject);
+					});
+				} else {
+					chrome.fileSystem.chooseEntry(
+					 {
+					 	type: 'openDirectory'
+					 }, 
+					 function(dirEntry) {
+				 		if (!dirEntry) {
+				 			//no file
+				 			return;
+				 		}
+				 			chrome.storage.local.set({"loadedDir": chrome.fileSystem.retainEntry(dirEntry)});
+				 			createWS(dirEntry);
+				 			//Deferred.when(that.loadEntry(dirEntry), d.resolve, d.reject);
+						});
+				}
+
 			});
+
+			
+			return d;
+		},
+		createJSONFromEntry: function(entry) {
+			var result = {};
+			result.Location = "/orionClient/chrome" + entry.fullPath;
+			result.Name = entry.name;
+			result.Directory = entry.isDirectory;
+			if (entry.isDirectory) {
+				result.ChildrenLocation = result.Location + "/?depth=1";
+			}
+			return result;
+		},
+		loadDirectory: function(theEntry) {
+			var  dirEnt = theEntry;
+			if (dirEnt.isDirectory) {
+				var dirReader = dirEnt.createReader();
+				var entries = [];
+
+			}
 		},
 		createProject: function(url, projectName, serverPath, create) {
-			throw new Error("Not supported"); //$NON-NLS-0$ 
-		},
-		createFolder: function(parentLocation, folderName) {
-			throw new Error("Not supported"); //$NON-NLS-0$ 
-		},
-		createFile: function(parentLocation, fileName) {
 			throw new Error("Not supported"); //$NON-NLS-0$ 
 		},
 		deleteFile: function(location) {
@@ -78,22 +149,84 @@ define(["orion/xhr", "orion/Deferred", "orion/encoding-shim", "orion/URL-shim"],
 			throw new Error("Not supported"); //$NON-NLS-0$ 
 		},
 		read: function(location, isMetadata) {
-			var url = new URL(location, window.location);
+			var that = this;
+			var d = new Deferred();
 			if (isMetadata) {
-				url.query.set("parts", "meta"); //$NON-NLS-0$  //$NON-NLS-1$
+
+			} else {
+
 			}
-			return xhr("GET", url.href, {
-				timeout: GIT_TIMEOUT,
-				headers: { "Orion-Version": "1" }, //$NON-NLS-0$  //$NON-NLS-1$
-				log: false
-			}).then(function(result) {
-				if (isMetadata) {
-					return result.response ? JSON.parse(result.response) : null;
-				} else {
-					return result.response;
+
+			chrome.storage.local.get("loadedDir", function (value) {
+				if (value.loadedDir) {
+					chrome.fileSystem.restoreEntry(value.loadedDir, function(restoredEntry) {
+						that.readEntries(restoredEntry).then(function(entries) {
+							
+							for (var i = 0; i < entries.length; i++) {
+								if (entries[i].fullPath === location.substring(that.fileBase.length, location.indexOf("?") || location.length)) {
+									console.out("HI");
+									//Deferred.when(that.loadEntry(entries[i]), d.resolve, d.reject);
+								}	
+							}
+						});
+					});
 				}
 			});
+			// chrome.storage.local.get("loadedDir", function (value) {
+			// 	if (value.loadedDir) {
+			// 		chrome.fileSystem.restoreEntry(value.loadedDir, function(restoredEntry) {
+			// 			that.readEntries(restoredEntry).then(function(entries) {
+			// 				// for (var i = 0; i < entries.length; i++) {
+			// 				// 	if (entries[i].fullPath === location.substring(that.fileBase.length)) {
+			// 				// 		entries[i].file(function(file) {
+			// 				// 			var reader = new FileReader();
+			// 				// 			reader.readAsText(file);
+			// 				// 			reader.onload = function() {
+			// 				// 				d.resolve(reader.result);
+			// 				// 			};
+			// 				// 			reader.onerror = function() {
+			// 				// 				d.reject(reader.error);
+			// 				// 			};
+			// 				// 		});
+			// 				// 	}
+			// 				// }
+			// 			});
+			// 		});
+			// 	}
+			// });
+			return d;
+
+			
 		},
+		/**
+		 * Creates a folder.
+		 * @param {String} parentLocation The location of the parent folder
+		 * @param {String} folderName The name of the folder to create
+		 * @return {Object} JSON representation of the created folder
+		 */
+		createFolder: function(parentLocation, folderName) {
+			var that = this;
+			return this._getEntry(parentLocation).then(function(dirEntry) {
+				var d = new Deferred();
+				dirEntry.getDirectory(folderName, {create:true}, function() {d.resolve(that.read(parentLocation + "/" + folderName, true));}, d.reject);
+				return d;
+			});
+		},
+		/**
+		 * Create a new file in a specified location. Returns a deferred that will provide
+		 * The new file object when ready.
+		 * @param {String} parentLocation The location of the parent folder
+		 * @param {String} fileName The name of the file to create
+		 * @return {Object} A deferred that will provide the new file object
+		 */
+		createFile: function(fileName) {
+			var that = this;
+			
+			var d = new Deferred();
+			fileName.getFile(fileName, {create:true}, function() {d.resolve(that.read(parentLocation + "/" + fileName, true));}, d.reject);
+			return d;
+			
+		}, 
 		write: function(location, contents, args) {
 			throw new Error("Not supported"); //$NON-NLS-0$ 
 		},
@@ -115,7 +248,7 @@ define(["orion/xhr", "orion/Deferred", "orion/encoding-shim", "orion/URL-shim"],
 			throw new Error("Not supported"); //$NON-NLS-0$ 
 		}
 	};
-	GitFileImpl.prototype.constructor = GitFileImpl;
+	ChromeFileImpl.prototype.constructor = ChromeFileImpl;
 
-	return GitFileImpl;
+	return ChromeFileImpl;
 });
