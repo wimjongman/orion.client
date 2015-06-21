@@ -10,7 +10,7 @@
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
 /*eslint-env browser, amd*/
-/*global confirm*/
+/*global confirm chrome*/
 
 define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/i18nUtil', 'orion/uiUtils', 'orion/fileUtils', 'orion/commands', 'orion/fileDownloader',
 	'orion/commandRegistry', 'orion/contentTypes', 'orion/compare/compareUtils', 
@@ -1309,7 +1309,11 @@ define(['i18n!orion/navigate/nls/messages', 'orion/webui/littlelib', 'orion/i18n
 									}
 								}
 								if (prompt) {
-									name = window.prompt(i18nUtil.formatMessage(messages['EnterName'], selectedItem.Name), i18nUtil.formatMessage(messages['Copy of ${0}'], selectedItem.Name));
+									if (window.chrome && chrome.app && chrome.app.runtime) {
+										name+= " (1)";
+									} else {									
+										name = window.prompt(i18nUtil.formatMessage(messages['EnterName'], selectedItem.Name), i18nUtil.formatMessage(messages['Copy of ${0}'], selectedItem.Name));
+									}
 									// user cancelled?  don't copy this one
 									if (!name) {
 										location = null;

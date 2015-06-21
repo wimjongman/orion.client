@@ -511,11 +511,7 @@ define([
 		var deferred = new Deferred();
 		var fetchLocation = projectMetadata.ContentLocation;
 		if(fetchLocation) {
-			if (fetchLocation.indexOf("?depth=") === -1) { //$NON-NLS-0$
-				fetchLocation += "?depth=1"; //$NON-NLS-0$
-			}
-			this.fileClient.read(fetchLocation, true).then(function(projectDir){
-				var children = projectDir.Children;
+			this.fileClient.fetchChildren(fetchLocation).then(function(children){
 				for(var i=0; i<children.length; i++){
 					if(children[i].Name && children[i].Name===this._launchConfigurationsDir){
 						deferred.resolve(children[i]);
@@ -525,7 +521,7 @@ define([
 				if(create){
 					this.fileClient.createFolder(projectMetadata.ContentLocation, this._launchConfigurationsDir).then(
 						function(result){
-							result.parent = projectDir;
+							result.parent = projectMetadata.fileMetadata;
 							deferred.resolve(result);
 						}, deferred.reject);
 				} else {

@@ -10,6 +10,7 @@
  *******************************************************************************/
 
 /*eslint-env browser, amd*/
+/*global chrome*/
 define([], function(){
 	/**
 	 * Constructs a new dialog service. Clients should obtain a dialog service by
@@ -32,7 +33,11 @@ define([], function(){
 		 * @param {Function} onDone The function to invoke upon confirmation.
 		 */
 		 confirm : function(msg, onDone) {
-		 onDone(window.confirm(msg));
+		 	if (window.chrome && chrome.app && chrome.app.runtime) {
+		 		onDone(true);
+		 	} else {
+				onDone(window.confirm(msg));	 		
+		 	}
 		 },
 		 /**
 		 * Prompts the user to select one or more files

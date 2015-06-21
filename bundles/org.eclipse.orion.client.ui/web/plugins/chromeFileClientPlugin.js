@@ -10,7 +10,30 @@
  ******************************************************************************/
 
 /*eslint-env browser, amd*/
-define(["orion/Deferred", "orion/plugin", "plugins/filePlugin/ChromeFileImpl", 'i18n!orion/navigate/nls/messages', "domReady!"], function(Deferred, PluginProvider, ChromeFileServiceImpl, messages) {
+define(["orion/Deferred", "orion/plugin", "plugins/filePlugin/ChromeFileImpl", 'i18n!orion/navigate/nls/messages', "domReady!"], function(Deferred, PluginProvider, ChromeFileServiceImpl, messages) {	
+	function trace(implementation) {
+		var method;
+		var traced = {};
+		for (method in implementation) {
+			if (typeof implementation[method] === 'function') {
+				traced[method] = function(methodName) {
+					return function() {
+						console.log(methodName);
+						var arg;
+						for (arg in arguments) {
+							console.log(" [" + arg + "] " + arguments[arg]);
+						}
+						var result = implementation[methodName].apply(implementation, Array.prototype.slice.call(arguments));
+						Deferred.when(result, function(json) {
+							console.log(json);
+						});
+						return result;
+					};
+				}(method);
+			}
+		}
+		return traced;
+	}
 	
 	function connect() {
 		var headers = {
@@ -22,6 +45,7 @@ define(["orion/Deferred", "orion/plugin", "plugins/filePlugin/ChromeFileImpl", '
 		registerServiceProviders(pluginProvider);
 		pluginProvider.connect();
 	}
+
 
 	var tryParentRelative = true;
 	function makeParentRelative(location) {
@@ -41,22 +65,19 @@ define(["orion/Deferred", "orion/plugin", "plugins/filePlugin/ChromeFileImpl", '
 		}
 		return location;
 	}
-
-	function registerServiceProviders(provider) {
-		var fileBase = makeParentRelative(new URL("../chrome", self.location.href).href);
 	
+	function registerServiceProviders(provider) {
+		var fileBase = makeParentRelative(new URL("/files/", self.location.href).href);
 		var service = new ChromeFileServiceImpl(fileBase);
-		//provider.registerService("orion.core.file", trace(service), {
-		provider.registerService("orion.core.file", service, {
-			//Name: 'Orion Content',  // HACK  see https://bugs.eclipse.org/bugs/show_bug.cgi?id=386509
+		provider.registerService("orion.core.file", trace(service), {
+		//provider.registerService("orion.core.file", service, {
 			Name: messages['Orion Content'],
-			nls: 'orion/navigate/nls/messages',
 			top: fileBase,
 			ranking: -1,
 			pattern: fileBase
 		});
 	}
-
+	
 	return {
 		connect: connect,
 		registerServiceProviders: registerServiceProviders
