@@ -246,7 +246,9 @@
     constraint = exports.constraint = function(props, methods) {
       var ctor = function(/*propValues..*/) {
         this.init();
-        props = props ? props.split(", ") : [];
+        if (!Array.isArray(props)) {
+        	props = props ? props.split(", ") : [];
+        }
         for (var i = 0; i < props.length; i++)
           this[props[i]] = arguments[i];
       };
