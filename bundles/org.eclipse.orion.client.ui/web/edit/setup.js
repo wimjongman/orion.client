@@ -710,8 +710,13 @@ objects.mixin(EditorSetup.prototype, {
 		var href = this.computeNavigationHref({Location: loc}, {start: options.start, end: options.end});
 		if (!href)
 			return;
-			
-		var mode = typeof(options.mode) === 'string' ? options.mode : 'replace';
+		
+		var mode = 'replace'; //$NON-NLS-1$
+		if (this.editorCommands.triggerEvent) {
+			var e = this.editorCommands.triggerEvent;
+			mode = e.ctrlKey ? e.altKey ? "split" : "tab" : "replace"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		}
+		mode = typeof(options.mode) === 'string' ? options.mode : mode;
 		switch (mode) {
 			case 'replace':
 				window.location = href;

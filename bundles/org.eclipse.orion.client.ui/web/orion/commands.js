@@ -418,7 +418,11 @@ define([
 					if (dropdown){
 						dropdown.close(true);
 					}
+
+					// Cache the event that triggered this invocation					
+					commandInvocation.triggerEvent = e;
 					onClick.call(commandInvocation.handler, commandInvocation);
+					commandInvocation.triggerEvent = undefined;
 				}, false);
 				element.addEventListener("keydown", function(e) { //$NON-NLS-0$
 					if (e.keyCode === lib.KEY.ENTER || e.keyCode === lib.KEY.SPACE) {
@@ -529,6 +533,7 @@ define([
 			var copy =  new CommandInvocation(this.handler, this.items, this.userData, this.command, this.commandRegistry);
 			copy.domNode = this.domNode;
 			copy.domParent = this.domParent;
+			copy.triggerEvent = this.triggerEvent;
 			if (parameters) {
 				copy.parameters = parameters.makeCopy();
 			} else if (this.parameters) {

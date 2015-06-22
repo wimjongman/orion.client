@@ -746,6 +746,9 @@ define([
 					return !commandVisibleWhen || commandVisibleWhen(items);
 				};
 				options.callback = function(data) {
+					// track the event in editorCommands (openEditor will interpret this)
+					this.editorCommands.triggerEvent = data.triggerEvent;
+					
 					var editor = this.editor || that.editor;
 					var inputManager = this.inputManager || that.inputManager;
 					//TODO should all text editors have selection?
@@ -831,6 +834,7 @@ define([
 						};
 					}
 					progress.showWhile(serviceCall, i18nUtil.formatMessage(messages.running, options.name)).then(handleResult);
+//					this.editorCommands.triggerEvent = undefined;
 					return true;
 				};
 				return new mCommands.Command(options);
