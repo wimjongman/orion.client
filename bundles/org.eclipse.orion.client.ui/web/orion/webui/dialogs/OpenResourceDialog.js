@@ -59,7 +59,7 @@ define(['i18n!orion/widgets/nls/messages', 'orion/crawler/searchCrawler', 'orion
 		if (options.nameSearch !== undefined) {
 			this._nameSearch = options.nameSearch;
 		}
-		this._searchOnRoot = true;
+		this._searchOnRoot = false; // true;
 		this._fileService = this._searcher.getFileService();
 		if (!this._fileService) {
 			throw new Error(messages['Missing required argument: fileService']);

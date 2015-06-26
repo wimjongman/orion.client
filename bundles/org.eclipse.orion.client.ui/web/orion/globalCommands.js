@@ -396,7 +396,7 @@ define([
 		var serviceRegistry = options.serviceRegistry;
 		if (options.target) { // we have metadata
 			if (options.searchService) {
-				options.searchService.setLocationByMetaData(options.target);
+				options.searchService.setLocationByMetaData(options.target, {index: "last"});
 			}
 			if (options.fileService && !options.breadcrumbTarget && !options.staticBreadcrumb) {
 				fileSystemRootName = breadcrumbRootName ? breadcrumbRootName + " " : ""; //$NON-NLS-1$ //$NON-NLS-0$
