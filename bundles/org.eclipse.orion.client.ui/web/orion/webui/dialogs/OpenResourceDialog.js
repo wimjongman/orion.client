@@ -33,7 +33,7 @@ define(['i18n!orion/widgets/nls/messages', 'orion/crawler/searchCrawler', 'orion
 		'<div role="search">' + //$NON-NLS-0$
 			'<div><label id="fileNameMessage" for="fileName">${Type the name of a file to open (? = any character, * = any string):}</label></div>' + //$NON-NLS-0$
 			'<div><input id="fileName" type="text" class="openResourceDialogInput" style="min-width: 25em; width:90%;"/></div>' + //$NON-NLS-0$
-			'<div><input id="searchScope" type="checkbox" style="width: auto" class="openResourceDialogInput">${Search all Projects}</div>' + //$NON-NLS-0$
+			'<div><input id="searchScope" type="checkbox" style="width: auto" class="openResourceDialogInput"/><label for="searchScope">${Search all Projects}</label></input></div>' + //$NON-NLS-0$
 			'<div id="progress" style="padding: 2px 0 0; width: 100%;"><img src="'+ require.toUrl("../../../images/progress_running.gif") + '" class="progressPane_running_dialog" id="crawlingProgress"></img></div>' +  //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 			'<div id="results" style="max-height:250px; height:auto; overflow-y:auto;" aria-live="off"></div>' + //$NON-NLS-0$
 			'<div id="statusbar"></div>' + //$NON-NLS-0$
@@ -198,17 +198,16 @@ define(['i18n!orion/widgets/nls/messages', 'orion/crawler/searchCrawler', 'orion
 
 		var scope = messages["AnyProject"];
 		if (!isGlobalSearch) {
-			var sl = this._searcher.getSearchLocation();
-			if (sl) {
-				var parts = sl.split('/');
-				scope = "'" + parts[parts.length-2] + "'"; //$NON-NLS-2$ //$NON-NLS-1$
-			}			
+			scope = "\'" + this._searcher.getSearchLocationName() + "\'"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		
 		var newTitle = util.formatMessage(this.title, scope);
-		if (newTitle.length > 0) {
-			var titleDiv = lib.$("span", this.$frame); //$NON-NLS-1$
-			titleDiv.textContent = newTitle;
+		var titleDiv = lib.$("span", this.$frame); //$NON-NLS-1$
+		titleDiv.textContent = newTitle;
+		
+		// Hide the checkbox if this search must be global
+		if (this.forcedGlobalSearch()) {
+			this.$searchScope.parentNode.style.display = "none"; //$NON-NLS-1$
 		}
 	};
 
@@ -225,7 +224,17 @@ define(['i18n!orion/widgets/nls/messages', 'orion/crawler/searchCrawler', 'orion
 	};
 
 	/** @private */
+	OpenResourceDialog.prototype.forcedGlobalSearch = function() {
+		var loc = this._searcher.getSearchLocation();
+		var rootLoc = this._searcher.getSearchRootLocation();
+		return loc === rootLoc;
+	};
+
+	/** @private */
 	OpenResourceDialog.prototype.getSearchPref = function() {
+		if (this.forcedGlobalSearch())
+			return true;
+			
 		var globalSearch = localStorage.getItem("/searchScope") === 'true'; //$NON-NLS-0$
 		return globalSearch;
 	};
