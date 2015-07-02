@@ -33,6 +33,7 @@ define(['i18n!orion/widgets/nls/messages', 'orion/crawler/searchCrawler', 'orion
 		'<div role="search">' + //$NON-NLS-0$
 			'<div><label id="fileNameMessage" for="fileName">${Type the name of a file to open (? = any character, * = any string):}</label></div>' + //$NON-NLS-0$
 			'<div><input id="fileName" type="text" class="openResourceDialogInput" style="min-width: 25em; width:90%;"/></div>' + //$NON-NLS-0$
+			'<div><input id="searchScope" type="checkbox" style="width: auto" class="openResourceDialogInput">${Search all Projects}</div>' + //$NON-NLS-0$
 			'<div id="progress" style="padding: 2px 0 0; width: 100%;"><img src="'+ require.toUrl("../../../images/progress_running.gif") + '" class="progressPane_running_dialog" id="crawlingProgress"></img></div>' +  //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 			'<div id="results" style="max-height:250px; height:auto; overflow-y:auto;" aria-live="off"></div>' + //$NON-NLS-0$
 			'<div id="statusbar"></div>' + //$NON-NLS-0$
@@ -73,6 +74,17 @@ define(['i18n!orion/widgets/nls/messages', 'orion/crawler/searchCrawler', 'orion
 	
 	OpenResourceDialog.prototype._bindToDom = function(parent) {
 		var self = this;
+		
+		var gs = this.getSearchPref();
+		this.$searchScope.checked = gs;
+		this.updateTitle();
+		this.$searchScope.addEventListener("click", function(e) {
+			localStorage.setItem("/searchScope", this.$searchScope.checked);
+			
+			this.updateTitle();
+			this.doSearch();
+		}.bind(this));
+		
 		self.$crawlingProgress.style.display = "none"; //$NON-NLS-0$
 		if(this._nameSearch) {
 			this.$fileName.setAttribute("placeholder", messages["FileName FolderName"]);  //$NON-NLS-0$
@@ -181,6 +193,26 @@ define(['i18n!orion/widgets/nls/messages', 'orion/crawler/searchCrawler', 'orion
 	};
 
 	/** @private */
+	OpenResourceDialog.prototype.updateTitle = function() {
+		var isGlobalSearch = this.$searchScope.checked;
+
+		var scope = messages["AnyProject"];
+		if (!isGlobalSearch) {
+			var sl = this._searcher.getSearchLocation();
+			if (sl) {
+				var parts = sl.split('/');
+				scope = "'" + parts[parts.length-2] + "'"; //$NON-NLS-2$ //$NON-NLS-1$
+			}			
+		}
+		
+		var newTitle = util.formatMessage(this.title, scope);
+		if (newTitle.length > 0) {
+			var titleDiv = lib.$("span", this.$frame); //$NON-NLS-1$
+			titleDiv.textContent = newTitle;
+		}
+	};
+
+	/** @private */
 	OpenResourceDialog.prototype.checkSearch = function() {
 		clearTimeout(this._timeoutId);
 		var now = new Date().getTime();
@@ -190,6 +222,12 @@ define(['i18n!orion/widgets/nls/messages', 'orion/crawler/searchCrawler', 'orion
 		} else {
 			this._timeoutId = setTimeout(this.checkSearch.bind(this), 50); //$NON-NLS-0$
 		}
+	};
+
+	/** @private */
+	OpenResourceDialog.prototype.getSearchPref = function() {
+		var globalSearch = localStorage.getItem("/searchScope") === 'true'; //$NON-NLS-0$
+		return globalSearch;
 	};
 
 	/** @private */
@@ -220,6 +258,10 @@ define(['i18n!orion/widgets/nls/messages', 'orion/crawler/searchCrawler', 'orion
 		if (text) {
 			// Gives Webkit a chance to show the "Searching" message
 			var keyword = this._detectFolderKeyword(text);
+			
+			// Capture the checkbox state
+			this._searchOnRoot = this.$searchScope.checked;
+			
 			var searchParams = this._searcher.createSearchParams(keyword.keyword, this._nameSearch, this._searchOnRoot);
 			var renderFunction = this._searchRenderer.makeRenderFunction(this._contentTypeService, this.$results, false, this.decorateResult.bind(this));
 			this.currentSearch = renderFunction;

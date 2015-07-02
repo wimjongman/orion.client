@@ -712,9 +712,11 @@ define([
 				return;
 			}
 			var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
+			var prefs = serviceRegistry.getService("orion.core.preference"); //$NON-NLS-0$
 			var dialog = new openResource.OpenResourceDialog({
 				searcher: searcher,
 				progress: progress,
+				prefService: prefs,
 				searchRenderer: searcher.defaultRenderer,
 				onHide: function () {
 					showingResourceDialog = false;
