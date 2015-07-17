@@ -346,7 +346,11 @@ define([
 				} else {
 					_self.project = project;
 					_self.showViewMode(true);
-					openDefaultMode();
+					if (sidebar.getActiveViewModeId() === _self.id) {
+						_self.explorer.display(project);
+					} else {
+						openDefaultMode();
+					}
 				}
 			}, openDefaultMode);
 			var handleDisplay = function (event) {
@@ -382,6 +386,7 @@ define([
 				}
 			}
 		});
+		this.sidebar.addViewMode(this.id, this);
 	}
 	objects.mixin(ProjectNavViewMode.prototype, {
 		label: messages["Project"],

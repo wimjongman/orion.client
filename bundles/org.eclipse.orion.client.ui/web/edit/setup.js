@@ -358,6 +358,9 @@ objects.mixin(EditorViewer.prototype, {
 			this.pool.metadata = metadata;
 			var href = window.location.href;
 			this.activateContext.setActiveEditorViewer(this);
+			if (evt.input && evt.input.sidebar) {
+				this.sideBar.setViewMode(evt.input.sidebar);
+			}
 			this.commandRegistry.processURL(href);
 			if (this.curFileNode) {
 				this.curFileNode.innerHTML = evt.name || "";
@@ -629,7 +632,7 @@ objects.mixin(EditorSetup.prototype, {
 			EventTarget.attach(this);
 		}
 		this.sidebarNavInputManager = new SidebarNavInputManager();
-		var sidebar = this.sidebar = new Sidebar({
+		var sidebar = this.sideBar = new Sidebar({
 			commandRegistry: this.commandRegistry,
 			contentTypeRegistry: this.contentTypeRegistry,
 			editorInputManager: this.editorInputManager,
@@ -743,6 +746,7 @@ objects.mixin(EditorSetup.prototype, {
 			activateContext: this,
 			modelPool: this.modelPool,
 			menuBar: this.menuBar,
+			sideBar: this.sideBar,
 			serviceRegistry: this.serviceRegistry,
 			pluginRegistry: this.pluginRegistry,
 			commandRegistry: this.commandRegistry,
