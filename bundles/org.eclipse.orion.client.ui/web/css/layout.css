@@ -838,6 +838,7 @@ and (max-device-width : 1024px)  {
 }
 
 .userMenu {
+	
 }
 
 .splash {
@@ -854,6 +855,8 @@ and (max-device-width : 1024px)  {
 
 .splashShown {
 	display: flex;
+  	align-items: center;
+  	justify-content: center;
 }
 
 .splashProgress {
@@ -876,4 +879,106 @@ and (max-device-width : 1024px)  {
 	position:relative;
 	top:-6px;
 }
+
+
+
+.container{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height:100%;
+    flex-direction: column;
+    font-family: sans-serif;
+    font-size: 14px;
+}
+
+
+
+.loader{
+    display: flex;
+    height:400px;
+    width:400px;
+
+    flex-direction: column;
+    align-items: center;
+}
+
+.about{
+    width:300px;
+    align-content: center;
+    justify-content: center;
+    max-width: 50%;
+    margin: 20px;
+    text-align: center;
+    padding: 10px;
+     color: #FFFFFF;
+     font-size:16px;
+  font-family: 'helvetica';
+  font-weight: bold;
+
+}
+
+.progressbar{
+    align-content: center;
+    width:200px;
+}
+
+.steps{
+   margin:20px; 
+    max-width: 200px;
+}
+
+.step{
+    display: flex;
+    flex-direction: row;
+    width:400px;
+    padding-top: 10px;
+    padding-bottom:10px;
+    margin-bottom: 20px;
+    height:24px;
+}
+
+.visual{
+    width:40px;
+    align-content: center;
+    justify-content: center;
+}
+
+.verbal{
+	margin-left:10px;
+	align-content: center;
+    justify-content: center;
+    color: #3BDEFF;
+    font-family: 'helvetica';
+    font-weight: bold;
+    margin-top: 3px; /* should not have to do this */
+}
+
+.verbalwaiting{
+	color:grey;
+}
+
+
+.loadingImage{
+	background: url(../images/loading_24.gif) no-repeat top left;
+   	vertical-align: middle;
+   	display: inline-block;
+   	border: none;	
+   	height:24px;
+   	width:24px;
+}
+
+.successImage{
+	background: url(../images/message_success_24.png) no-repeat top left;
+   	vertical-align: middle;
+   	display: inline-block;
+   	border: none;	
+   	height:24px;
+   	width:24px;
+}
+
+
+
+
+
 

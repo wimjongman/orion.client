@@ -7,6 +7,7 @@
 		<link rel="icon" href="../images/edit.png" type="image/png">
 		<title>Editor</title>
 		<link rel="stylesheet" type="text/css" href="edit.css" />
+		<script src="loader.js"></script>
 		<script src="../requirejs/require.js"></script>
 		<script type="text/javascript">
 			/*eslint-env browser, amd*/
@@ -20,6 +21,7 @@
 			});
 			require(["edit/edit"]);
 		</script>
+
 	</head>
 
 	<body id="orion-editor" spellcheck="false" class="orionPage">
@@ -50,15 +52,41 @@
 		</div>
 		<div id="contentassist" class="contentassist" role="listbox" tabindex="-1"></div>
 		<div id="splash" class="splash">
+			
 			<div class="splashProgress">
-				<span class="core-sprite-progress">
-				</span>
-				<span id="splashProgress" class="splashProgressLabel">Loading...</span>
+			<div id="container" class="container">
+	            <!-- div class="loader">
+	                <div class="about">Setting up workspace</div>
+	                <div class="progressbar">
+	                    <progress id="loadingProgressBar" max="120" value="0"></progress>
+	                </div>
+	                <div class="steps">
+	                    <div class="step">
+	                        <div class="visual"><div id="initializationVisual" class="loadingImage"></div></div>
+	                        <div class="verbal" id="initializationStep">Initializing Workspace</div>
+	                    </div>
+	                    <div class="step">
+	                        <div class="visual"><div id="pluginVisual"></div></div>
+	                        <div class="verbal verbalwaiting" id="pluginsStep">Load plug-ins</div>
+	                    </div>
+	                    <div class="step">
+	                        <div class="visual"><div id="personalizationVisual"></div></div>
+	                        <div class="verbal verbalwaiting" id="peronalizationStep">Personal settings </div>
+	                    </div>
+	                </div>
+	            </div>
+            </div -->
+			
 			</div>
 		</div>
 		<script type="text/javascript">
 			if (localStorage.showSplash) {
 				document.getElementById("splash").classList.add("splashShown");
+				
+				var pageLoader = new loader( 'container', 'Setting up workspace', 200 );
+				var initial = new step( 1, 'Workspace', 0, 40 );
+				pageLoader.addStep( initial );
+				pageLoader.nextStep();
 			}
 		</script>
 	</body>

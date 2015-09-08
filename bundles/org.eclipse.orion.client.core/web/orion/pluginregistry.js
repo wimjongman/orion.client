@@ -924,6 +924,8 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"]
      * @borrows orion.serviceregistry.EventTarget#removeEventListener as #removeEventListener
      */
     function PluginRegistry(serviceRegistry, configuration) {
+    	
+    	                	
         configuration = configuration || {};
         var _storage = configuration.storage || localStorage;
         if (!_storage.getItem) {
@@ -993,7 +995,7 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"]
                 if ((!localStorage.useWorkers || !isWorker) && url.match(workerRegex)) {
                     url = url.replace(workerRegex, pluginHtml);
                     isWorker = isSharedWorker = false;
-                }
+                }               
 
                 channel.url = url;
                 channel._updateTimeout();
@@ -1021,10 +1023,23 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"]
                     	_channelHandler(channel, evt);
                     });
                 } else {
-                    var iframe = document.createElement("iframe"); //$NON-NLS-0$
+                	
+                	
+                var pluginStep = new step( 2, 'Plugins', 1, 80, _plugins.length );
+                	
+                	pageLoader.addStep( pluginStep );
+                	pageLoader.nextStep();
+                	
+//                	splash.showInitializationProgress();
+//                	
+//                	splash.pluginCount( _plugins.length );
+                	
+                   	var iframe = document.createElement("iframe"); //$NON-NLS-0$
                     iframe.name = url + "_" + channel._startTime;
                     iframe.src = url;
                     iframe.onload = function() {
+                    	
+                    	pageLoader.increment();
                         splash.progress("Loading " + url);
                         log("handshake"); //$NON-NLS-0$
                         channel._handshake = true;
@@ -1046,13 +1061,15 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"]
                             }
                             iframe = null;
                         }
-                    };
+                    }; 
                 }
                 channel.connected = function() {
                     log("connected"); //$NON-NLS-0$
                     this._connected = true;
                     this._updateTimeout();
-                    splash.progress("Loaded " + url);
+//                    splash.progress("Loaded " + url);
+                    pageLoader.increment();
+                    
                 };
                 channel.loading = function() {
                     log("loading"); //$NON-NLS-0$
