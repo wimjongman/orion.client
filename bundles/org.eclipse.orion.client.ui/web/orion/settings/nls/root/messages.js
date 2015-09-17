@@ -88,6 +88,8 @@ define({//Default message bundle
 	"Enable": "Enable",
 	"Enabled":"Enabled ${0}",
 	"EnableTooltip": "Enable the plug-in",
+	"ResetAll": "Reset",
+	"ResetAllPlugs": "Reset all plugins by clearing any cached data",
 	"Reload all": "Reload all",
 	"ReloadAllPlugs": "Reload all installed plug-ins",
 	"CreatePlug": "Create a new Orion Plug-in",

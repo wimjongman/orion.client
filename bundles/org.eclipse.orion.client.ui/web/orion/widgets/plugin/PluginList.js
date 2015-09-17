@@ -166,6 +166,16 @@ define(['i18n!orion/settings/nls/messages', 'orion/i18nUtil', 'require', 'orion/
 			this.commandService.addCommand(reloadAllPluginsCommand);
 			// register these with the toolbar
 			this.commandService.registerCommandContribution("pluginCommands", "orion.reloadAllPlugins", 3); //$NON-NLS-1$ //$NON-NLS-0$
+			
+			var resetAllPluginsCommand = new mCommands.Command({
+				name: messages["ResetAll"],
+				tooltip: messages["ResetAllPlugs"],
+				id: "orion.resetAllPlugins", //$NON-NLS-0$
+				callback: this.resetPlugins.bind(this)
+			});
+			this.commandService.addCommand(resetAllPluginsCommand);
+			// register these with the toolbar
+			this.commandService.registerCommandContribution("pluginCommands", "orion.resetAllPlugins", 3); //$NON-NLS-1$ //$NON-NLS-0$
 
 			var createPluginCommand = new mCommands.Command({
 				name: messages['Create'],
@@ -449,6 +459,15 @@ define(['i18n!orion/settings/nls/messages', 'orion/i18nUtil', 'require', 'orion/
 				this.reloaded();
 				deferred.resolve();
 			}.bind(this), deferred.reject, deferred.progress);
+			return deferred;
+		},
+		
+		resetPlugins: function() {
+			this.settings.preferences.getPreferences("/plugins").then(function(prefs) {
+				prefs.sync(true).then(function() {
+					window.location.reload();
+				});
+			});
 		},
 		
 		forceRemove: function(url){
