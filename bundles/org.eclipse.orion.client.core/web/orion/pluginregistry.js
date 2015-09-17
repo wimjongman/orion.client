@@ -12,7 +12,7 @@
 /* eslint-disable missing-nls */
 /*eslint-env browser, amd*/
 /*global URL*/
-define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"], function(Deferred, EventTarget, splash) {
+define(["orion/Deferred", "orion/EventTarget", 'orion/objects', 'orion/splash', "orion/URL-shim"], function(Deferred, EventTarget, objects, splash) {
     
     function _equal(obj1, obj2) {
         var keys1 = Object.keys(obj1);
@@ -652,6 +652,10 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"]
                     _state = "starting";
                     _internalRegistry.dispatchEvent(new PluginEvent("lazy activation", _this));
                 }
+                var now = new Date().getTime();
+		        if (!this.getLastModified() || now > this.getLastModified() + 86400000) { // 24 hours
+	                 return this.update();
+                }
                 return new Deferred().resolve();
             }
             
@@ -832,7 +836,7 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"]
                 _internalRegistry.dispatchEvent(new PluginEvent("updated", _this));
             });
         };
-
+        
         /**
          * Uninstalls this plugin.
          * @name orion.pluginregistry.Plugin#uninstall
@@ -1090,6 +1094,17 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"]
                 }
                 _storage.removeItem("plugin." + plugin.getLocation());
             },
+            getPersisted: function(url) {
+            	var key = "plugin." + url;
+            	var manifest = _storage.getItem(key);
+            	if (manifest) {
+            		manifest = JSON.parse(manifest);
+            		if (manifest.created) {
+            			return manifest;
+            		}
+            	}
+            	return null;
+            },
             persist: function(url, manifest) {
                 _storage.setItem("plugin." + url, JSON.stringify(manifest)); //$NON-NLS-0$
             },
@@ -1221,22 +1236,6 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"]
                 return;
             }
             addEventListener("message", _messageHandler, false);
-            var storageKeys = [];
-            for (var i = 0, length = _storage.length; i < length; i++) {
-                storageKeys.push(_storage.key(i));
-            }
-            storageKeys.forEach(function(key) {
-                if (key.indexOf("plugin.") === 0) {
-                    var url = key.substring("plugin.".length);
-                    var manifest = JSON.parse(_storage.getItem(key));
-                    if (manifest.created) {
-                        _plugins.push(new Plugin(url, manifest, internalRegistry));
-                    }
-                }
-            });
-            _plugins.sort(function(a, b) {
-                return a._getCreated() < b._getCreated() ? -1 : 1;
-            });
             
             if (configuration.parent) {
                 _parent = configuration.parent;
@@ -1260,7 +1259,7 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"]
                     if (!plugin) {
                         var manifest = configuration.plugins[url];
                         if (typeof manifest !== "object") {
-                            manifest = {};
+                        	manifest = internalRegistry.getPersisted(url) || {};
                         }
                         manifest.autostart = manifest.autostart || configuration.defaultAutostart || "lazy";
                         plugin = new Plugin(url, manifest, internalRegistry);
@@ -1271,6 +1270,9 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"]
                     }
                 }.bind(this));
             }
+            _plugins.sort(function(a, b) {
+                return a._getCreated() < b._getCreated() ? -1 : 1;
+            });
             _state = "starting";
         };
 
@@ -1288,27 +1290,8 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"]
                 return new Deferred().reject("Cannot start framework. Framework is already " + _state + ".");
             }
             var deferreds = [];
-            var now = new Date().getTime();
             _plugins.forEach(function(plugin) {
                 var autostart = plugin._getAutostart();
-                if (plugin.getLastModified() === 0) {
-                    deferreds.push(plugin.update().then(function() {
-                        if ("started" === autostart) {
-                            return plugin.start({
-                                "transient": true
-                            });
-                        }
-                        if ("lazy" === autostart) {
-                            return plugin.start({
-                                "lazy": true,
-                                    "transient": true
-                            });
-                        }
-                        plugin._resolve();
-                    }));
-                    return;
-                }
-
                 if ("started" === autostart) {
                     deferreds.push(plugin.start({
                         "transient": true
@@ -1318,9 +1301,6 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"]
                         "lazy": true,
                             "transient": true
                     }));
-                    if (now > plugin.getLastModified() + 86400000) { // 24 hours
-                        plugin.update();
-                    }
                 } else {
                     plugin._resolve();
                 }
@@ -1394,8 +1374,12 @@ define(["orion/Deferred", "orion/EventTarget", 'orion/splash', "orion/URL-shim"]
             if (_installing[url]) {
                 return _installing[url];
             }
+            
 
             if (optManifest) {
+            	if (optManifest.autostart === "lazy") {
+	                optManifest = objects.mixin({}, internalRegistry.getPersisted(url), optManifest);
+            	}
                 plugin = new Plugin(url, optManifest, internalRegistry);
                 _plugins.push(plugin);
                 plugin._persist();
