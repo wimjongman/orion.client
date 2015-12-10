@@ -107,6 +107,9 @@ define([
                    }
                }
                return null;
+           }, 
+           /* @callback */ function(reject) {
+           		return null;
            });
        },
 

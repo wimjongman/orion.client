@@ -23,13 +23,13 @@ define([
 	 * @constructor
 	 * @public
 	 * @param {ASTManager} ASTManager The backing AST manager
-	 * @param {TernWorker} ternWorker The running Tern worker
+	 * @param {TernServer} ternServer The running Tern server
 	 * @returns {javascript.commands.RenameCommand} A new command
 	 * @since 9.0
 	 */
-	function RenameCommand(ASTManager, ternWorker, scriptResolver, CUProvider) {
+	function RenameCommand(ASTManager, ternServer, scriptResolver, CUProvider) {
 		this.astManager = ASTManager;
-		this.ternworker = ternWorker;
+		this.ternserver = ternServer;
 		this.scriptResolver = scriptResolver;
 		this.cuprovider = CUProvider;
 		this.timeout = null;
@@ -88,29 +88,26 @@ define([
 					that.timeout = null;
 				}, 5000);
 				var files = [{type:'full', name:params.input, text:text}]; //$NON-NLS-1$
-				that.ternworker.postMessage(
-					{request:'rename', args:{params:{offset: params.offset}, files: files, meta:{location: params.input}, newname:''}}, //$NON-NLS-1$
-					function(response) {
-						var changes = response.changes;
-						if(changes && changes.changes && changes.changes.length > 0) {
-							var ranges = changes.changes;
-							// turn the ranges into offset / length
-							var offsets = [ranges.length];
-							for (var i = 0; i < ranges.length; i++) {
-								offsets[i] = {
-									offset: ranges[i].start,
-									length: ranges[i].end - ranges[i].start
-								};
+				that.ternserver.rename(params.input, params.offset, '', files, 
+					function(val, err) {
+						if(err) {
+							deferred.reject({Severity: 'Warning', Message: badRename(err.error)}); //$NON-NLS-1$
+						} else if(val.length > 0) {
+							var offsets = [];
+							for (var i = 0; i < val.length; i++) {
+								offsets.push({
+									offset: val[i].start,
+									length: val[i].end - val[i].start
+								});
 							}
 							var groups = [{data: {}, positions: offsets}];
 							var linkModel = {groups: groups};
 							editorContext.exitLinkedMode().then(function() {
 								editorContext.enterLinkedMode(linkModel).then(deferred.resolve, deferred.reject);
 							}, deferred.reject);
-						} else if(typeof(response.error) === 'string') {
-							deferred.reject({Severity: 'Warning', Message: badRename(response.error)}); //$NON-NLS-1$
 						}
-					});
+					}
+				);
 			}, deferred.reject);
 		}
 	});

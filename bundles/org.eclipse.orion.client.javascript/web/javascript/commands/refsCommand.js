@@ -22,12 +22,16 @@ define([
 	 * @description Creates a new rename command
 	 * @constructor
 	 * @public
-	 * @param {TernWorker} ternWorker The running Tern worker
+	 * @param {TernServer} ternserver The running Tern worker
+	 * @param {ASTManager} astManager The AST manager
+	 * @param {ScriptResolver} scriptResolver The backing resolver
+	 * @param {CUProvider} cuProvider The backing compilation unit provider
+	 * @param {gSearchClient} searchClient The global search client
 	 * @returns {javascript.commands.RenameCommand} A new command
 	 * @since 10.0
 	 */
-	function RefsCommand(ternWorker, astManager, scriptResolver, cuProvider, searchClient) {
-		this.ternworker = ternWorker;
+	function RefsCommand(ternServer, astManager, scriptResolver, cuProvider, searchClient) {
+		this.ternserver = ternServer;
 		this.scriptresolver = scriptResolver;
 		this.astmanager = astManager;
 		this.cuprovider = cuProvider;
@@ -163,8 +167,7 @@ define([
 			return that.astmanager.getAST(editorContext).then(function(ast) {
 				var node = Finder.findNode(options.offset, ast);
 				if(node && node.type === 'Identifier') {
-					that.ternworker.postMessage(
-						{request: 'type', args: {meta: metadata, params: options}},  //$NON-NLS-1$
+					that.ternserver.type(options.input, options.offset, 
 						function(type, err) {
 							if(err) {
 								deferred.reject({Severity: 'Error', Message: err}); //$NON-NLS-1$
@@ -198,7 +201,7 @@ define([
 												if(v === node.name) {
 													//XXX do not send the full source more than once
 													//until bug https://bugs.eclipse.org/bugs/show_bug.cgi?id=474420 is fixed
-													var req = {request: 'checkRef', args: {meta:{location: file.metadata.Location}, params: {offset: match.end}, origin: type}} //$NON-NLS-1$
+													var req = {location: file.metadata.Location, offset: match.end, origin: type}
 													if(!srcCache[file.metadata.Location].src) {
 														srcCache[file.metadata.Location].src = true;
 														req.files = [{type: 'full', name: file.metadata.Location, text: source}]; //$NON-NLS-1$;
@@ -232,10 +235,9 @@ define([
 		 * @function
 		 * @private
 		 */
-		_checkType: function _checkType(original, file, match, expected, request) {
+		_checkType: function _checkType(original, file, match, expected, options) {
 			var that = this;
-			that.ternworker.postMessage(
-					request, 
+			that.ternserver.checkRef(options.location, options.offset, options.origin, options.files, 
 					/* @callback */ function(type, err) {
 						if(type && type.type) {
 							var _t = type.type, _ot = original.type;

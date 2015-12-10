@@ -14,16 +14,14 @@ define([
 "orion/Deferred"
 ], function(Defered) {
 	
+	var ternserver;
 	/**
-	 * @name javascript.JSOutliner
 	 * @description creates a new instance of the outliner
-	 * @param {Worker} ternWorker The backing Tern worker 
-	 * @constructor
 	 * @public
-	 * @param {javascript.ASTManager} astManager
+	 * @param {TernServer} ternServer The running Tern server
 	 */
-	function JSOutliner(ternWorker) {
-		this.ternWorker = ternWorker;
+	function JSOutliner(ternServer) {
+		ternserver = ternServer;
 	}
 	
 	/**
@@ -43,16 +41,15 @@ define([
 		editorContext.getFileMetadata().then(function(meta) {
 			editorContext.getText().then(function(text) {
 				var files = [{type: "full", name: meta.location, text: text}]; //$NON-NLS-1$
-				this.ternWorker.postMessage({request: "outline", args: {files: files, meta: {location: meta.location}}}, function(response, error) { //$NON-NLS-1$
-				if(response.outline) {
-					deferred.resolve(response.outline);
-				} else if(error) {
-					deferred.reject(error);
-				}
+				ternserver.outline(meta.location, files, function(val, err) {
+					if(err) {
+						deferred.reject(err.message);
+					} else if(val) {
+						deferred.resolve(val);
+					}
+				});
 			});
-			}.bind(this));
-			
-		}.bind(this));
+		});
 		return deferred;
 	};
 	

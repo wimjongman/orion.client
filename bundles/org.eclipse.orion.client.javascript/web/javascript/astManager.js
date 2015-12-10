@@ -63,8 +63,8 @@ define([
 					ast = _self.parse(text, metadata ? metadata.location : 'unknown'); //$NON-NLS-1$
 					_self.cache.put(loc, ast);
 					return ast;
-				});
-			});
+				});;;;
+			});;;;
 		},
 		/**
 		 * Returns the key to use when caching

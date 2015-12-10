@@ -23,6 +23,7 @@ define([
 'esprima/esprima',
 'estraverse/estraverse',
 'javascript/scriptResolver',
+"javascript/plugins/ternServer",
 'javascript/astManager',
 'javascript/quickFixes',
 'javascript/contentAssist/ternAssist',
@@ -33,7 +34,6 @@ define([
 'javascript/cuProvider',
 'javascript/ternProjectManager',
 'orion/util',
-'javascript/logger',
 'javascript/commands/addToTernCommand',
 'javascript/commands/generateDocCommand',
 'javascript/commands/openDeclaration',
@@ -46,42 +46,47 @@ define([
 'orion/editor/stylers/application_schema_json/syntax',
 'orion/editor/stylers/application_x-ejs/syntax',
 'i18n!javascript/nls/messages',
-'orion/i18nUtil',
 'orion/URL-shim'
-], function(PluginProvider, mServiceRegistry, Deferred, FileClient, Metrics, Esprima, Estraverse, ScriptResolver, ASTManager, QuickFixes, TernAssist,
-			EslintValidator, Occurrences, Hover, Outliner,	CUProvider, TernProjectManager, Util, Logger, AddToTernCommand, GenerateDocCommand, OpenDeclCommand, OpenImplCommand,
-			RenameCommand, RefsCommand, mGSearchClient, mJS, mJSON, mJSONSchema, mEJS, javascriptMessages, i18nUtil) {
+], function(PluginProvider, mServiceRegistry, Deferred, FileClient, Metrics, Esprima, Estraverse, ScriptResolver, TernServer, ASTManager, QuickFixes, TernAssist,
+			EslintValidator, Occurrences, Hover, Outliner,	CUProvider, TernProjectManager, Util, AddToTernCommand, GenerateDocCommand, OpenDeclCommand, OpenImplCommand,
+			RenameCommand, RefsCommand, mGSearchClient, mJS, mJSON, mJSONSchema, mEJS, javascriptMessages) {
 
-	var serviceRegistry = new mServiceRegistry.ServiceRegistry();
-    var provider = new PluginProvider({
-		name: javascriptMessages['pluginName'],
-		version: "1.0", //$NON-NLS-1$
-		description: javascriptMessages['pluginDescription']
-	}, serviceRegistry);
-
-    	/**
-    	 * Register the JavaScript content types
-    	 */
-    	provider.registerService("orion.core.contenttype", {}, { //$NON-NLS-1$
-    		contentTypes: [
-    		               {	id: "application/javascript", //$NON-NLS-1$
-    		            	   "extends": "text/plain", //$NON-NLS-1$ //$NON-NLS-1$
-    		            	   name: "JavaScript", //$NON-NLS-1$
-    		            	   extension: ["js"], //$NON-NLS-1$
-    		            	   imageClass: "file-sprite-javascript modelDecorationSprite" //$NON-NLS-1$
-    		               }, {id: "application/json", //$NON-NLS-1$
-    		            	   "extends": "text/plain", //$NON-NLS-1$ //$NON-NLS-1$
-    		            	   name: "JSON", //$NON-NLS-1$
-    		            	   extension: ["json", "pref", "tern-project"], //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-    		            	   imageClass: "file-sprite-javascript modelDecorationSprite" //$NON-NLS-1$
-    		               }, {id: "application/x-ejs", //$NON-NLS-1$
-    		            	   "extends": "text/plain", //$NON-NLS-1$ //$NON-NLS-1$
-    		            	   name: "Embedded Javascript", //$NON-NLS-1$
-    		            	   extension: ["ejs"], //$NON-NLS-1$
-    		            	   imageClass: "file-sprite-javascript modelDecorationSprite" //$NON-NLS-1$
-    		               }
-    		               ]
-    	});
+	function connect(provider) {
+		var serviceRegistry = new mServiceRegistry.ServiceRegistry();
+		var headers = {
+			name: javascriptMessages['pluginName'],
+			version: "1.0", //$NON-NLS-1$
+			description: javascriptMessages['pluginDescription']
+		};
+		if(!provider) {
+	    	provider = new PluginProvider();
+		}
+		provider.updateHeaders(headers);
+	
+	
+		/**
+		 * Register the JavaScript content types
+		 */
+		provider.registerService("orion.core.contenttype", {}, { //$NON-NLS-1$
+			contentTypes: [
+			               {	id: "application/javascript", //$NON-NLS-1$
+			            	   "extends": "text/plain", //$NON-NLS-1$ //$NON-NLS-1$
+			            	   name: "JavaScript", //$NON-NLS-1$
+			            	   extension: ["js"], //$NON-NLS-1$
+			            	   imageClass: "file-sprite-javascript modelDecorationSprite" //$NON-NLS-1$
+			               }, {id: "application/json", //$NON-NLS-1$
+			            	   "extends": "text/plain", //$NON-NLS-1$ //$NON-NLS-1$
+			            	   name: "JSON", //$NON-NLS-1$
+			            	   extension: ["json", "pref", "tern-project"], //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			            	   imageClass: "file-sprite-javascript modelDecorationSprite" //$NON-NLS-1$
+			               }, {id: "application/x-ejs", //$NON-NLS-1$
+			            	   "extends": "text/plain", //$NON-NLS-1$ //$NON-NLS-1$
+			            	   name: "Embedded Javascript", //$NON-NLS-1$
+			            	   extension: ["ejs"], //$NON-NLS-1$
+			            	   imageClass: "file-sprite-javascript modelDecorationSprite" //$NON-NLS-1$
+			               }
+			               ]
+		});
 
     	/**
     	 * make sure the RecoveredNode is ignored
@@ -103,190 +108,24 @@ define([
     	 */
     	var astManager = new ASTManager.ASTManager(Esprima);
 
-		var ternReady = false;
-		var messageQueue = [];
-
-    	function WrappedWorker(script, onMessage, onError) {
-    		/*if(typeof(SharedWorker) === 'function') {
-    			this.shared = true;
-    			var wUrl = new URL(script, window.location.href);
-    			wUrl.query.set("worker-language", navigator.language);
-    			this.worker = new SharedWorker(wUrl.href);
-    			this.worker.port.onmessage = onMessage;
-    			this.worker.port.onerror = onError;
-    			this.worker.port.start();
-    			this.worker.postMessage({request: "start_worker"}); //$NON-NLS-1$
-    		} else { */
- 				var wUrl = new URL(script, window.location.href);
-    			wUrl.query.set("worker-language", navigator.language); //$NON-NLS-1$
-    			this.worker = new Worker(wUrl.href);
-    			this.worker.onmessage = onMessage.bind(this);
-    			this.worker.onerror = onError.bind(this);
-    			this.worker.postMessage({request: "start_worker"}); //$NON-NLS-1$
-    			this.messageId = 0;
-    			this.callbacks = Object.create(null);
-    	//	}
-    	}
-    	
-    	WrappedWorker.prototype.postMessage = function(msg, f) {
-    		var starting = msg.request === 'start_server';
-    		if(starting) {
-    			ternReady = false;
-    		}
-    		if(ternReady || starting) {
-				if(msg != null && typeof(msg) === 'object') {
-					if(typeof(msg.messageID) !== 'number' && typeof(msg.ternID) !== 'number') {
-						//don't overwrite an id from a tern-side request
-						msg.messageID = this.messageId++;
-						this.callbacks[msg.messageID] = f;
-					}
-				}
-	    		if(this.shared) {
-	    			this.worker.port.postMessage(msg);
-	    		} else {
-	    			this.worker.postMessage(msg);
-	    		}
-			} else {
-				messageQueue.push({msg: msg, f: f});
-			}
-    	};
-
-    	/**
-    	 * Object of contributed environments
-    	 *
-    	 * TODO will need to listen to updated tern plugin settings once enabled to clear this cache
-    	 */
-    	var contributedEnvs;
-		var ternWorker;
-		
-		var handlers ={
-			'read': doRead,
-			/**
-			 * @callback
-			 */
-			'worker_ready': function(response) {
-				ternReady = false;
-				ternWorker.postMessage({request: 'start_server', args: {options: {}}}, /* @callback */ function(response) { //$NON-NLS-1$
-					serverReady();
-				});
-			},
-			/**
-			 * @callback
-			 */
-			'start_server': function(response) {
-				serverReady();
-			}
-		};
-
-		// Start the worker
-    	ternWorker = new WrappedWorker("ternWorker.js",  //$NON-NLS-1$
-	    	function(evnt) {
-	    		var _d = evnt.data;
-	    		if(_d.__isError) {
-	    			//TODO log using the new platform hooks when available
-	    			Logger.log(_d.message);
-	    		} else if(typeof(_d) === 'object') {
-					var id  = _d.messageID;
-					var f = this.callbacks[id];
-					if(typeof(f) === 'function') {
-						f(_d, _d.error);
-						delete this.callbacks[id];
-					}
-					var _handler = handlers[_d.request];
-					if(typeof(_handler) === 'function') {
-						_handler(_d);
-					}
-				}
-	    	},
-	    	function(err) {
-	    		Logger.log(err);
-	    });
-
-		/**
-		 * @description Handler for Tern read requests
-		 * @param {Object} request Therequest from Tern
-		 * @since 10.0
-		 */
-		function doRead(request) {
-			var response = {request: 'read', ternID: request.ternID, args: {}}; //$NON-NLS-1$
-			if(typeof(request.args.file) === 'object') {
-				var _l = request.args.file.logical;
-				response.args.logical = _l;
-				scriptresolver.getWorkspaceFile(_l).then(function(files) {
-					if(files && files.length > 0) {
-						var rel = scriptresolver.resolveRelativeFiles(_l, files, {location: request.args.file.file, contentType: {name: 'JavaScript'}}); //$NON-NLS-1$
-						if(rel && rel.length > 0) {
-							return fileClient.read(rel[0].location).then(function(contents) {
-								response.args.contents = contents;
-								response.args.file = rel[0].location;
-								response.args.path = rel[0].path;
-								ternWorker.postMessage(response);
-							});
-						} else {
-							response.args.error = i18nUtil.formatMessage(javascriptMessages['failedToReadFile'], _l);
-							ternWorker.postMessage(response);
+		var ternServer = new TernServer(scriptresolver, fileClient);
+		ternServer.startServer(Object.create(null), /* @callback */ function(err) {
+			ternServer.installedPlugins(function(val, err) {
+				function cleanPrefs(prefs) {
+					var all = Object.keys(prefs);
+					for(var i = 0, len = all.length; i < len; i++) {
+						var id = all[i];
+						if(/^tern.$/.test(id)) {
+							delete prefs[id];
 						}
-					} else {
-						response.args.error = i18nUtil.formatMessage(javascriptMessages['failedToReadFile'], _l);
-						ternWorker.postMessage(response);
-					}
-				},
-				function(err) {
-					response.args.error = i18nUtil.formatMessage(javascriptMessages['failedToReadFile'], _l);
-					response.args.message = err.toString();
-					ternWorker.postMessage(response);
-				});
-			} else {
-				var file = request.args.file;
-				response.args.file = file;
-				if(!/\.js|\.htm|\.htm$/ig.test(file)) {
-					//no extension given, guess at js
-					file += '.js'; //$NON-NLS-1$
-				}
-				try {
-					return fileClient.read(file).then(function(contents) {
-								response.args.contents = contents;
-								ternWorker.postMessage(response);
-							},
-							function(err) {
-								response.args.message = err.toString();
-								response.args.error = i18nUtil.formatMessage(javascriptMessages['failedToReadFile'], file);
-								ternWorker.postMessage(response);
-							});
-				}
-				catch(err) {
-					response.args.message = err.toString();
-					response.args.error = i18nUtil.formatMessage(javascriptMessages['failedToReadFile'], file);
-					ternWorker.postMessage(response);
-				}
-			}
-		}
-		
-		/**
-		 * @description Handles the server being ready
-		 * @param {Object} request The request
-		 * @since 10.0
-		 */
-		function serverReady() {
-			ternReady = true;
-			for(var i = 0, len = messageQueue.length; i < len; i++) {
-				var item = messageQueue[i];
-				ternWorker.postMessage(item.msg, item.f);
-			}
-			messageQueue = [];
-			function cleanPrefs(prefs) {
-				var all = Object.keys(prefs);
-				for(i = 0, len = all.length; i < len; i++) {
-					var id = all[i];
-					if(/^tern.$/.test(id)) {
-						delete prefs[id];
 					}
 				}
-			}
-			ternWorker.postMessage({request: 'installed_plugins'}, function(response) { //$NON-NLS-1$
-				var plugins = response.plugins;
+				if(err) {
+					return new Deferred().reject(err.message);
+				}
+				var plugins = val;
 				var preferences = serviceRegistry.getService("orion.core.preference"); //$NON-NLS-1$
- 				return preferences ? preferences.get("/cm/configurations").then(function(prefs){ // //$NON-NLS-1$
+				return preferences ? preferences.get("/cm/configurations").then(function(prefs){ // //$NON-NLS-1$
 					var props = prefs["tern"];
 					cleanPrefs(prefs);
 					if (!props) {
@@ -296,7 +135,7 @@ define([
 					}
 					var keys = Object.keys(plugins);
 					var plugs = props.plugins ? props.plugins : Object.create(null);
-					for(i = 0; i < keys.length; i++) {
+					for(var i = 0; i < keys.length; i++) {
 						var key = keys[i];
 						if(/^orion/.test(key)) {
 							delete plugs[key]; //make sure only the latest of Orion builtins are shown
@@ -308,8 +147,12 @@ define([
 					return preferences.put("/cm/configurations", prefs, {clear: true}); //$NON-NLS-1$
 				}) : new Deferred().resolve();
 			});
-		}
-
+		}); 
+		
+    	/**
+    	 * Object of contributed environments
+    	 */
+    	var contributedEnvs;
     	/**
 	     * @description Queries the Tern server to return all contributed environment names from the installed plugins
 	     * @returns {Object} The object of contributed environments or null
@@ -318,17 +161,21 @@ define([
 	    function getEnvironments() {
     		var envDeferred = new Deferred();
     		if(!contributedEnvs) {
-    			ternWorker.postMessage({request: 'environments'}, function(response) { //$NON-NLS-1$
-					contributedEnvs = response.envs;
-	    			envDeferred.resolve(response.envs);
+    			ternServer.environments(function(val, err) {
+    				if(err) {
+    					envDeferred.reject(err.message);
+    				} else if(val) {
+    					contributedEnvs = val;
+    					envDeferred.resolve(val);
+    				}
     			});
     		} else {
     			return envDeferred.resolve(contributedEnvs);
     		}
     		return envDeferred;
     	}
-
-    	provider.registerService("orion.edit.contentassist", new TernAssist.TernContentAssist(astManager, ternWorker, getEnvironments, CUProvider),  //$NON-NLS-1$
+		
+    	provider.registerService("orion.edit.contentassist", new TernAssist.TernContentAssist(astManager, ternServer, getEnvironments, CUProvider),  //$NON-NLS-1$
     			{
     				contentType: ["application/javascript", "text/html"],  //$NON-NLS-1$ //$NON-NLS-2$
     				nls: 'javascript/nls/messages',  //$NON-NLS-1$
@@ -341,7 +188,7 @@ define([
     	/**
     	 * Register the jsdoc-based outline
     	 */
-    	provider.registerService("orion.edit.outliner", new Outliner.JSOutliner(ternWorker),  //$NON-NLS-1$
+    	provider.registerService("orion.edit.outliner", new Outliner.JSOutliner(ternServer),  //$NON-NLS-1$
     			{ contentType: ["application/javascript"],  //$NON-NLS-1$
     		name: javascriptMessages["sourceOutline"],
     		title: javascriptMessages['sourceOutlineTitle'],
@@ -359,13 +206,13 @@ define([
     	/**
     	 * Register the hover support
     	 */
-    	provider.registerService("orion.edit.hover", new Hover.JavaScriptHover(astManager, scriptresolver, ternWorker, CUProvider),  //$NON-NLS-1$
+    	provider.registerService("orion.edit.hover", new Hover.JavaScriptHover(astManager, scriptresolver, ternServer, CUProvider),  //$NON-NLS-1$
     			{
     		name: javascriptMessages['jsHover'],
     		contentType: ["application/javascript", "text/html"]	//$NON-NLS-1$ //$NON-NLS-2$
     			});
 
-    	var validator = new EslintValidator(ternWorker, CUProvider);
+    	var validator = new EslintValidator(ternServer, CUProvider);
 
     	/**
     	 * Register the ESLint validator
@@ -388,7 +235,7 @@ define([
     		types: ["ModelChanging", 'onInputChanged']  //$NON-NLS-1$ //$NON-NLS-2$
     	});
     	
-    	var ternProjectManager = new TernProjectManager.TernProjectManager(ternWorker, scriptresolver, fileClient);
+    	var ternProjectManager = new TernProjectManager.TernProjectManager(ternServer, scriptresolver, fileClient);
     	/**
     	 * Register Tern project manager as input changed listener
     	 */
@@ -400,7 +247,7 @@ define([
     		types: ['onInputChanged']  //$NON-NLS-1$
     	});
 	    
-	    if ("true" === localStorage.getItem("darklaunch")) {
+	   // if ("true" === localStorage.getItem("darklaunch")) {
 	    	provider.registerServiceProvider("orion.navigate.command",  //$NON-NLS-1$
 	    			new AddToTernCommand.AddToTernCommand(ternProjectManager),
 	    			{
@@ -410,7 +257,7 @@ define([
 			    		id : "add.js.tern"  //$NON-NLS-1$
 	    			}
 	    	);
-    	}
+    	//}
 
     	/**
     	 * register the compilation unit provider as a listener
@@ -436,7 +283,7 @@ define([
     	);
 
     	provider.registerServiceProvider("orion.edit.command",  //$NON-NLS-1$
-    			new OpenDeclCommand.OpenDeclarationCommand(astManager, ternWorker, CUProvider, "replace"),  //$NON-NLS-1$
+    			new OpenDeclCommand.OpenDeclarationCommand(astManager, ternServer, CUProvider, "replace"),  //$NON-NLS-1$
     			{
     		name: javascriptMessages["openDeclName"],
     		tooltip : javascriptMessages['openDeclTooltip'],
@@ -451,7 +298,7 @@ define([
 	          name: javascriptMessages['referencesMenuName'],
 	          tooltip : javascriptMessages['referencesMenuTooltip']
 		});
-		var refscommand = new RefsCommand(ternWorker, 
+		var refscommand = new RefsCommand(ternServer, 
 						astManager,
 						scriptresolver,
 						CUProvider,
@@ -490,7 +337,7 @@ define([
     	);
 
     	provider.registerServiceProvider("orion.edit.command",  //$NON-NLS-1$
-    			new OpenImplCommand.OpenImplementationCommand(astManager, ternWorker, CUProvider),
+    			new OpenImplCommand.OpenImplementationCommand(astManager, ternServer, CUProvider),
     			{
     		name: javascriptMessages["openImplName"],
     		tooltip : javascriptMessages['openImplTooltip'],
@@ -500,7 +347,7 @@ define([
     			}
     	);
     	provider.registerServiceProvider("orion.edit.command",  //$NON-NLS-1$
-    			new RenameCommand.RenameCommand(astManager, ternWorker, scriptresolver, CUProvider),
+    			new RenameCommand.RenameCommand(astManager, ternServer, scriptresolver, CUProvider),
     			{
     		name: javascriptMessages['renameElement'],
     		tooltip : javascriptMessages['renameElementTooltip'],
@@ -1154,7 +1001,12 @@ define([
 	    	 * Re-init
 	    	 * @see https://bugs.eclipse.org/bugs/show_bug.cgi?id=462878
 	    	 */
-	    	Metrics.initFromRegistry(serviceRegistry);
+	    	//Metrics.initFromRegistry(serviceRegistry);
     	});
+	}
+	
+	return {
+		connect: connect
+	};
 });
 

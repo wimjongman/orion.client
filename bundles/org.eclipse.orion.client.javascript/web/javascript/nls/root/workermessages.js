@@ -76,6 +76,7 @@ define({
 	'failedRefs': 'Failed to find references',
 	'failedRefsNoServer': 'failed to find references - server not started',
 	'failedType': 'Failed to find type',
+	'failedTypeNoServer': 'Failed to find type - server not started',
 	'unknownRequest': 'The request \'${0}\' is unknown',
 	'serverNotStarted': 'The server has not been started. Request: \'${0}\'',
 	'funcProposalDescription': ' - The name of the function',
@@ -88,5 +89,7 @@ define({
 	'eslintRuleEnable': ' - ESLint rule enablement directive',
 	'eslintRuleDisable': ' - ESLint rule disablement directive',
 	'failedToComputeProblems': 'Failed to compute ESLint problems/markers',
-	'failedToComputeOutline': 'Failed to compute outline'
+	'failedToComputeProblemsNoServer': 'Failed to compute ESLint problems/markers - server not started',
+	'failedToComputeOutline': 'Failed to compute outline',
+	'failedToComputeOutlineNoServer': 'Failed to compute outline - server not started'
 });

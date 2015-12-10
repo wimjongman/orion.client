@@ -228,14 +228,14 @@ define([
 	 * @public
 	 * @param {javascript.ASTManager} astManager
 	 * @param {javascript.ScriptResolver} resolver
-	 * @param {javascript.TernWorkerCore} ternWorker
+	 * @param {TernServer} ternserver
 	 * @param {javascript.CUProvider} cuProvider
 	 * @since 7.0
 	 */
-	function JavaScriptHover(astManager, resolver, ternWorker, cuProvider) {
+	function JavaScriptHover(astManager, resolver, ternServer, cuProvider) {
 		this.astManager = astManager;
 		this.resolver = resolver;
-		this.ternworker = ternWorker;
+		this.ternserver = ternServer;
 		this.cuprovider = cuProvider;
 	}
 
@@ -335,13 +335,14 @@ define([
 		    }
 			deferred = new Deferred();
 			var files = [{type: 'full', name: meta.location, text: htmlsource ? htmlsource : ast.source}]; //$NON-NLS-1$
-			this.ternworker.postMessage(
-				{request:'documentation', args:{params:{offset: ctxt.offset, docFormat: 'full'}, files: files, meta:{location: meta.location}}}, //$NON-NLS-1$ //$NON-NLS-2$
-				function(response) {
-					var hover = '';
-					if(response.request === 'documentation') {
-						if(response.doc) {
-							hover = formatMarkdownHover(response.doc.doc);
+			this.ternserver.documentation(meta.location, ctxt.offset, null, files,
+				function(val, err) {
+					if(err) {
+						deferred.reject(err.message);
+					} else {
+						var hover = '';
+						if(val) {
+							hover = formatMarkdownHover(val);
 						}
 						deferred.resolve(hover);
 					}
@@ -361,7 +362,7 @@ define([
 		    if(path && files) {
 		        var title = null;
 		        if(files.length > 1) {
-		             title = i18nUtil.formatMessage('###${0} \'${1}\'###', Messages['openFileForTitle'], path); //$NON-NLS-1$ //$NON-NLS-2$
+		             title = i18nUtil.formatMessage('###${0} \'${1}\'###', Messages['openFileForTitle'], path); //$NON-NLS-1$
 		        }
 		        var hover = '';
 		        for(var i = 0; i < files.length; i++) {
@@ -372,7 +373,7 @@ define([
     		                      {
     		                      resource: file.location,
     		                      params: {}
-    		                      }); //$NON-NLS-0$
+    		                      });
 		                hover += file.name + ']('+href+') - '+file.path+'\n\n'; //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$
 		            }
 

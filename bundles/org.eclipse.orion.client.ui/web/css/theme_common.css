@@ -1137,10 +1137,6 @@ a.breadcrumb.currentLocation {
 	transition: opacity 0.2s ease-in;
 }
 
-.textviewTooltip {
-	background-color: #158d7a;
-}
-
 .textviewTooltip .commandButton {
 	border-color: white;
 	color: white;

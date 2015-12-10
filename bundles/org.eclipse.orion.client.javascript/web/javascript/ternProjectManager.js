@@ -20,13 +20,13 @@ define([
 	 * @constructor
 	 * @public
 	 * @param {javascript.ASTManager} ASTManager The backing AST manager
-	 * @param {TernWorker} ternWorker The running Tern worker
+	 * @param {TernServer} ternSErver The running Tern server
 	 * @param {javascript.CUProvider} cuProvider
 	 * @returns {javascript.commands.OpenDeclarationCommand} A new command
 	 * @since 8.0
 	 */
-	function TernProjectManager(ternWorker, scriptResolver, fileClient) {
-		this.ternWorker = ternWorker;
+	function TernProjectManager(ternServer, scriptResolver, fileClient) {
+		this.ternWorker = ternServer;
 		this.scriptResolver = scriptResolver;
 		this.fileClient = fileClient;
 		this.currentProjectLocation = null;
@@ -145,7 +145,7 @@ define([
 //				console.log(jsonOptions);
 				
 				if (jsonOptions.plugins || Array.isArray(jsonOptions.libs) || jsonOptions.dependencyBudget || jsonOptions.ecmaVersion){
-					this.ternWorker.postMessage({request: "start_server", args: {options: jsonOptions}}); //$NON-NLS-1$
+					this.ternWorker.startServer(jsonOptions);
 				}
 
 				if (Array.isArray(jsonOptions.loadEagerly)){
@@ -165,9 +165,7 @@ define([
 								if (files.length > 1){
 									console.log('Tern-Project File: Found multiple potential files for: ' + filename);
 								}
-								this.ternWorker.postMessage(
-									{request:'addFile', args:{file: files[0].location}} //$NON-NLS-1$
-								);
+								this.ternWorker.addFile(files[0].location);
 							} else {
 								console.log("Tern-Project File: Could not find any matching files for: " + filename);
 							}

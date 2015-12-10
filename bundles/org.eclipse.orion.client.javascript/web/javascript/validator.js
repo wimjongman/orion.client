@@ -59,14 +59,13 @@ define([
 
 	/**
 	 * @description Creates a new ESLintValidator
-	 * @constructor
 	 * @public
-	 * @param {javascript.ASTManager} astManager The AST manager backing this validator
-	 * @param {javascript.CUProvider} cuProvider
+	 * @param {TernServer} ternServer The backing running server
+	 * @param {CUProvider} cuProvider
 	 * @returns {ESLintValidator} Returns a new validator
 	 */
-	function ESLintValidator(ternWorker, cuProvider) {
-		this.ternWorker = ternWorker;
+	function ESLintValidator(ternServer, cuProvider) {
+		this.ternserver = ternServer;
 		this.cuprovider = cuProvider;
 		config.setDefaults();
 	}
@@ -222,16 +221,9 @@ define([
 				undefRuleValue = config.rules['no-undef'];
 				config.rules['no-undef'] = 0;
 			}
-			
-			config.env = env;
 			var files = [{type: 'full', name: meta.location, text: text}]; //$NON-NLS-1$
-			var request = {request: 'lint', args: {meta: {location: meta.location}, files: files, rules: config.rules}}; //$NON-NLS-1$
-			if(env) {
-				request.env = config.env;
-			}
-			this.ternWorker.postMessage(
-				request, 
-				/* @callback */ function(type, err) {
+			this.ternserver.lint(meta.location, config.rules, env, files, 
+					function(val, err) {
 						var eslintErrors = []; 
 						if(err) {
 							eslintErrors.push({
@@ -239,13 +231,14 @@ define([
 								args: {0: err.error, nls: "eslintValidationFailure" }, //$NON-NLS-0$
 								severity: "error" //$NON-NLS-0$
 							});
-						} else if (type.problems) {
-							type.problems.forEach(function(element) {
+						} else if (val) {
+							val.forEach(function(element) {
 								eslintErrors.push(element);
 							});
 						}
 						deferred.resolve({ problems: eslintErrors.map(toProblem) });
-				});
+					}
+			);
 			if (htmlMode) {
 				config.rules['no-undef'] = undefRuleValue;
 			}

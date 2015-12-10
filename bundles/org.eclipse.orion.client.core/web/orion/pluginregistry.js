@@ -1076,10 +1076,10 @@ define(["orion/Deferred", "orion/EventTarget", "orion/URL-shim"], function(Defer
                                 }
                             });
                             message = "Plugin handshake timeout for: " + url;
-                           newTimeout = this._loading ? 5000 : (timeout || 60000) + extraTimeout;
+                           newTimeout = this._loading ? 50000 : (timeout || 60000) + extraTimeout;
                         } else {
                             message = "Plugin load timeout for: " + url;
-                            newTimeout = timeout || 15000;
+                            newTimeout = timeout || 150000;
                         }
                     }
                     if (this._loadTimeout) clearTimeout(this._loadTimeout);

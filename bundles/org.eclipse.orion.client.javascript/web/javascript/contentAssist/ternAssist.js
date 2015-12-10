@@ -152,7 +152,8 @@ define([
  	});
 
  	var provider = new TemplateProvider();
-
+	var ternserver;
+	
 	/**
 	 * @description Creates a new TernContentAssist object
 	 * @constructor
@@ -162,9 +163,9 @@ define([
 	 * @param {Function} pluginEnvironments The function to use to query the Tern server for contributed plugins
 	 * @param {Object} cuprovider The CU Provider that caches compilation units
 	 */
-	function TernContentAssist(astManager, ternWorker, pluginEnvironments, cuprovider) {
+	function TernContentAssist(astManager, ternServer, pluginEnvironments, cuprovider) {
 		this.astManager = astManager;
-		this.ternworker = ternWorker;
+		ternserver = ternServer;
 		this.pluginenvs = pluginEnvironments;
 		this.cuprovider = cuprovider;
 		this.timeout = null;
@@ -223,14 +224,16 @@ define([
 		    }
 		    var args = {params: params, meta: meta, envs:env, files: files};
 			var deferred = new Deferred();
-			var that = this;
-			this.ternworker.postMessage({request: 'completions', args: args}, //$NON-NLS-1$
-				function(response) {
-					clearTimeout(that.timeout);
-		        	deferred.resolve(sortProposals(response.proposals, templates, args));
-				}
-        	);
-			
+			ternserver.completions(meta.location, params.offset, params.keywords, files, 
+				function(val, err) {
+					clearTimeout(this.timeout);
+					if(err) {
+						deferred.reject(err.message);
+					} else {
+			        	deferred.resolve(sortProposals(val, templates, args));
+		        	}
+
+				}.bind(this));
 			if(this.timeout) {
 				clearTimeout(this.timeout);
 			}
@@ -239,8 +242,8 @@ define([
 					// In the editor we can't return an error message here or it will be treated as a proposal and inserted into text
 					deferred.resolve(params.timeoutReturn ? params.timeoutReturn : []);
 				}
-				that.timeout = null;
-			}, params.timeout ? params.timeout : 5000);
+				this.timeout = null;
+			}.bind(this), params.timeout ? params.timeout : 5000);
 			return deferred;
 		},
 

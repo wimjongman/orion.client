@@ -21,14 +21,14 @@ define([
 	 * @constructor
 	 * @public
 	 * @param {javascript.ASTManager} ASTManager The backing AST manager
-	 * @param {TernWorker} ternWorker The running Tern worker
+	 * @param {TernServer} ternServer The running Tern server
 	 * @param {javascript.CUProvider} cuProvider
 	 * @returns {javascript.commands.OpenImplementationCommand} A new command
 	 * @since 10.0
 	 */
-	function OpenImplementationCommand(ASTManager, ternWorker, cuProvider) {
+	function OpenImplementationCommand(ASTManager, ternServer, cuProvider) {
 		this.astManager = ASTManager;
-		this.ternworker = ternWorker;
+		this.ternserver = ternServer;
 		this.cuprovider = cuProvider;
 		this.timeout = null;
 	}
@@ -53,18 +53,24 @@ define([
 				this.timeout = null;
 			}, 5000);
 			var files = [{type: 'full', name: options.input, text: text}]; //$NON-NLS-1$
-			this.ternworker.postMessage(
-				{request:'implementation', args:{params:{offset: options.offset}, guess: true, files: files, meta:{location: options.input}}}, //$NON-NLS-1$
-				function(response) {
-					if(response.implementation && (typeof(response.implementation.start) === 'number' && typeof(response.implementation.end) === 'number')) {
+			this.ternserver.implementation(options.input, options.offset, true, files,
+				function(val, err) {
+					clearTimeout(this.timeout);
+					if(err) {
+						deferred.reject(err.message);
+					} else if(val) {
+						if(val.guess) {
+							//TODO handle a guess
+						}
 						var opts = Object.create(null);
-						opts.start = response.implementation.start;
-						opts.end = response.implementation.end;
-						deferred.resolve(editorContext.openEditor(response.implementation.file, opts));
+						opts.start = val.start;
+						opts.end = val.end;
+						deferred.resolve(editorContext.openEditor(val.file, opts));
 					} else {
 						deferred.reject({Severity: 'Warning', Message: Messages['noImplFound']}); //$NON-NLS-1$
 					}
-				});
+				}.bind(this)
+			);
 		}
 	});
 
