@@ -42,6 +42,7 @@ define([
 		 * @private
 		 */
 		_report: function _report(heading, message) {
+			this._fileErrors = [];
 			if(!this.inEditor) {
 				var head = heading;
 				if(!head) {
@@ -63,6 +64,19 @@ define([
 				this.registry.getService("orion.page.message").setProgressResult(msg); //$NON-NLS-1$
 			}
 		},
+		
+		_reportDelayed: function _reportDelayed(){
+			// TODO Should we display even in the editor?
+			if (this._fileErrors && this._fileErrors.length > 0){
+				var message = "";
+				for (var i=0; i<this._fileErrors.length; i++) {
+					message += this._fileErrors[i] + '\n';
+				}
+				this._report("A problem with the loadEagerly attribute in your .tern-project file was found.", message);
+			}
+			this._fileErrors = [];
+		},
+		
 		/**
 		 * @description Get the file client;
 		 * @function
@@ -204,6 +218,7 @@ define([
 		 * @param jsonOptions {Object} options to load into Tern
 		 */
 		loadTernProjectOptions: function(jsonOptions) {
+			this._fileErrors = [];
 			this.ternWorker.postMessage({request: "start_server", args: {options: jsonOptions}}); //$NON-NLS-1$
 			if (Array.isArray(jsonOptions.loadEagerly)) {
 				for (var i = 0; i < jsonOptions.loadEagerly.length; i++) {
@@ -216,13 +231,14 @@ define([
 					}
 					this.scriptResolver.getWorkspaceFile(filename, {ext: ext}).then(function(files) {
 						if (Array.isArray(files) && files.length > 0){
-//							if (files.length > 1) {
-//								this._report("Mutiple matches were found eagerly loading file: "+filename, 
-//								files[0].location+" was chosen and loaded.");							
-//							}
+							if (files.length > 1) {
+								this._fileErrors.push("Mutiple matches found for: "+filename + ". " + files[0].location+" was chosen and loaded.");							
+							}
 							this.ternWorker.postMessage(
 								{request:'addFile', args:{file: files[0].location}} //$NON-NLS-1$
 							);
+						} else {
+							this._fileErrors.push("No file could be found matching: " + filename);
 						}
 					}.bind(this));
 				}
@@ -235,6 +251,7 @@ define([
 		 * @see https://wiki.eclipse.org/Orion/Documentation/Developer_Guide/Plugging_into_the_editor#orion.edit.model
 		 */
 		onInputChanged: function onInputChanged(evnt) {
+			this._reportDelayed();
 			this.inEditor = ".tern-project" === evnt.file.name;
 			if(this.inEditor) {
 				this.currentProjectLocation = null;
