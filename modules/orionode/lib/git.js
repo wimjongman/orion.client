@@ -57,93 +57,97 @@ function Git(options) {
 	.use(bodyParser.json())
 	.use(resource(workspaceRoot, {
 		GET: function(req, res, next, rest) {
+			var ws = workspaceDir + (req.user && req.user.workspace || "");
 			if (rest === '') {
 				writeError(400, res);
 			} else if (rest.indexOf("clone/") === 0) {
-				clone.getClone(workspaceDir, fileRoot, req, res, next, rest);
+				clone.getClone(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("remote/") === 0) {
-				remotes.getRemotes(workspaceDir, fileRoot, req, res, next, rest);
+				remotes.getRemotes(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("branch/")===0) {
-				branches.getBranches(workspaceDir, fileRoot, req, res, next, rest);
+				branches.getBranches(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("status/file/") === 0) {
-				status.getStatus(workspaceDir, fileRoot, req, res, next, rest);
+				status.getStatus(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("config/clone/file/") === 0) {
-				config.getConfig(workspaceDir, fileRoot, req, res, next, rest);
+				config.getConfig(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("config/") === 0) {
-				config.getAConfig(workspaceDir, fileRoot, req, res, next, rest);
+				config.getAConfig(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("index/") === 0) {
-				index.getIndex(workspaceDir, fileRoot, req, res, next, rest);
+				index.getIndex(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("tag/") === 0) {
-				tags.getTags(workspaceDir, fileRoot, req, res, next, rest);
+				tags.getTags(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("stash/file") === 0) {
-				stash.getStash(workspaceDir, fileRoot, req, res, next, rest);
+				stash.getStash(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("blame/") === 0) {
-				blame.getBlame(workspaceDir, fileRoot, req, res, next, rest);
+				blame.getBlame(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("commit/") === 0) {
-				commit.getCommit(workspaceDir, fileRoot, req, res, next, rest);
+				commit.getCommit(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("diff/") === 0) {
-				diff.getDiff(workspaceDir, fileRoot, req, res, next, rest);
+				diff.getDiff(ws, fileRoot, req, res, next, rest);
 			} else {
 				writeError(403, res);
 			}
 		},
 		POST: function(req, res, next, rest) {
+			var ws = workspaceDir + (req.user && req.user.workspace || "");
 			if (rest.indexOf("clone/") === 0){
-				clone.postInit(workspaceDir, fileRoot, req, res, next, rest);
+				clone.postInit(ws, fileRoot, req, res, next, rest);
 			} else if(rest.indexOf("index/") === 0) {
-				index.postIndex(workspaceDir, fileRoot, req, res, next, rest);
+				index.postIndex(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("config/") === 0) {
-				config.postConfig(workspaceDir, fileRoot, req, res, next, rest);
+				config.postConfig(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("commit/") === 0) {
-				commit.postCommit(workspaceDir, fileRoot, req, res, next, rest);
+				commit.postCommit(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("branch/") === 0) {
-				branches.createBranch(workspaceDir, fileRoot, req, res, next, rest);
+				branches.createBranch(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("diff/") === 0) {
-				diff.getDiffLocation(workspaceDir, fileRoot, req, res, next, rest);
+				diff.getDiffLocation(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("remote/file/") === 0) {
-				remotes.addRemote(workspaceDir, fileRoot, req, res, next, rest);
+				remotes.addRemote(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("remote/") === 0) {
-				remotes.postRemote(workspaceDir, fileRoot, req, res, next, rest);
+				remotes.postRemote(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("stash/") === 0) {
-				stash.postStash(workspaceDir, fileRoot, req, res, next, rest);
+				stash.postStash(ws, fileRoot, req, res, next, rest);
 			} else {	
 				writeError(403, res);
 			}
 		},
 		PUT: function(req, res, next, rest) {
+			var ws = workspaceDir + (req.user && req.user.workspace || "");
 			if (rest.indexOf("clone/") === 0) {
-				clone.putClone(workspaceDir, fileRoot, req, res, next, rest);
+				clone.putClone(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("index/") === 0) {
-				index.putIndex(workspaceDir, fileRoot, req, res, next, rest);
+				index.putIndex(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("config/") === 0) {
-				config.putConfig(workspaceDir, fileRoot, req, res, next, rest);
+				config.putConfig(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("commit/") === 0) {
-				commit.putCommit(workspaceDir, fileRoot, req, res, next, rest);
+				commit.putCommit(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("stash/") === 0) {
-				stash.putStash(workspaceDir, fileRoot, req, res, next, rest);
+				stash.putStash(ws, fileRoot, req, res, next, rest);
 			} else {
 				// Would 501 be more appropriate?
 				writeError(403, res);
 			}
 		},
 		DELETE: function(req, res, next, rest) {
+			var ws = workspaceDir + (req.user && req.user.workspace || "");
 			if(rest.indexOf("clone/file/") === 0) {
 				var configPath = rest.replace("clone/file", "");
-				rmdir(fileUtil.safeFilePath(workspaceDir, configPath), function(err) {
+				rmdir(fileUtil.safeFilePath(ws, configPath), function(err) {
 					if (err) return writeError(500, res, err);
 					res.statusCode = 200;
 					res.end();
 				});
 			} else if (rest.indexOf("config/") === 0) {
-				config.deleteConfig(workspaceDir, fileRoot, req, res, next, rest);
+				config.deleteConfig(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("tag/") === 0) {
-				tags.deleteTags(workspaceDir, fileRoot, req, res, next, rest);
+				tags.deleteTags(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("branch/") === 0) {
-				branches.deleteBranch(workspaceDir, fileRoot, req, res, next, rest);
+				branches.deleteBranch(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("remote/") === 0) {
-				remotes.deleteRemote(workspaceDir, fileRoot, req, res, next, rest);
+				remotes.deleteRemote(ws, fileRoot, req, res, next, rest);
 			} else if (rest.indexOf("stash/") === 0) {
-				stash.deleteStash(workspaceDir, fileRoot, req, res, next, rest);
+				stash.deleteStash(ws, fileRoot, req, res, next, rest);
 			} else {
 				writeError(403, res);
 			}
