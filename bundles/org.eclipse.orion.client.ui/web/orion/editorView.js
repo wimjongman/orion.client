@@ -100,7 +100,7 @@ define([
 		this.undoStack = options.undoStack;
 		this.problemsServiceID = options.problemsServiceID || "orion.core.marker"; //$NON-NLS-0$
 		this.editContextServiceID = options.editContextServiceID || "orion.edit.context"; //$NON-NLS-0$
-		this.syntaxHighlighter = new Highlight.SyntaxHighlighter(this.serviceRegistry);
+		this.syntaxHighlighter = new Highlight.SyntaxHighlighter(this.serviceRegistry, null, options.preferences);
 		var keyAssist = mGlobalCommands.getKeyAssist ? mGlobalCommands.getKeyAssist() : null;
 		if(keyAssist) {
 			keyAssist.addProvider(this.editorCommands);

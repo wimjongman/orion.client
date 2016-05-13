@@ -574,6 +574,7 @@ define([
 			logEvent: function(category, action, label, value) {
 			},
 			logTiming: function(timingCategory, timingVar, timingValue, timingLabel) {
+console.log("timing: " + timingCategory + "..." + timingVar + "..." + timingValue + "..." + timingLabel);
 				if (timingCategory === "page" && timingVar === "complete") {
 					var pageLoader = require.defined("orion/splash") && require("orion/splash").getPageLoader();
 					if (pageLoader) pageLoader.takeDown();

@@ -11,13 +11,167 @@
  ******************************************************************************/
 
 /*eslint-env browser, amd*/
-define("orion/editor/textStyler", ['orion/editor/annotations', 'orion/editor/eventTarget', 'orion/metrics'], //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-	function(mAnnotations, mEventTarget, mMetrics) {
+define("orion/editor/textStyler", ['orion/Deferred', 'orion/editor/annotations', 'orion/editor/eventTarget', 'orion/regex', 'orion/metrics'], //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+	function(Deferred, mAnnotations, mEventTarget, mRegex, mMetrics) {
 
 	/*
 	 * Throughout textStyler "block" refers to a potentially multi-line token.
 	 * Typical examples are multi-line comments and multi-line strings.
 	 */
+
+	var mOnigurumaRegEx = null;
+
+//	var nonJSregexFeatures = [
+//		/\(\?[ims\-]:/, /* option on/off for subexp */
+//		/\(\?<[=!]/, /* lookbehind */
+//		/\(\?>/, /* atomic group */
+//	];
+//
+//	/* converts an extended regex pattern into a normal one */
+//	function normalize(/**String*/ str) {
+//		var result = "";
+//		var insideCharClass = false;
+//		var len = str.length;
+//		for (var i = 0; i < len; ) {
+//			var chr = str.charAt(i);
+//			if (!insideCharClass && chr === "#") {
+//				/* skip to eol */
+//				while (i < len && chr !== "\r" && chr !== "\n") {
+//					chr = str.charAt(++i);
+//				}
+//			} else if (!insideCharClass && /\s/.test(chr)) {
+//				/* skip whitespace */
+//				while (i < len && /\s/.test(chr)) { 
+//					chr = str.charAt(++i);
+//				}
+//			} else if (chr === "\\") {
+//				result += chr;
+//				if (!/\s/.test(str.charAt(i + 1))) {
+//					result += str.charAt(i + 1);
+//					i++;
+//				}
+//				i++;
+//			} else if (chr === "[") {
+//				insideCharClass = true;
+//				result += chr;
+//				i++;
+//			} else if (chr === "]") {
+//				insideCharClass = false;
+//				result += chr;
+//				i++;
+//			} else {
+//				result += chr;
+//				i++;
+//			}
+//		}
+//		return result;
+//	}
+//
+//	/**
+//	 * Checks if flag applies to entire pattern. If so, obtains replacement string by calling processor
+//	 * on the unwrapped pattern. Handles 2 possible syntaxes: (?f)pat and (?f:pat)
+//	 * @param {String} flag
+//	 * @param {String} str
+//	 * @param {Function} processor
+//	 */
+//	function processGlobalFlag(flag, str, processor) {
+//		var match = /^\(\?([^:)]+)\)/.exec(str);
+//		if (match) {
+//			if (match[1].indexOf(flag) !== -1) {
+//				var remainingFlags = match[1].replace(flag, "");
+//				if (remainingFlags.length) {
+//					remainingFlags = "(?" + remainingFlags + ")";
+//				}
+//				return remainingFlags + processor(str.substring(match[0].length));
+//			}
+//		}
+//		return str;
+//	}
+//	
+//	function getJSRegExpEquivalent(pattern, flags) {
+//		flags = flags || "";
+//
+//		function getMatchingCloseParen(/*String*/pat, /*Number*/start) {
+//			var depth = 0;
+//			var len = pat.length;
+//			var flagStop = -1;
+//			for (var i = start; i < len && flagStop === -1; i++) {
+//				switch (pat.charAt(i)) {
+//					case "\\":
+//						i++; /* escape: skip next char */
+//						break;
+//					case "(":
+//						depth++;
+//						break;
+//					case ")":
+//						depth--;
+//						if (depth === 0) {
+//							flagStop = i;
+//						}
+//						break;
+//				}
+//			}
+//			return flagStop;
+//		}
+//
+//		/*
+//		 * If there are flags scoped to first group and the first group spans the
+//		 * full pattern then convert the flags to global.
+//		 */
+//		var match = /^\(\?([^:)]+):/.exec(pattern); /* flag(s) scoped to first group */
+//		if (match) {
+//			var endIndex = getMatchingCloseParen(pattern, 0);
+//			if (pattern.search(/\)\s*$/) === endIndex) {
+//				/* group spans whole pattern */
+//				pattern = "(?" + match[1] + ")(" + pattern.substring(match[0].length, endIndex + 1);
+//			}
+//		}
+//
+//		/* Handle global "x" flag (whitespace/comments) */
+//		pattern = processGlobalFlag("x", pattern, function(subexp) {
+//			return normalize(subexp);
+//		});
+//
+//		/* Handle global "i" flag (case-insensitive) */
+//		pattern = processGlobalFlag("i", pattern, function(subexp) {
+//			flags += "i";
+//			return subexp;
+//		});
+//
+//		/* now determine whether pattern can be represented by a standard JS RegExp */
+//		for (var i = 0; i < nonJSregexFeatures.length; i++) {
+//			if (nonJSregexFeatures[i].test(pattern)) {
+//				return null; /* using unsupportable features */
+//			}
+//		}
+//
+//		/* can be represented as a JS RegExp */
+//		return {pattern, flags};
+//	}
+
+	var counterRegular = 0;
+	var counterOniguruma = 0;
+
+	function createRegexp(pattern, flags, needOniguruma) {
+		if (!needOniguruma) {
+console.log("regular: " + counterRegular++);
+			return new RegExp(pattern, flags);
+		}
+		
+console.log("oniguruma: " + counterOniguruma++);
+		if (!mOnigurumaRegEx) {
+			// TODO log an error message
+			return null;
+		}
+
+		var result = new mOnigurumaRegEx(pattern, flags);
+		if (!result.source) {
+			/* failed to create the Oniguruma regex */
+			return null;
+		}
+
+		return result;
+	}
 
 	var binarySearch = function(array, offset, inclusive, low, high) {
 		var index;
@@ -42,7 +196,17 @@ define("orion/editor/textStyler", ['orion/editor/annotations', 'orion/editor/eve
 	}
 
 	var createPatternBasedAdapter = function(grammars, rootId, contentType) {
-		return new PatternBasedAdapter(grammars, rootId, contentType);
+		var result = new Deferred();
+		var adapter = new PatternBasedAdapter(grammars, rootId, contentType);
+		if (!adapter.getNeedsOniguruma() || mOnigurumaRegEx) {
+			result.resolve(adapter);
+		} else {
+			require({waitSeconds: 0}, ["orion/onigurumaRegex"], function(onigurumaRegex) {
+				mOnigurumaRegEx = onigurumaRegex;
+				result.resolve(adapter);	
+			});
+		}
+		return result;
 	};
 
 	function PatternBasedAdapter(grammars, rootId, contentType) {
@@ -162,7 +326,7 @@ define("orion/editor/textStyler", ['orion/editor/annotations', 'orion/editor/eve
 							block,
 							testPattern);
 						var subBlocks = testBlock.getBlocks();
-						if (!subBlocks.length || subBlocks[subBlocks.length - 1].end <= (result.index + offset)) {
+						if (!subBlocks.length || subBlocks[subBlocks.length - 1].end <= result.index + offset) {
 							resultEnd = testBlock;
 						}
 						lastIndex = result.index + result[0].length;
@@ -364,6 +528,9 @@ define("orion/editor/textStyler", ['orion/editor/annotations', 'orion/editor/eve
 				}
 			}
 			return "";
+		},
+		getNeedsOniguruma: function() {
+			return this._patternManager.getNeedsOniguruma();
 		},
 		parse: function(text, offset, startIndex, block, _styles, ignoreCaptures) {
 			if (!text) {
@@ -647,30 +814,31 @@ define("orion/editor/textStyler", ['orion/editor/annotations', 'orion/editor/eve
 				return;
 			}
 			var patterns = patternManager.getPatterns(block.pattern ? block.pattern.pattern : null);
-			var initRegex = function(match) {
+			var initRegex = function(match, needsOniguruma) {
 				var matchString = typeof(match) === "string" ? match : match.match;
-				var result = this._ignoreCaseRegex.exec(matchString);
-				var flags = this._FLAGS;
-				if (result) {
-					matchString = matchString.substring(result[0].length);
-					flags += "i";
-				}
-				return new RegExp(matchString, flags);
+				return createRegexp(matchString, this._FLAGS, needsOniguruma);
 			}.bind(this);
 			var lastBlock = -1;
 			var index = 0;
 			patterns.forEach(function(current) {
 				var pattern;
 				if (current.match && !current.begin && !current.end) {
-					pattern = {regex: initRegex(current.match), pattern: current};
-					block.linePatterns.push(pattern);
-					if (current.name && current.name.indexOf("punctuation.section") === 0 && (current.name.indexOf(this._PUNCTUATION_SECTION_BEGIN) !== -1 || current.name.indexOf(this._PUNCTUATION_SECTION_END) !== -1)) { //$NON-NLS-0$
-						block.enclosurePatterns[current.name] = pattern;
+					var regex = initRegex(current.match, current.matchNeedsOniguruma);
+					if (regex) {
+						pattern = {regex: regex, pattern: current};
+						block.linePatterns.push(pattern);
+						if (current.name && current.name.indexOf("punctuation.section") === 0 && (current.name.indexOf(this._PUNCTUATION_SECTION_BEGIN) !== -1 || current.name.indexOf(this._PUNCTUATION_SECTION_END) !== -1)) { //$NON-NLS-0$
+							block.enclosurePatterns[current.name] = pattern;
+						}
 					}
 				} else if (!current.match && current.begin && current.end) {
 					lastBlock = index;
-					pattern = {regexBegin: initRegex(current.begin), regexEnd: initRegex(current.end), pattern: current};
-					block.linePatterns.push(pattern);
+					var beginRegex = initRegex(current.begin, current.beginNeedsOniguruma);
+					var endRegex = initRegex(current.end, current.endNeedsOniguruma);
+					if (beginRegex && endRegex) {
+						pattern = {regexBegin: beginRegex, regexEnd: endRegex, pattern: current};
+						block.linePatterns.push(pattern);
+					}
 				}
 				index++;
 			}.bind(this));
@@ -695,7 +863,7 @@ define("orion/editor/textStyler", ['orion/editor/annotations', 'orion/editor/eve
 			}
 		},
 		_substituteCaptureValues: function(regex, resolvedResult) {
-			var regexString = regex.toString();
+			var regexString = regex.toString(); // TODO should this be getting "source"?  If so then there is no leading/trailing '/' to consider below
 			this._captureReferenceRegex.lastIndex = 0;
 			if (!this._captureReferenceRegex.test(regexString)) {
 				/* nothing to do */
@@ -710,7 +878,7 @@ define("orion/editor/textStyler", ['orion/editor/annotations', 'orion/editor/eve
 				result = this._captureReferenceRegex.exec(regexString);
 			}
 			/* return an updated regex, remove the leading '/' and trailing /FLAGS */
-			return new RegExp(regexString.substring(1, regexString.length - 1 - this._FLAGS.length), this._FLAGS);
+			return createRegexp(regexString.substring(1, regexString.length - 1 - this._FLAGS.length), this._FLAGS, regex.isOniguruma);
 		},
 		_updateMatch: function(match, text, matches, minimumIndex, endIndex) {
 			var regEx = match.pattern.regex ? match.pattern.regex : match.pattern.regexBegin;
@@ -729,7 +897,6 @@ define("orion/editor/textStyler", ['orion/editor/annotations', 'orion/editor/eve
 		},
 		_captureReferenceRegex: /\\(\d)/g,
 		_eolRegex: /$/,
-		_ignoreCaseRegex: /^\(\?i\)\s*/,
 		_linebreakRegex: /(.*)(?:[\r\n]|$)/g,
 		_CR: "\r", //$NON-NLS-0$
 		_FLAGS: "g", //$NON-NLS-0$
@@ -742,12 +909,16 @@ define("orion/editor/textStyler", ['orion/editor/annotations', 'orion/editor/eve
 		this._unnamedCounter = 0;
 		this._patterns = [];
 		this._rootId = rootId;
-		grammars.forEach(function(grammar) {
-			this._addRepositoryPatterns(grammar.repository || {}, grammar.id);
-			this._addPatterns(grammar.patterns || [], grammar.id);
-		}.bind(this));
+		this._needsOniguruma = false;
+		grammars.sort(function(a, b) {
+			return a.id < b.id ? -1 : a.id === b.id ? 0 : 1;
+		});
+		this._add(rootId, grammars);
 	}
 	PatternManager.prototype = {
+		getNeedsOniguruma: function() {
+			return this._needsOniguruma;
+		},
 		getPatterns: function(pattern) {
 			var parentId;
 			if (!pattern) {
@@ -763,7 +934,7 @@ define("orion/editor/textStyler", ['orion/editor/annotations', 'orion/editor/eve
 			/* indexes on patterns are used to break ties when multiple patterns match the same start text */
 			var indexCounter = [0];
 			var resultObject = {};
-			var regEx = new RegExp("^" + parentId + "[^#]+$"); //$NON-NLS-0$
+			var regEx = new RegExp("^" + mRegex.escape(parentId) + "[^#]+$"); //$NON-NLS-0$
 			this._patterns.forEach(function(current) {
 				if (regEx.test(current.qualifiedId)) {
 					if (current.include) {
@@ -784,40 +955,94 @@ define("orion/editor/textStyler", ['orion/editor/annotations', 'orion/editor/eve
 			return result;
 		},
 
-		/** @private */
+		_add: function(id, grammars) {
+			var index;
+			if (id.indexOf("#") === -1) {
+				index = this._findGrammar(grammars, id);
+				if (index < 0 || grammars.length <= index || grammars[index].id !== id) {
+					// TODO show a warning
+					console.log("didn't find grammar: " + id);
+				} else {
+					this._addPatterns(grammars[index].patterns || [], id, grammars);
+				}
+				return;
+			}
 
-		_addPattern: function(pattern, patternId, parentId) {
+			var match = /^([^#]*)#(.*)/.exec(id);
+			index = this._findGrammar(grammars, match[1]);
+			if (grammars[index].id !== match[1]) {
+				// TODO show a warning
+			} else {
+				var pattern = grammars[index].repository[match[2]];
+				if (!pattern) {
+					// TODO show a warning
+				} else {
+					this._addPattern(pattern, match[2], match[1], grammars);
+				}
+			}
+		},
+
+		_addPattern: function(pattern, patternId, parentId, grammars) {
 			pattern.parentId = parentId;
 			pattern.id = patternId;
 			pattern.qualifiedId = pattern.parentId + "#" + pattern.id;
 			this._patterns.push(pattern);
+
+			if (!this._needsOniguruma) {
+				if (pattern.match && !pattern.begin && !pattern.end) {
+					this._needsOniguruma = pattern.matchNeedsOniguruma;
+				} else if (!pattern.match && pattern.begin && pattern.end) {
+					this._needsOniguruma = pattern.beginNeedsOniguruma;
+					if (!this._needsOniguruma) {
+						this._needsOniguruma = pattern.endNeedsOniguruma;
+					}
+				}
+			}
+
 			if (pattern.patterns && !pattern.include) {
-				this._addPatterns(pattern.patterns, pattern.qualifiedId);
+				this._addPatterns(pattern.patterns, pattern.qualifiedId, grammars);
+			}
+			if (pattern.include) {
+				if (pattern.include.indexOf("#") === 0) {
+					this._add(parentId + pattern.include, grammars);
+				} else {
+					this._add(pattern.include, grammars);
+				}
 			}
 		},
-		_addPatterns: function(patterns, parentId) {
+		_addPatterns: function(patterns, parentId, grammars) {
 			patterns.forEach(function(pattern) {
-				this._addPattern(pattern, this._NO_ID + this._unnamedCounter++, parentId);
+				this._addPattern(pattern, this._NO_ID + this._unnamedCounter++, parentId, grammars);
 			}.bind(this));
 		},
-		_addRepositoryPatterns: function(repository, parentId) {
-			var keys = Object.keys(repository);
-			keys.forEach(function(key) {
-				this._addPattern(repository[key], key, parentId);
-			}.bind(this));
+		_findGrammar: function(array, value) {
+			var low = 0;
+			var high = array.length - 1;
+			while (low <= high) {
+				var index = Math.floor((high + low) / 2);
+				if (value < array[index].id) {
+					high = index - 1;
+				} else if (array[index].id < value) {
+					low = index + 1;
+				} else {
+					high = index;
+					break;
+				}
+			}
+			return high;
 		},
 		_processInclude: function(pattern, indexCounter, resultObject) {
 			var searchExp;
 			var index = pattern.include.indexOf("#");
 			if (index === 0) {
 				/* inclusion of pattern from same grammar */
-				searchExp = new RegExp("^" + pattern.qualifiedId.substring(0, pattern.qualifiedId.indexOf("#")) + pattern.include + "$");
+				searchExp = new RegExp("^" + mRegex.escape(pattern.qualifiedId.substring(0, pattern.qualifiedId.indexOf("#")) + pattern.include) + "$");
 			} else if (index === -1) {
 				/* inclusion of whole grammar */
-				searchExp = new RegExp("^" + pattern.include + "#" + this._NO_ID + "[^#]+$");
+				searchExp = new RegExp("^" + mRegex.escape(pattern.include) + "#" + this._NO_ID + "[^#]+$");
 			} else {
 				/* inclusion of specific pattern from another grammar */
-				searchExp = new RegExp("^" + pattern.include + "$");
+				searchExp = new RegExp("^" + mRegex.escape(pattern.include) + "$");
 			}
 			this._patterns.forEach(function(current) {
 				if (searchExp.test(current.qualifiedId)) {

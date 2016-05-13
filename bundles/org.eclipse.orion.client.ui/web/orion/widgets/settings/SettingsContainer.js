@@ -27,18 +27,21 @@ define([
 	'orion/widgets/themes/ThemeImporter',
 	'orion/widgets/settings/SplitSelectionLayout',
 	'orion/widgets/plugin/PluginList',
+	'orion/widgets/editorLanguages/EditorLanguagesList',
 	'orion/widgets/settings/GitSettings',
 	'orion/widgets/settings/EditorSettings',
+	'orion/widgets/settings/EditorLanguages',
 	'orion/widgets/settings/ThemeSettings',
 	'orion/widgets/settings/UserSettings',
 	'orion/widgets/settings/GlobalizationSettings',
 	'orion/widgets/settings/GeneralSettings',
 	'orion/editorPreferences',
 	'orion/generalPreferences',
+	'orion/editorLanguagesPreferences',
 	'orion/metrics'
 ], function(messages, mGlobalCommands, PageUtil, lib, objects, URITemplate, 
-		ThemeBuilder, SettingsList, mThemePreferences, editorThemeData, editorThemeImporter, SplitSelectionLayout, PluginList, 
-		GitSettings, EditorSettings, ThemeSettings, UserSettings, GlobalizationSettings, GeneralSettings, mEditorPreferences, mGeneralPreferences, mMetrics) {
+		ThemeBuilder, SettingsList, mThemePreferences, editorThemeData, editorThemeImporter, SplitSelectionLayout, PluginList, EditorLanguagesList,
+		GitSettings, EditorSettings, EditorLanguages, ThemeSettings, UserSettings, GlobalizationSettings, GeneralSettings, mEditorPreferences, mGeneralPreferences, mEditorLanguagesPreferences, mMetrics) {
 
 	/**
 	 * @param {Object} options
@@ -102,6 +105,14 @@ define([
 						id: "editorSettings", //$NON-NLS-0$
 						textContent: messages.Editor,
 						show: _self.showEditor
+					});
+				}
+				
+				if (categories.showEditorLanguages === undefined || categories.showEditorLanguages) {
+					_self.settingsCategories.push({
+						id: "editorLanguages", //$NON-NLS-0$
+						textContent: messages.EditorLanguages,
+						show: _self.showEditorLanguages
 					});
 				}
 				
@@ -216,6 +227,42 @@ define([
 			
 			this.editorSettings.show();
 		},
+		
+		showEditorLanguages: function(id){
+			this.selectCategory(id);
+			this.updateToolbar(id);
+			this.initLanguages(id);
+		},
+			
+//			this.selectCategory(id);
+//			
+//			lib.empty(this.table);
+//		
+//			if (this.editorLanguagesWidget) {
+//				this.editorLanguagesWidget.destroy();
+//			}
+//
+//			this.updateToolbar(id);
+//
+//			var editorLanguagesNode = document.createElement('div'); //$NON-NLS-0$
+//			this.table.appendChild(editorLanguagesNode);
+//			
+//			var editorTheme = new editorThemeData.ThemeData();
+//			var themePreferences = new mThemePreferences.ThemePreferences(this.preferences, editorTheme);
+//
+//			var editorLanguagesPreferences = new mEditorLanguagesPreferences.EditorLanguagesPreferences (this.preferences);			
+//			this.editorLanguages = new EditorLanguages ({
+//				registry: this.registry,
+//				preferences: editorLanguagesPreferences,
+//				themePreferences: themePreferences,
+//				statusService: this.preferencesStatusService,
+//				dialogService: this.preferenceDialogService,
+//				commandService: this.commandService,
+//				userClient: this.userClient
+//			}, editorLanguagesNode);
+//
+//			this.editorLanguages.show();
+//		},
 		
 		showUserSettings: function(id){
 
@@ -368,6 +415,30 @@ define([
 			}, userNode);
 			
 			this.generalWidget.show();
+		},
+		
+		initLanguages: function(id) {
+			lib.empty(this.table);
+			
+			if (this.editorLanguagesWidget) {
+				this.editorLanguagesWidget.destroy();
+			}
+
+			var editorLanguagesNode = document.createElement('div');
+			this.table.appendChild(editorLanguagesNode);
+
+			this.editorLanguagesWidget = new EditorLanguagesList({
+				settings: this.settingsCore,
+				preferences: this.preferences,
+				statusService: this.preferencesStatusService,
+				progressService: this.progressService,
+				dialogService: this.preferenceDialogService,
+				commandService: this.commandService,
+				registry: this.registry,
+				pluginsUri: this.pluginsUri
+			}, editorLanguagesNode);
+			
+			this.editorLanguagesWidget.show();
 		},
 		
 		initPlugins: function(id){

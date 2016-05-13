@@ -10,14 +10,13 @@
  ******************************************************************************/
 
 /*eslint-env browser, amd*/
-define(['examples/editor/textStyler', 'orion/editor/textStyler', 'orion/editor/textMateStyler', 'orion/editor/AsyncStyler', 'orion/Deferred'], 
-		function(mTextStyler, mTextStyler2, mTextMateStyler, AsyncStyler, Deferred) {
+define(['orion/editor/textStyler', 'orion/editor/textMateStyler', 'orion/editor/AsyncStyler', 'orion/Deferred', 'orion/editorLanguagesPreferences',], 
+		function(mTextStyler, mTextMateStyler, AsyncStyler, Deferred, mEditorLanguagesPreferences) {
 
-	var NEW = 1;
+	var languagesPreferences;
 
 	/**
 	 * Returns a promise that will provide a styler for the given content type.
-	 * @static
 	 * @param {orion.serviceregistry.ServiceRegistry} serviceRegistry
 	 * @param {orion.core.ContentTypeRegistry} contentTypeService
 	 * @param {orion.core.ContentType} contentType
@@ -28,10 +27,11 @@ define(['examples/editor/textStyler', 'orion/editor/textStyler', 'orion/editor/t
 	 * @returns {orion.Deferred}
 	 */
 	function createStyler(serviceRegistry, contentTypeService, contentType, textView, annotationModel, fileName, allowAsync) {
-		// Returns a promise (if provider matches) or null (if it doesn't match).
+		
+		/* returns a promise if provider matches, or null otherwise */
 		function getPromise(provider, extension) {
 			var contentTypeIds = provider.getProperty("contentType") || provider.getProperty("contentTypes"), //$NON-NLS-1$ //$NON-NLS-0$
-			    fileTypes = provider.getProperty("fileTypes"); // backwards compatibility //$NON-NLS-0$
+			    fileTypes = provider.getProperty("fileTypes"); //$NON-NLS-0$
 			if (contentTypeIds) {
 				return Deferred.when(contentTypeService.isSomeExtensionOf(contentType, contentTypeIds)).then(
 					function (isMatch) {
@@ -44,56 +44,32 @@ define(['examples/editor/textStyler', 'orion/editor/textStyler', 'orion/editor/t
 			}
 			return null;
 		}
+		
 		function isAllowed(provider) {
 			return allowAsync || provider.getProperty("type") !== "highlighter"; //$NON-NLS-1$ //$NON-NLS-0$
 		}
-		function createDefaultStyler(contentType) {
-			var styler = null;
-			switch (contentType && contentType.id) {
-				case "application/javascript": //$NON-NLS-0$
-				case "application/json": //$NON-NLS-0$
-					styler = new mTextStyler.TextStyler(textView, "js", annotationModel); //$NON-NLS-0$
-					break;
-				case "text/x-java-source": //$NON-NLS-0$
-					styler = new mTextStyler.TextStyler(textView, "java", annotationModel); //$NON-NLS-0$
-					break;
-				case "text/css": //$NON-NLS-0$
-					styler = new mTextStyler.TextStyler(textView, "css", annotationModel); //$NON-NLS-0$
-					break;
-			}
-			return styler;
-		}
-		// Check default styler
-		if (!NEW) {
-			var styler = createDefaultStyler(contentType);
-			if (styler) {
-				var result = new Deferred();
-				result.resolve(styler);
-				return result;
-			}
-		}
 
-		if (NEW && !this.orionGrammars) {
+		if (!this.orionGrammars) {
 			this.orionGrammars = {};
 		}
 
-		// Check services
+		/* check services */
 		var extension = fileName && fileName.split(".").pop().toLowerCase(); //$NON-NLS-0$
 		var serviceRefs = serviceRegistry.getServiceReferences("orion.edit.highlighter"); //$NON-NLS-0$
 		var textmateGrammars = [], promises = [];
 		for (var i = 0; i < serviceRefs.length; i++) {
 			var serviceRef = serviceRefs[i];
-			var type = serviceRef.getProperty("type");
-			if (type === "grammar" || (!NEW && typeof type === "undefined")) { //$NON-NLS-1$ //$NON-NLS-0$
+			var type = serviceRef.getProperty("type"); //$NON-NLS-0$
+			if (type === "grammar") { //$NON-NLS-0$
 				textmateGrammars.push(serviceRef.getProperty("grammar")); //$NON-NLS-0$
-			} else if (type !== "highlighter") {
-				var id = serviceRef.getProperty("id");
+			} else if (type !== "highlighter") { //$NON-NLS-0$
+				var id = serviceRef.getProperty("id"); //$NON-NLS-0$
 				if (id && !this.orionGrammars[id]) {
 					this.orionGrammars[id] = {
 						id: id,
-						contentTypes: serviceRef.getProperty("contentTypes"),
-						patterns: serviceRef.getProperty("patterns"),
-						repository: serviceRef.getProperty("repository")
+						contentTypes: serviceRef.getProperty("contentTypes"), //$NON-NLS-0$
+						patterns: serviceRef.getProperty("patterns"), //$NON-NLS-0$
+						repository: serviceRef.getProperty("repository") //$NON-NLS-0$
 					};
 				}
 			}
@@ -102,41 +78,91 @@ define(['examples/editor/textStyler', 'orion/editor/textStyler', 'orion/editor/t
 				promises.push(promise);
 			}
 		}
+
+		/* check preferences for imported grammars */
+		var keys = Object.keys(languagesPreferences);
+		keys.forEach(function(key) {
+			var grammar = languagesPreferences[key];
+			var grammarId = grammar.scopeName || grammar.name;
+
+			var fakeServiceRef = (function(id, grammar, fileTypes) {
+				var result = {};
+				result.getProperty = function(key) {
+					if (key === "fileTypes") return fileTypes; //$NON-NLS-0$
+					if (key === "type") return "imported"; //$NON-NLS-1$ //$NON-NLS-0$
+					if (key === "grammar") return grammar; //$NON-NLS-0$
+					if (key === "id") return id; //$NON-NLS-0$
+					return null;
+				};
+				return result;
+			})(grammarId, grammar, grammar.fileTypes.join(","));
+
+			/* will override an identically-named grammar defined in a service */		
+			this.orionGrammars[grammarId] = {
+				id: grammarId,
+				contentTypes: grammar.fileTypes,
+				patterns: grammar.patterns,
+				repository: grammar.repository
+			};
+				
+			var promise = getPromise(fakeServiceRef, extension);
+			if (promise) {
+				promises.push(promise);
+			}
+		}.bind(this));
+
 		return Deferred.all(promises, function(error) {return {_error: error};}).then(function(promises) {
-			// Take the last matching provider. Could consider ranking them here.
-			var provider;
-			for (var i = promises.length - 1; i >= 0; i--) {
+			var matches = [];
+			for (var i = 0; i < promises.length; i++) {
 				var promise = promises[i];
 				if (promise && !promise._error && isAllowed(promise)) {
-					provider = promise;
-					break;
+					matches.push(promise);
 				}
 			}
-			var styler;
-			if (provider) {
+			
+			function getTypeRank(type) {
+				if (type === "imported") {
+					return 1;
+				}
+				if (type === "grammar") {
+					return 3;
+				}
+				if (type === "highlighter") {
+					return 4;
+				}
+				return 2; /* default syntax styling service */
+			}
+			matches.sort(function(e1, e2) {
+				var e1Value = getTypeRank(e1.getProperty("type"));
+				var e2Value = getTypeRank(e2.getProperty("type"));
+				return e1Value < e2Value ? -1 : 1;
+			});
+
+			if (matches.length) {
+				var provider = matches[0];
 				var type = provider.getProperty("type"); //$NON-NLS-0$
 				if (type === "highlighter") { //$NON-NLS-0$
-					styler = new AsyncStyler(textView, serviceRegistry, annotationModel);
+					var styler = new AsyncStyler(textView, serviceRegistry, annotationModel);
 					styler.setContentType(contentType);
-				} else if (type === "grammar" || (!NEW && typeof type === "undefined")) { //$NON-NLS-1$ //$NON-NLS-0$
-					var textmateGrammar = provider.getProperty("grammar"); //$NON-NLS-0$
-					styler = new mTextMateStyler.TextMateStyler(textView, textmateGrammar, textmateGrammars);
-				} else {
-					if (NEW) {
-						var grammars = [];
-						for(var key in this.orionGrammars) {
-						    grammars.push(this.orionGrammars[key]);
-						}
-						var stylerAdapter = new mTextStyler2.createPatternBasedAdapter(grammars, provider.getProperty("id"), contentType.id);  //$NON-NLS-0$
-						styler = new mTextStyler2.TextStyler(textView, annotationModel, stylerAdapter);
-					}
+					return styler;
 				}
-			} else if (NEW && (!contentType || contentType.id !== "text/x-markdown")) { //$NON-NLS-0$
+				if (type === "grammar") { //$NON-NLS-0$
+					var textmateGrammar = provider.getProperty("grammar"); //$NON-NLS-0$
+					return new mTextMateStyler.TextMateStyler(textView, textmateGrammar, textmateGrammars);
+				}
+				var grammars = [];
+				for (var key in this.orionGrammars) {
+				    grammars.push(this.orionGrammars[key]);
+				}
+				mTextStyler.createPatternBasedAdapter(grammars, provider.getProperty("id"), contentType ? contentType.id : provider.getProperty("id")).then(function(stylerAdapter) {
+					return new mTextStyler.TextStyler(textView, annotationModel, stylerAdapter);
+				});
+			} else if (!contentType || contentType.id !== "text/x-markdown") { //$NON-NLS-0$
 				/* even if a grammar was not found create a default pattern adapter so that whitespace will be shown if appropriate */
-				stylerAdapter = new mTextStyler2.createPatternBasedAdapter([], "");
-				styler = new mTextStyler2.TextStyler(textView, annotationModel, stylerAdapter);
+				mTextStyler.createPatternBasedAdapter([], "").then(function(stylerAdapter) {
+					return new mTextStyler.TextStyler(textView, annotationModel, stylerAdapter);
+				});
 			}
-			return styler;
 		});
 	}
 
@@ -146,11 +172,16 @@ define(['examples/editor/textStyler', 'orion/editor/textStyler', 'orion/editor/t
 	 * @description 
 	 * <p>Requires service {@link orion.core.ContentTypeRegistry}</p>
 	 * @param {orion.serviceregistry.ServiceRegistry} serviceRegistry Registry to look up highlight providers from.
-	 * @param {orion.core.ContentType} [contentTypeService=null] A stand alone content type service that is not registered in theservice registry.
+	 * @param {orion.core.ContentType} [contentTypeService=null] A stand alone content type service that is not registered in the service registry.
 	 */
-	function SyntaxHighlighter(serviceRegistry, contentTypeService) {
+	function SyntaxHighlighter(serviceRegistry, contentTypeService, preferences) {
 		this.serviceRegistry = serviceRegistry;
 		this.contentTypeService = contentTypeService;
+		if (preferences) {			
+			new mEditorLanguagesPreferences.EditorLanguagesPreferences(preferences).getPrefs(function(result) {
+				languagesPreferences = result;
+			}.bind(this));
+		}
 		this.styler = null;
 	}
 	SyntaxHighlighter.prototype = /** @lends orion.highlight.SyntaxHighlighter.prototype */ {

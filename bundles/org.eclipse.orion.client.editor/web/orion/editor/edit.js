@@ -264,9 +264,10 @@ define('orion/editor/edit', [ //$NON-NLS-0$
 					var folderName = contentType.replace(/[*|:/".<>?+]/g, '_');
 					require(["./stylers/" + folderName + "/syntax"], //$NON-NLS-1$ //$NON-NLS-0$
 						function(grammar) {
-							var stylerAdapter = new mTextStyler.createPatternBasedAdapter(grammar.grammars, grammar.id, contentType);
-							this.styler = new mTextStyler.TextStyler(textView, annotationModel, stylerAdapter);
-						},
+							new mTextStyler.createPatternBasedAdapter(grammar.grammars, grammar.id, contentType).then(function(stylerAdapter) {
+								this.styler = new mTextStyler.TextStyler(textView, annotationModel, stylerAdapter);
+							}.bind(this));
+						}.bind(this),
 						/* @callback */ function(error) {
 							/*
 							 * A grammar file was not found for the specified contentType, so syntax styling will
@@ -275,15 +276,16 @@ define('orion/editor/edit', [ //$NON-NLS-0$
 							 */
 						}
 					);
-				};
+				}.bind(this);
 
 				if (contentType) {
 					if (grammarProvider && (typeof grammarProvider === "function")) { //$NON-NLS-0$
 						grammarProvider(contentType).then(
 							function(result) {
 								if (result && result.grammars && result.id) {
-									var stylerAdapter = new mTextStyler.createPatternBasedAdapter(result.grammars, result.id, contentType);
-									this.styler = new mTextStyler.TextStyler(textView, annotationModel, stylerAdapter);
+									new mTextStyler.createPatternBasedAdapter(result.grammars, result.id, contentType).then(function(stylerAdapter) {
+										this.styler = new mTextStyler.TextStyler(textView, annotationModel, stylerAdapter);
+									}.bind(this));
 								}
 							}.bind(this),
 							/* @callback */ function(error) {

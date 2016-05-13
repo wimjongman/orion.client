@@ -404,6 +404,18 @@ html[dir="rtl"] .plugin-icon { /* ACGC */
 	padding-right: 20px;
 }
 
+.language-title {
+	font-size: 15px;
+	font-weight: 500;
+	padding-right: 20px;
+}
+
+.language-extensions {
+	font-size: 12px;
+	font-weight: 500;
+	padding-right: 20px;
+}
+
 html[dir="rtl"] .plugin-title { /* ACGC */ 
 	padding-left: 20px;
 	padding-right: 0px;
@@ -440,12 +452,25 @@ html[dir="rtl"] .plugin-title { /* ACGC */
 	color: #b94a48;
 }
 
+.language-status {
+	font-size: 11px;
+	white-space: normal;
+	color: #b94a48;
+}
+
 .plugin-description {
 	font-size: 11px;
 	white-space: normal;
 	padding-right: 10px;
 	min-width:100px;
 	max-width:200px;
+}
+
+.language-description {
+	font-size: 10px;
+	white-space: normal;
+	padding-right: 10px;
+	min-width:100px;
 }
 
 html[dir="rtl"] .plugin-description { /* ACGC */
