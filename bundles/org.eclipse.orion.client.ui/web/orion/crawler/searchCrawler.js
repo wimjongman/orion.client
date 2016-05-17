@@ -1,6 +1,6 @@
 /*******************************************************************************
  * @license
- * Copyright (c) 2009, 2012 IBM Corporation and others.
+ * Copyright (c) 2009, 2013 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials are made 
  * available under the terms of the Eclipse Public License v1.0 
  * (http://www.eclipse.org/legal/epl-v10.html), and the Eclipse Distribution 
@@ -235,6 +235,10 @@ define(['i18n!orion/crawler/nls/messages', 'orion/i18nUtil', 'orion/searchUtils'
 	
 	SearchCrawler.prototype._visitRecursively = function(directoryLocation){
 		var results = [];
+		//TODO never visit source control meta locations
+		if(/\.git|\.cvs$/i.test(directoryLocation)) {
+			return new Deferred().resolve(results);
+		}
 		var _this = this;
 		if(this._fetchChildrenCallBack){
 			this._fetchChildrenCallBack(directoryLocation);
