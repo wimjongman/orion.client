@@ -118,8 +118,57 @@ function startServer(cb) {
 }
 
 if (process.versions.electron) {
-	var electron = require('electron');
+	var electron = require('electron'),
+		autoUpdater = require('auto-updater'),
+		spawn = require('child_process').spawn,
+		os = require('os');
+
 	var mainWindow = null;
+
+	var handleSquirrelEvent = function() {
+		if (process.argv.length === 1 || os.platform() !== 'win32') { // No squirrel events to handle
+			return false;
+		}
+
+		var	target = path.basename(process.execPath);
+
+		function executeSquirrelCommand(args, done) {
+  		 	var updateDotExe = path.resolve(path.dirname(process.execPath), 
+		      	'..', 'Update.exe');
+		    var child = spawn(updateDotExe, args, { detached: true });
+		    child.on('close', function(code) {
+		    	done();
+		    });
+		};
+
+		var squirrelEvent = process.argv[1];
+	   	switch (squirrelEvent) {
+	   		case '--squirrel-install':
+	      	case '--squirrel-updated':
+	      		// Install desktop and start menu shortcuts
+	      		executeSquirrelCommand(["--createShortcut", target], electron.app.quit);
+	      		setTimeout(electron.app.quit, 1000);
+	      		return true;
+	      	case '--squirrel-obsolete':
+	      		// This is called on the outgoing version of the app before
+	      		// we update to the new version - it's the opposite of
+	      	  	// --squirrel-updated
+	      		electron.app.quit();
+	      		return true;
+	      	case '--squirrel-uninstall':
+	      		// Remove desktop and start menu shortcuts
+	      		executeSquirrelCommand(["--removeShortcut", target], electron.app.quit);
+	      		setTimeout(electron.app.quit, 1000);
+	      		return true;
+	    }
+	    return false;
+	};
+
+	if (handleSquirrelEvent()) {
+		// Squirrel event handled and app will exit in 1000ms
+		return;
+	}
+
 	electron.app.on('ready', function() {
 		function createWindow(url){
 			var nextWindow = new electron.BrowserWindow({width: 1024, height: 800, title: "Orion", icon: "icon/256x256/orion.png"});
@@ -145,8 +194,34 @@ if (process.versions.electron) {
 	});
 
 	electron.app.on('window-all-closed', function() {
-		electron.app.quit();		
+		electron.app.quit();	
 	});
+
+	// autoUpdater event listeners
+	autoUpdater.on('error', function (event, message) {
+	  	//console.log('auto-updater error', message);
+	});
+	autoUpdater.on('checking-for-update', function() {
+	  	//console.log('auto-updater checking for update');
+	});
+	autoUpdater.on('update-available', function () {
+		//console.log('auto-updater update available');
+	});
+	autoUpdater.on('update-not-available', function() {
+	  	//console.log('auto-updater update not available');
+	});
+	autoUpdater.on('update-downloaded', function() {
+	  	//console.log('auto-updater update downloaded');
+	});
+
+	var platform = os.platform() + '_' + os.arch(),
+		version = electron.app.getVersion();
+	// console.log('Platform: ' + platform + ' ' + version);
+	
+	// Check for updates every time we run the electron app
+	autoUpdater.setFeedURL('http://orion-update.mybluemix.net/update/'+ platform + '/' + version);
+	autoUpdater.checkForUpdates();
+
 } else {
 	startServer();
 }
