@@ -649,6 +649,9 @@ define([
 		 * @param {String} [extraClasses] A string containing space separated css classes that will be applied to group button
 		 */	
 		addCommandGroup: function(scopeId, groupId, position, title, parentPath, emptyGroupMessage, imageClass, tooltip, selectionClass, defaultActionId, extraClasses) {
+			if (scopeId.indexOf("jsonActions") >= 0) {
+				console.log(" Title: " + title + " position: " + position + " groupId: " + groupId + " PPath: " + parentPath + " selClass: " + selectionClass);
+			}
 			if (!this._contributionsByScopeId[scopeId]) {
 				this._contributionsByScopeId[scopeId] = {};
 			}
@@ -718,6 +721,149 @@ define([
 				});
 			}
 			return parentTable;	
+		},
+		
+		_getItemById: function(id, curItem) {
+			if (!curItem.items)
+				return null;
+				
+			// Is it one of our children ?
+			var foundItem = null;
+			for (var i = 0; i < curItem.items.length; i++) {
+				var theItem = curItem.items[i];
+
+				// is this the item ?
+				var itemId = theItem.groupId ? theItem.groupId : theItem.commandId;
+				if (itemId && itemId === id) {
+					return { item: theItem, parent: curItem };
+				}
+				
+				// Check this item's children
+				foundItem = this._getItemById(id, theItem);
+				if (foundItem)
+					break;
+			}
+			return foundItem;
+		},
+		
+		_mergeMenuContribution: function (menuId, contribution, isPending) {
+			if (!this._menus) this._menus = [];
+			if (!this._menus[menuId]) {
+				// Define a new menu / tb
+				this._menus[menuId] = { items: contribution, pendingContributions: [] };
+				return true;
+			}
+
+			var theMenu = this._menus[menuId];
+			var relTo = this._getItemById(contribution.relToId, theMenu.items);
+			if (relTo) {
+				if (relTo.groupId && "start" === contribution.relToModifier) {
+					relTo.parent.items = contribution.items.concat(relTo.parent.items);
+				} else if (relTo.groupId && "end" === contribution.relToModifier) {
+					relTo.parent.items = relTo.parent.items.concat(contribution.items);
+				} else {
+					var items = relTo.parent.items;
+					var index = items.indexOf(relTo.item);
+					if ("after" === contribution.relToModifier)
+						index++;
+
+					var left = items.slice(0, index);
+					var right = items.slice(index);
+					relTo.parent.items = left.concat(contribution.items, right);
+				}
+
+				// OK, we've successfully added more items, re-check the 'pending' contributions
+				if (!isPending) {
+					var done = false;
+					while (!done) {
+						var curPending = theMenu.pendingContributions;
+						theMenu.pendingContributions = [];
+						
+						for (var i = 0; i < curPending.length; i++) {
+							// NOTE: setting 'isPending' to true prevents recursing when successfully applying a pending contribution
+							this._mergeMenuContribution(menuId, curPending[i], true);
+						}
+						
+						// If none on the pending contributions were applied we're 'done'
+						done = curPending.length === theMenu.pendingContributions.length;
+					}
+				}
+			} else {
+				theMenu.pendingContributions = theMenu.pendingContributions.concat([contribution]);
+			}
+		},
+		
+		_registerMenuItems: function(scopeId, curPath, items, curPos) {
+			if (!items) return;
+			
+			for (var i = 0; i < items.length; i++) {
+				var item = items[i];
+				if (item.groupId) {
+					var saveCurPath = curPath;
+					if (item.title) {
+						if (!item.selectionClass)
+							item.selectionClass = "dropdownSelection";
+					}
+					curPath += '/' + item.groupId;
+					this.addCommandGroup(scopeId, item.groupId, ++curPos, item.title, saveCurPath, item.emptyGroupMessage,
+						item.imageClass, item.tooltip, item.selectionClass, item.defaultActionId, item.extraClasses);
+						
+					curPos += this._registerMenuItems(scopeId, curPath, item.items, curPos);
+					curPath = saveCurPath;
+				} else if (item.commandId) {
+					this.registerCommandContribution(scopeId, item.commandId, ++curPos, curPath,
+						item.bindingOnly, item.keyBinding, item.urlBinding, item.handler);
+				}
+			}
+			return items.length;
+		},
+		
+		loadJSONDefinition: function(JSONFile) {
+			//var menuStructure = JSON.parse(JSONFile);
+			var menuStructure = {
+				scopeId: "jsonActions",
+				pathRoot: "orion.menuBarJSONGroup",
+				items: [
+					{ groupId: "json.newContentGroup", title: "New", items: [
+						{ commandId: "eclipse.newFile" },
+						{ commandId: "eclipse.newFolder" },
+					]},
+					{ groupId: "json.edit.saveGroup", items: [
+						{ commandId: "orion.edit.openFolder" },
+						{ commandId: "orion.openResource" },
+						{ commandId: "orion.edit.save" },
+					]},
+					{ groupId: "json.importGroup", title: "Import", items: [
+						{ commandId: "orion.import" },
+						{ commandId: "orion.importZipURL" },
+						{ commandId: "orion.importSFTP" },
+					]},		
+					{ groupId: "json.exportGroup", title: "Export", items: [
+						{ commandId: "eclipse.downloadSingleFile" },
+						{ commandId: "eclipse.downloadFile" },
+						{ commandId: "eclipse.exportSFTPCommand" },
+					]},
+
+				]
+			};
+			
+			// 'Register' this menu...
+			this._mergeMenuContribution("orion.menuBarJSONGroup", menuStructure);
+
+			// Now add a new entry in the export group
+			var contrib = { relToId: "eclipse.downloadFile", items: [{ commandId: "orion.importZipURL" }] };
+			this._mergeMenuContribution("orion.menuBarJSONGroup", contrib);
+
+			// This entry needs to be 'cached' becasue
+			contrib = { relToId: "orion.keyAssist", relToModifier: "after", items: [{ commandId:  "orion.importSFTP" }] };
+			this._mergeMenuContribution("orion.menuBarJSONGroup", contrib);
+
+			// Now add a new entry in the new group
+			contrib = { relToId: "eclipse.newFolder", relToModifier: "after", items: [{ commandId: "orion.keyAssist" }] };
+			this._mergeMenuContribution("orion.menuBarJSONGroup", contrib);
+
+			
+			this._registerMenuItems(menuStructure. scopeId, menuStructure.pathRoot, menuStructure.items, 0);
 		},
 		
 		/**
@@ -800,6 +946,9 @@ define([
 		 * @param {Object} [handler] the object that should perform the command for this contribution.  Optional.
 		 */
 		registerCommandContribution: function(scopeId, commandId, position, parentPath, bindingOnly, keyBinding, urlBinding, handler) {
+			if (scopeId.indexOf("jsonActions") >= 0) {
+				console.log("position: " + position + " Command: " + commandId + " PPath: " + parentPath);
+			}
 			if (!this._contributionsByScopeId[scopeId]) {
 				this._contributionsByScopeId[scopeId] = {};
 			}

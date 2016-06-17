@@ -81,6 +81,7 @@ function MenuBar(options) {
 	this.editActionsScope = "editActions"; //$NON-NLS-0$
 	this.viewActionsScope = "viewActions"; //$NON-NLS-0$
 	this.toolsActionsScope = "toolsActions"; //$NON-NLS-0$
+	this.jsonActionsScope = "jsonActions"; //$NON-NLS-0$
 	this.additionalActionsScope = "extraActions"; //$NON-NLS-0$
 	this.createActionSections();
 	
@@ -90,7 +91,7 @@ MenuBar.prototype = {};
 objects.mixin(MenuBar.prototype, {
 	createActionSections: function() {
 		var _self = this;
-		[this.fileActionsScope, this.editActionsScope, this.viewActionsScope, this.toolsActionsScope, this.additionalActionsScope].reverse().forEach(function(id) {
+		["jsonActions", this.fileActionsScope, this.editActionsScope, this.viewActionsScope, this.toolsActionsScope, this.additionalActionsScope].reverse().forEach(function(id) {
 			if (!_self[id]) {
 				var elem = document.createElement("ul"); //$NON-NLS-0$
 				elem.id = id;
@@ -110,11 +111,13 @@ objects.mixin(MenuBar.prototype, {
 		var editActionsScope = this.editActionsScope;
 		var viewActionsScope = this.viewActionsScope;
 		var toolsActionsScope = this.toolsActionsScope;
+		var jsonActionsScope = this.jsonActionsScope;
 		
 		commandRegistry.addCommandGroup(fileActionsScope, "orion.menuBarFileGroup", 1000, messages["File"], null, messages["noActions"], null, null, "dropdownSelection"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 		commandRegistry.addCommandGroup(editActionsScope, "orion.menuBarEditGroup", 100, messages["Edit"], null, messages["noActions"], null, null, "dropdownSelection"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 		commandRegistry.addCommandGroup(viewActionsScope, "orion.menuBarViewGroup", 100, messages["View"], null, messages["noActions"], null, null, "dropdownSelection"); //$NON-NLS-1$ //$NON-NLS-2$	
 		commandRegistry.addCommandGroup(toolsActionsScope, "orion.menuBarToolsGroup", 100, messages["Tools"], null, null, null, null, "dropdownSelection"); //$NON-NLS-1$ //$NON-NLS-2$
+		commandRegistry.addCommandGroup(jsonActionsScope, "orion.menuBarJSONGroup", 100, "JSON", null, null, null, null, "dropdownSelection"); //$NON-NLS-1$ //$NON-NLS-2$
 		
 		commandRegistry.addCommandGroup(fileActionsScope, "orion.newContentGroup", 0, messages["New"], "orion.menuBarFileGroup", null, null, null, "dropdownSelection"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 		commandRegistry.addCommandGroup(fileActionsScope, "orion.importGroup", 100, messages["Import"], "orion.menuBarFileGroup", null, null, null, "dropdownSelection"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
@@ -125,6 +128,10 @@ objects.mixin(MenuBar.prototype, {
 		var commandRegistry = this.commandRegistry;
 		var fileClient = this.fileClient;
 		var editorCommands = this.editorCommands;
+		
+		// HACK!! test code, if found in the wild remove !!		
+		commandRegistry.loadJSONDefinition();
+
 		return editorCommands.createCommands().then(function() {
 			editorCommands.registerCommands();
 			editorCommands.registerContextMenuCommands();
@@ -161,15 +168,21 @@ objects.mixin(MenuBar.prototype, {
 			metadata = editorViewer.inputManager.getFileMetadata();
 			this.editorCommands.updateCommands(editorViewer.getCurrentEditorView());
 		}
+		
 		var commandRegistry = this.commandRegistry, serviceRegistry = this.serviceRegistry;
+
 		commandRegistry.registerSelectionService(this.fileActionsScope, visible ? selection : null);
 		commandRegistry.registerSelectionService(this.editActionsScope, visible ? selection : null);
 		commandRegistry.registerSelectionService(this.viewActionsScope, visible ? selection : null);
+		commandRegistry.registerSelectionService(this.jsonActionsScope, visible ? selection : null);
+
 		mFileCommands.setExplorer(explorer);
 		ProjectCommands.setExplorer(explorer);
-		mFileCommands.updateNavTools(serviceRegistry, commandRegistry, explorer, null, [this.fileActionsScope, this.editActionsScope, this.viewActionsScope], treeRoot, true);
+		if (explorer)
+			mFileCommands.updateNavTools(serviceRegistry, commandRegistry, explorer, null, [this.jsonActionsScope, this.fileActionsScope, this.editActionsScope, this.viewActionsScope], treeRoot, true);
 		commandRegistry.destroy(this.toolsActionsScope);
 		commandRegistry.renderCommands(this.toolsActionsScope, this.toolsActionsScope, metadata, explorer, "tool"); //$NON-NLS-0$
+
 		commandRegistry.destroy(this.additionalActionsScope);
 		commandRegistry.renderCommands(this.additionalActionsScope, this.additionalActionsScope, treeRoot, explorer, "button"); //$NON-NLS-0$
 	}
