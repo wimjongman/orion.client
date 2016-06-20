@@ -757,9 +757,9 @@ define([
 			var theMenu = this._menus[menuId];
 			var relTo = this._getItemById(contribution.relToId, theMenu.items);
 			if (relTo) {
-				if (relTo.groupId && "start" === contribution.relToModifier) {
+				if (relTo.item.groupId && "start" === contribution.relToModifier) {
 					relTo.parent.items = contribution.items.concat(relTo.parent.items);
-				} else if (relTo.groupId && "end" === contribution.relToModifier) {
+				} else if (relTo.item.groupId && "end" === contribution.relToModifier) {
 					relTo.parent.items = relTo.parent.items.concat(contribution.items);
 				} else {
 					var items = relTo.parent.items;
@@ -818,8 +818,7 @@ define([
 			return items.length;
 		},
 		
-		loadJSONDefinition: function(JSONFile) {
-			//var menuStructure = JSON.parse(JSONFile);
+		_createFileMenuStruct: function() {
 			var menuStructure = {
 				scopeId: "jsonActions",
 				pathRoot: "orion.menuBarJSONGroup",
@@ -861,8 +860,71 @@ define([
 			// Now add a new entry in the new group
 			contrib = { relToId: "eclipse.newFolder", relToModifier: "after", items: [{ commandId: "orion.keyAssist" }] };
 			this._mergeMenuContribution("orion.menuBarJSONGroup", contrib);
-
 			
+			return menuStructure;
+		},
+		
+		_createTestCommandFor: function(label) {
+			var doCmd = function (label) {
+				console.log(label + " was executed");
+			};
+			
+			var newCommand = new Commands.Command({
+				name: label,
+				id: "test." + label, //$NON-NLS-1$
+				visibleWhen: /** @callback */ function() {
+					return true;
+				},
+				callback: function() {
+					doCmd (label); //$NON-NLS-1$
+				}
+			});
+			this.addCommand(newCommand);	
+			
+			return newCommand.id;
+		},
+		
+		_applyContributionsRandomly: function(contribArray) {
+			var tmpArray = contribArray.concat([]);
+			
+			while (tmpArray.length > 0) {
+				var index = Math.floor(Math.random()*tmpArray.length);
+				var contrib = tmpArray[index];
+				tmpArray = tmpArray.slice(0,index).concat(tmpArray.slice(index+1));
+				this._mergeMenuContribution("orion.menuBarJSONGroup", contrib);
+			}
+		},
+		
+		_createTestMenuStruct: function() {
+			var testStructure = {
+				scopeId: "jsonActions",
+				pathRoot: "orion.menuBarJSONGroup",
+				items: [
+					{ groupId: "json.test.mainGroup", items: [] }
+				]
+			};
+			
+			// 'Register' this menu...
+			this._mergeMenuContribution("orion.menuBarJSONGroup", testStructure);
+
+			// Now contribute a buncho of items
+			var contrib1 = {  relToId: "json.test.mainGroup",  relToModifier: "start", items: [{ groupId: "test.TopGroup",  title: "TopGroup", 
+				items: [{ commandId: this._createTestCommandFor("SGCommand1")}]}] };
+			var contrib2 = {  relToId: "test.TopGroup",  relToModifier: "after", items: [{ groupId: "test.BottomGroup",  title: "BottomGroup", 
+				items: [{ commandId: this._createTestCommandFor("BGCommand1")}]}] };
+			var contrib3 = {  relToId: "test.SGCommand1",  items: [{ commandId: this._createTestCommandFor("BeforeSGCommand1") }] };
+			var contrib4 = {  relToId: "test.SGCommand1", relToModifier: "after",  items: [{ commandId: this._createTestCommandFor("AfterSGCommand1") }] };
+			var contrib5 = {  relToId: "test.BottomGroup", relToModifier: "before",  items: [{ commandId: this._createTestCommandFor("BeforeBottomGroup") }] };
+			var contrib6 = {  relToId: "json.test.mainGroup",  relToModifier: "end", items: [{ commandId: this._createTestCommandFor("LastMainCommand") }] };
+			
+			var contributions = [ contrib1, contrib2, contrib3, contrib4, contrib5, contrib6 ];
+			this._applyContributionsRandomly(contributions);
+			
+			return testStructure;
+		},
+		
+		loadJSONDefinition: function(JSONFile) {
+			var menuStructure = this._createTestMenuStruct();
 			this._registerMenuItems(menuStructure. scopeId, menuStructure.pathRoot, menuStructure.items, 0);
 		},
 		
