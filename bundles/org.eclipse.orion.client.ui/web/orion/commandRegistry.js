@@ -820,7 +820,7 @@ define([
 		
 		_createFileMenuStruct: function() {
 			var menuStructure = {
-				scopeId: "jsonActions",
+				scopeId: "editorContextMenuActions",
 				pathRoot: "orion.menuBarJSONGroup",
 				items: [
 					{ groupId: "json.newContentGroup", title: "New", items: [
@@ -897,10 +897,10 @@ define([
 		
 		_createTestMenuStruct: function() {
 			var testStructure = {
-				scopeId: "jsonActions",
+				scopeId: "editorContextMenuActions",
 				pathRoot: "orion.menuBarJSONGroup",
 				items: [
-					{ groupId: "json.test.mainGroup", items: [] }
+					{ groupId: "json.test.mainGroup", items: [ {commandId: "orion.keyAssist" } ] }
 				]
 			};
 			
@@ -923,9 +923,10 @@ define([
 			return testStructure;
 		},
 		
-		loadJSONDefinition: function(JSONFile) {
-			var menuStructure = this._createTestMenuStruct();
-			this._registerMenuItems(menuStructure. scopeId, menuStructure.pathRoot, menuStructure.items, 0);
+		loadJSONDefinition: function(menuStructure) {
+			if (!menuStructure)
+				menuStructure = this._createTestMenuStruct();
+			this._registerMenuItems(menuStructure.scopeId, menuStructure.pathRoot, menuStructure.items, 0);
 		},
 		
 		/**
@@ -1171,8 +1172,8 @@ define([
 					selectionService.getSelections(function(selections) {
 						self.renderCommands(scopeId, parent, selections, handler, renderType, userData);
 					});
+					return;
 				}
-				return;
 			} 
 			if (contributions) {
 				this._render(scopeId, contributions, parent, items, handler, renderType || "button", userData, domNodeWrapperList); //$NON-NLS-0$

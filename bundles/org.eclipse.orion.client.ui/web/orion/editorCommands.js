@@ -1020,7 +1020,7 @@ define([
 					if (info.editor && editor.id && info.editor !== editor.id) {
 						return false;
 					}
-					if (that.inputManager.getReadOnly()) {
+					if (inputManager.getReadOnly()) {
 						return false;
 					}
 					return !commandVisibleWhen || commandVisibleWhen(items);

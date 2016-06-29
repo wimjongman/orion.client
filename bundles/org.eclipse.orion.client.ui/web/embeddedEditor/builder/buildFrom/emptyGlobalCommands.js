@@ -9,7 +9,30 @@
  * Contributors: IBM Corporation - initial API and implementation
  ******************************************************************************/
 /*eslint-env browser, amd*/
-define([], function() {
+define(['orion/keyAssist', 'orion/commands', 'i18n!orion/nls/messages'], function(mKeyAssist, mCommands, messages) {
+	var keyAssist;
+	function createKeyAssistCommand(commandRegistry) {
+		keyAssist = new mKeyAssist.KeyAssistPanel({
+			commandRegistry: commandRegistry
+		});
+		var keyAssistCommand = new mCommands.Command({
+			name: messages["Show Keys"],
+			tooltip: messages["ShowAllKeyBindings"],
+			id: "orion.keyAssist", //$NON-NLS-0$
+			callback: function () {
+				if (keyAssist.isVisible()) {
+					keyAssist.hide();
+				} else {
+					keyAssist.show();
+				}
+				return true;
+			}
+		});
+		commandRegistry.addCommand(keyAssistCommand);
+		return keyAssistCommand;
+	}
+
 	return {
+		createKeyAssistCommand: createKeyAssistCommand,
 	};
 });

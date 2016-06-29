@@ -92,8 +92,8 @@ define([
 		
 		setActiveEditorView: function(eView) {
 			this._editorCommands.updateCommands(eView);
-			this._commandRegistry.destroy(this._toolbarId);
-			this._commandRegistry.renderCommands(this._toolbarId, this._toolbarId, this._inputManager.getFileMetadata(), eView.editor, "tool"); //$NON-NLS-0$
+//			this._commandRegistry.destroy(this._toolbarId);
+//			this._commandRegistry.renderCommands(this._toolbarId, "pageToolbar", this._inputManager.getFileMetadata(), eView.editor, "menu"); //$NON-NLS-0$
 		},
 		
 		createEditor: function(options, startupOptions) {

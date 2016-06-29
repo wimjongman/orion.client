@@ -17,7 +17,15 @@
 					text: 'requirejs/text',
 					i18n: 'requirejs/i18n',
 					domReady: 'requirejs/domReady',
-					'orion/searchAndReplace/textSearcher': '/embeddedEditor/builder/buildFrom/textSearcher'
+				        "orion/globalCommands": "embeddedEditor/builder/buildFrom/emptyGlobalCommands",
+				        'orion/webui/dialogs/OpenResourceDialog': 'embeddedEditor/builder/buildFrom/OpenResourceDialog',
+				        'orion/explorers/navigatorRenderer': 'embeddedEditor/builder/buildFrom/navigatorRenderer',
+				        'examples/editor/textStyler': 'embeddedEditor/builder/buildFrom/emptyTextStyler',
+				        'orion/widgets/settings/EditorSettings': 'embeddedEditor/builder/buildFrom/EditorSettings',
+				        'orion/searchAndReplace/textSearcher': 'embeddedEditor/builder/buildFrom/textSearcher',
+						'orion/editorPreferences': 'embeddedEditor/builder/buildFrom/editorPreferences',
+						'orion/widgets/themes/ThemePreferences': 'embeddedEditor/builder/buildFrom/ThemePreferences',
+						'orion/widgets/themes/editor/ThemeData': 'embeddedEditor/builder/buildFrom/ThemeData'
 				}
 			});
 			require(["embeddedEditor/demo/demoCodeEdit"]);
@@ -42,11 +50,13 @@
 		<div class="embeddedEditorDemoTextParent">
 			<span id = "progressMessageDiv">Loading language tooling plugins...</span>
 		</div>
-		<!--
-		<div class="embeddedEditorTool" id="__toolbar__">
-			<span id = "progressMessageDiv"></span>
+		<div id="pageContent">
+			<div id="pageToolbar">
+				<div class="embeddedEditorTool" id="__toolbar__">
+					<span id = "progressMessageDiv"></span>
+				</div>
+			</div>
 		</div>
-		-->
 		<div class="embeddedEditorParentOuter" id="embeddedEditor">
 		</div>
 		<div class="embeddedEditorParentOuter" id="embeddedEditor1">

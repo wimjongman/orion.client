@@ -555,11 +555,32 @@ define([
 		return keyAssist;
 	}
 
+	function createKeyAssistCommand(commandRegistry) {
+		keyAssist = new mKeyAssist.KeyAssistPanel({
+			commandRegistry: commandRegistry
+		});
+		var keyAssistCommand = new mCommands.Command({
+			name: messages["Show Keys"],
+			tooltip: messages["ShowAllKeyBindings"],
+			id: "orion.keyAssist", //$NON-NLS-0$
+			callback: function () {
+				if (keyAssist.isVisible()) {
+					keyAssist.hide();
+				} else {
+					keyAssist.show();
+				}
+				return true;
+			}
+		});
+		commandRegistry.addCommand(keyAssistCommand);
+		return keyAssistCommand;
+	}
+
 	var globalEventTarget = new EventTarget();
 	function getGlobalEventTarget() {
 		return globalEventTarget;
 	}
-
+	
 	/**
 	 * Generates the banner at the top of a page.
 	 *
@@ -828,23 +849,7 @@ define([
 			commandRegistry.registerCommandContribution("globalActions", "orion.backgroundOperations", 100, null, true, new KeyBinding.KeyBinding('o', true, true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 
 			// Key assist
-			keyAssist = new mKeyAssist.KeyAssistPanel({
-				commandRegistry: commandRegistry
-			});
-			var keyAssistCommand = new mCommands.Command({
-				name: messages["Show Keys"],
-				tooltip: messages["ShowAllKeyBindings"],
-				id: "orion.keyAssist", //$NON-NLS-0$
-				callback: function () {
-					if (keyAssist.isVisible()) {
-						keyAssist.hide();
-					} else {
-						keyAssist.show();
-					}
-					return true;
-				}
-			});
-			commandRegistry.addCommand(keyAssistCommand);
+			var keyAssistCommand = createKeyAssistCommand(commandRegistry);
 			commandRegistry.registerCommandContribution("globalActions", "orion.keyAssist", 100, null, true, new KeyBinding.KeyBinding(191, false, true)); //$NON-NLS-1$ //$NON-NLS-0$
 
 			renderGlobalCommands(commandRegistry);
@@ -874,6 +879,7 @@ define([
 		layoutToolbarElements: layoutToolbarElements,
 		setPageTarget: setPageTarget,
 		setDirtyIndicator: setDirtyIndicator,
+		createKeyAssistCommand: createKeyAssistCommand,
 		setPageCommandExclusions: setPageCommandExclusions
 	};
 });

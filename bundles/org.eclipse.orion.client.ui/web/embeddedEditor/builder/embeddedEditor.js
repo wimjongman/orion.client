@@ -10,6 +10,7 @@
  ******************************************************************************/
 /*eslint-env browser, amd*/
 define([
+	'orion/globalCommands',
 	'orion/commandRegistry',
 	'orion/fileClient',
 	'orion/contentTypes',
@@ -23,6 +24,7 @@ define([
 	'orion/defaultEditorPreferences',
 	'orion/objects'
 ], function(
+	mGlobalCommands,
 	mCommandRegistry,
 	mFileClient,
 	mContentTypes,
@@ -45,6 +47,36 @@ define([
 	}
 	var once;
 	objects.mixin(CodeEdit.prototype, {
+		createContextMenuStructure: function() {
+			var menuStructure = {
+				scopeId: "editorContextMenuActions",
+				pathRoot: "orion.menuBarJSONGroup",
+				items: [
+					{ groupId: "json.test.mainGroup", items: [
+						{commandId: "orion.keyAssist" },
+						{commandId: "open.js.decl" },
+						{commandId: "open.js.impl" },
+						{commandId: "orion.edit.blame" },
+						{commandId: "orion.edit.convert.crlf" },
+						{commandId: "orion.edit.convert.lf" },
+						{commandId: "orion.edit.diff" },
+						{commandId: "orion.edit.find" },
+						{commandId: "orion.edit.gotoLine" },
+						{commandId: "orion.edit.openFolder" },
+						{commandId: "orion.edit.redo" },
+						{commandId: "orion.edit.reloadWithEncoding" },
+						{commandId: "orion.edit.save" },
+						{commandId: "orion.edit.settings" },
+						{commandId: "orion.edit.showTooltip" },
+						{commandId: "orion.edit.undo" },
+						{commandId: "project.js.refs" },
+						{commandId: "rename.js.element" },
+					] }
+				]
+			};
+			return menuStructure;
+		},
+		
 		_init: function(core) {
 			if(once) {
 				return once;
@@ -65,6 +97,7 @@ define([
 				commandRegistry: this._commandRegistry,
 				fileClient: this._fileClient,
 				toolbarId: this._toolbarId,
+				editorContextMenuId: "editorContextMenuActions",
 				navToolbarId: this._toolbarId
 			});
 			this._editorConfig = this._startupOptions && this._startupOptions.editorConfig ? this._startupOptions.editorConfig : {};
@@ -80,6 +113,11 @@ define([
 			this.serviceRegistry.registerService("orion.page.progress", this._progressService);
 			once = this._editorCommands.createCommands().then(function() {
 				this._editorCommands.registerCommands();
+				this._editorCommands.registerContextMenuCommands();
+
+				// Key assist
+				mGlobalCommands.createKeyAssistCommand(this._commandRegistry);
+				this._commandRegistry.loadJSONDefinition(this.createContextMenuStructure());
 				return new Deferred().resolve();
 			}.bind(this));
 			//once.resolve();
@@ -116,6 +154,7 @@ define([
 						editorCommands: this._editorCommands,
 						editorConfig: this._editorConfig,
 						progressService: this._progressService,
+						editorContextMenuId: "editorContextMenuActions",
 						toolbarId: this._toolbarId
 					});
 					return editorHelper.createEditor(options);
