@@ -257,29 +257,56 @@ define([
 		},
 		registerCommands: function() {
 			var commandRegistry = this.commandService;
+
+			if (!commandRegistry.useMenuStruct  || this.saveToolbarId !== "fileActions") {
+				commandRegistry.registerCommandContribution(this.saveToolbarId || this.toolbarId, "orion.edit.openFolder", 1, this.saveToolbarId ? "orion.menuBarFileGroup/orion.edit.saveGroup" : null, false, new mKeyBinding.KeyBinding('o', true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(this.saveToolbarId || this.toolbarId, "orion.edit.openRecent", 3, this.saveToolbarId ? "orion.menuBarFileGroup/orion.edit.saveGroup" : null, false, new mKeyBinding.KeyBinding('r', true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(this.saveToolbarId || this.toolbarId, "orion.openResource", 1, this.saveToolbarId ? "orion.menuBarFileGroup/orion.edit.saveGroup" : null, false, new mKeyBinding.KeyBinding('f', true, true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(this.saveToolbarId || this.toolbarId, "orion.edit.save", 2, this.saveToolbarId ? "orion.menuBarFileGroup/orion.edit.saveGroup" : null, false, new mKeyBinding.KeyBinding('s', true), null, this); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-3$
+			}
 			
 			commandRegistry.registerCommandContribution("settingsActions", "orion.edit.settings", 1, null, false, new mKeyBinding.KeyBinding("s", true, true), null, this); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(this.editToolbarId || this.toolbarId, "orion.edit.undo", 400, this.editToolbarId ? "orion.menuBarEditGroup/orion.edit.undoGroup" : null, !this.editToolbarId, new mKeyBinding.KeyBinding('z', true), null, this); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-3$
-			commandRegistry.registerCommandContribution(this.editToolbarId || this.toolbarId, "orion.edit.redo", 401, this.editToolbarId ? "orion.menuBarEditGroup/orion.edit.undoGroup" : null, !this.editToolbarId, util.isMac ? new mKeyBinding.KeyBinding('z', true, true) : new mKeyBinding.KeyBinding('y', true), null, this); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-4$
-			commandRegistry.registerCommandContribution(this.saveToolbarId || this.toolbarId, "orion.edit.openFolder", 1, this.saveToolbarId ? "orion.menuBarFileGroup/orion.edit.saveGroup" : null, false, new mKeyBinding.KeyBinding('o', true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(this.saveToolbarId || this.toolbarId, "orion.edit.openRecent", 3, this.saveToolbarId ? "orion.menuBarFileGroup/orion.edit.saveGroup" : null, false, new mKeyBinding.KeyBinding('r', true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(this.saveToolbarId || this.toolbarId, "orion.openResource", 1, this.saveToolbarId ? "orion.menuBarFileGroup/orion.edit.saveGroup" : null, false, new mKeyBinding.KeyBinding('f', true, true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(this.saveToolbarId || this.toolbarId, "orion.edit.save", 2, this.saveToolbarId ? "orion.menuBarFileGroup/orion.edit.saveGroup" : null, false, new mKeyBinding.KeyBinding('s', true), null, this); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-3$
-			commandRegistry.registerCommandContribution(this.editToolbarId || this.pageNavId, "orion.edit.gotoLine", 3, this.editToolbarId ? "orion.menuBarEditGroup/orion.findGroup" : null, !this.editToolbarId, new mKeyBinding.KeyBinding('l', !util.isMac, false, false, util.isMac), new mCommandRegistry.URLBinding("gotoLine", "line"), this); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-5$
-			commandRegistry.registerCommandContribution(this.editToolbarId || this.pageNavId, "orion.edit.find", 0, this.editToolbarId ? "orion.menuBarEditGroup/orion.findGroup" : null, !this.editToolbarId, new mKeyBinding.KeyBinding('f', true), new mCommandRegistry.URLBinding("find", "find"), this); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-5$
-			commandRegistry.registerCommandContribution(this.editToolbarId || this.pageNavId , "orion.edit.format", 2, this.editToolbarId ? "orion.menuBarEditGroup/orion.edit.formatGroup" : null, !this.editToolbarId, new mKeyBinding.KeyBinding('f', false, true, true), new mCommandRegistry.URLBinding("format", "format"), this); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-5$
+
 			commandRegistry.registerCommandContribution(this.toolbarId, "orion.keyAssist", 0, "orion.menuBarToolsGroup", false, new mKeyBinding.KeyBinding(191, false, true, true)); //$NON-NLS-1$ //$NON-NLS-0$ //$NON-NLS-2$
 			commandRegistry.registerCommandContribution(this.toolbarId , "orion.edit.showTooltip", 1, "orion.menuBarToolsGroup", false, new mKeyBinding.KeyBinding(113), null, this);//$NON-NLS-1$ //$NON-NLS-2$ 
 			commandRegistry.registerCommandContribution(this.toolbarId , "orion.edit.blame", 2, "orion.menuBarToolsGroup", false, new mKeyBinding.KeyBinding('b', true, true), new mCommandRegistry.URLBinding("blame", "blame"), this); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-5$
 			commandRegistry.registerCommandContribution(this.toolbarId , "orion.edit.diff", 3, "orion.menuBarToolsGroup", false, new mKeyBinding.KeyBinding('d', true, true), new mCommandRegistry.URLBinding("diff", "diff"), this); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-5$
+			
+			if (!commandRegistry.useMenuStruct || this.editToolbarId !== "editActions") {
+				commandRegistry.registerCommandContribution(this.editToolbarId || this.toolbarId, "orion.edit.undo", 400, this.editToolbarId ? "orion.menuBarEditGroup/orion.edit.undoGroup" : null, !this.editToolbarId, new mKeyBinding.KeyBinding('z', true), null, this); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-3$
+				commandRegistry.registerCommandContribution(this.editToolbarId || this.toolbarId, "orion.edit.redo", 401, this.editToolbarId ? "orion.menuBarEditGroup/orion.edit.undoGroup" : null, !this.editToolbarId, util.isMac ? new mKeyBinding.KeyBinding('z', true, true) : new mKeyBinding.KeyBinding('y', true), null, this); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-4$
+				commandRegistry.registerCommandContribution(this.editToolbarId || this.pageNavId, "orion.edit.gotoLine", 3, this.editToolbarId ? "orion.menuBarEditGroup/orion.findGroup" : null, !this.editToolbarId, new mKeyBinding.KeyBinding('l', !util.isMac, false, false, util.isMac), new mCommandRegistry.URLBinding("gotoLine", "line"), this); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-5$
+				commandRegistry.registerCommandContribution(this.editToolbarId || this.pageNavId, "orion.edit.find", 0, this.editToolbarId ? "orion.menuBarEditGroup/orion.findGroup" : null, !this.editToolbarId, new mKeyBinding.KeyBinding('f', true), new mCommandRegistry.URLBinding("find", "find"), this); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-5$
+				commandRegistry.registerCommandContribution(this.editToolbarId || this.pageNavId , "orion.edit.format", 2, this.editToolbarId ? "orion.menuBarEditGroup/orion.edit.formatGroup" : null, !this.editToolbarId, new mKeyBinding.KeyBinding('f', false, true, true), new mCommandRegistry.URLBinding("format", "format"), this); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-5$
+			} else {
+				commandRegistry._editorCommandHandler = this;
+			}
 
+			if (commandRegistry.useMenuStruct) {
+				var toolsMenuStructure = {
+					scopeId: this.toolbarId,
+					pathRoot: "",
+					items: [
+						{ groupId: "orion.menuBarToolsGroup", title: messages["Tools"], items: [
+							{ groupId: "orion.editorMenuBarMenuDelimitersGroup", title: messages["Convert Line Delimiters"], pos: 2000, items: [
+								{ commandId: "orion.edit.convert.crlf", handler: this },
+								{ commandId: "orion.edit.convert.lf", handler: this },
+							] },
+							{ commandId: "orion.edit.reloadWithEncoding", pos: 2001 },
+						] },
+					]};
+				
+				commandRegistry.addMenu(toolsMenuStructure);
+				commandRegistry.convertMenu(this.toolbarId, "", commandRegistry._menus[this.toolbarId].items, 0);
+			} else {
 			// 'Delimiters' cascade
-			var index = 0;
-			commandRegistry.addCommandGroup(this.toolbarId, "orion.editorMenuBarMenuDelimitersGroup", 999, messages["Convert Line Delimiters"], "orion.menuBarToolsGroup"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(this.toolbarId, "orion.edit.convert.crlf", index++, "orion.menuBarToolsGroup/orion.editorMenuBarMenuDelimitersGroup", false, null, null, this); //$NON-NLS-1$ //$NON-NLS-2$
-			commandRegistry.registerCommandContribution(this.toolbarId, "orion.edit.convert.lf", index++, "orion.menuBarToolsGroup/orion.editorMenuBarMenuDelimitersGroup", false, null, null, this); //$NON-NLS-1$ //$NON-NLS-2$
-
-			commandRegistry.registerCommandContribution(this.toolbarId, "orion.edit.reloadWithEncoding", 1000, "orion.menuBarToolsGroup"); //$NON-NLS-1$ //$NON-NLS-2$
+				var index = 0;
+				commandRegistry.addCommandGroup(this.toolbarId, "orion.editorMenuBarMenuDelimitersGroup", 999, messages["Convert Line Delimiters"], "orion.menuBarToolsGroup"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(this.toolbarId, "orion.edit.convert.crlf", index++, "orion.menuBarToolsGroup/orion.editorMenuBarMenuDelimitersGroup", false, null, null, this); //$NON-NLS-1$ //$NON-NLS-2$
+				commandRegistry.registerCommandContribution(this.toolbarId, "orion.edit.convert.lf", index++, "orion.menuBarToolsGroup/orion.editorMenuBarMenuDelimitersGroup", false, null, null, this); //$NON-NLS-1$ //$NON-NLS-2$
+	
+				commandRegistry.registerCommandContribution(this.toolbarId, "orion.edit.reloadWithEncoding", 1000, "orion.menuBarToolsGroup"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
 			
 			this._registerCommandGroups(this.toolbarId, "orion.menuBarToolsGroup"); //$NON-NLS-1$
 
@@ -308,32 +335,73 @@ define([
 		},
 		registerContextMenuCommands: function() {
 			var commandRegistry = this.commandService;
-			// main context menu
-			commandRegistry.addCommandGroup(this.editorContextMenuId, "orion.editorContextMenuGroup", 100, null, null, null, null, null, "dropdownSelection"); //$NON-NLS-1$ //$NON-NLS-2$
-			
-			var index = 1;
-			//TODO - non-nls is wrong, check accelerator conflicts etc.
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.copy", index++, "orion.editorContextMenuGroup/orion.edit.copyGroup", false, new mKeyBinding.KeyBinding('c', true)); //$NON-NLS-1$ //$NON-NLS-2$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.cut", index++, "orion.editorContextMenuGroup/orion.edit.copyGroup", false, new mKeyBinding.KeyBinding('x', true)); //$NON-NLS-1$ //$NON-NLS-2$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.paste", index++, "orion.editorContextMenuGroup/orion.edit.copyGroup", false, new mKeyBinding.KeyBinding('v', true)); //$NON-NLS-1$ //$NON-NLS-2$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.undo", index++, "orion.editorContextMenuGroup/orion.edit.undoGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.redo", index++, "orion.editorContextMenuGroup/orion.edit.undoGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.find", index++,"orion.editorContextMenuGroup/orion.findGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.gotoLine", index++, "orion.editorContextMenuGroup/orion.findGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.quickSearch", index++, "orion.editorContextMenuGroup/orion.findGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.openSearch", index++, "orion.editorContextMenuGroup/orion.findGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId , "orion.edit.format", index++, "orion.editorContextMenuGroup/orion.edit.formatGroup", false); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$
+			if (commandRegistry.useMenuStruct) {
+				var menuStructure = {
+					scopeId: "editorContextMenuActions",
+					pathRoot: "",
+					items: [
+						{ groupId: "orion.editorContextMenuGroup", items: [
+							{ groupId: "orion.edit.copyGroup", items: [
+								{ commandId: "orion.edit.copy" },
+								{ commandId: "orion.edit.cut" },
+								{ commandId: "orion.edit.paste" },
+							] },
+							{ groupId: "orion..edit.undoGroup", items: [
+								{ commandId: "orion.edit.undo" },
+								{ commandId: "orion.edit.redo" },
+							] },
+							{ groupId: "orion.edit.findGroup", items: [
+								{ commandId: "orion.edit.find" },
+								{ commandId: "orion.edit.gotoLine" },
+								{ commandId: "orion.quickSearch" },
+								{ commandId: "orion.openSearch" },
+								{ contribution: "getEditorCMEXtensions"}
+							] },
+							{ groupId: "orion.editorContextMenuToolsGroup", title: messages["Tools"], items: [
+								{ commandId: "orion.edit.blame" },
+								{ commandId: "orion.edit.diff" },
+								{ groupId: "orion.editorContextMenuDelimitersGroup", title: messages["Convert Line Delimiters"], pos: 900, items: [
+									{ commandId: "orion.edit.convert.crlf" },
+									{ commandId: "orion.edit.convert.lf" },
+								] },
+								{ commandId: "orion.edit.reloadWithEncoding", pos: 1000 },  // Need the 'pos' to allow entensions to go before these elements
+							] },
+						] },
+					]
+				};
 
-			// 'Tools' cascade
-			commandRegistry.addCommandGroup(this.editorContextMenuId, "orion.editorContextMenuToolsGroup", 400, messages["Tools"], "orion.editorContextMenuGroup"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.reloadWithEncoding", 1000, "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup"); //$NON-NLS-1$ //$NON-NLS-2$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId , "orion.edit.blame", 1, "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId , "orion.edit.diff", 2, "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
+				// Add and register the initial menu structure
+				commandRegistry.addMenu(menuStructure);
 
-			// 'Delimiters' cascade
-			commandRegistry.addCommandGroup(this.editorContextMenuId, "orion.editorContextMenuDelimitersGroup", 999, messages["Convert Line Delimiters"], "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.convert.crlf", index++, "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup/orion.editorContextMenuDelimitersGroup"); //$NON-NLS-1$ //$NON-NLS-2$
-			commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.convert.lf", index++, "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup/orion.editorContextMenuDelimitersGroup"); //$NON-NLS-1$ //$NON-NLS-2$
+				// Convert the menu to old-style command contributions and groups
+				this.commandService.convertMenu(menuStructure.scopeId, menuStructure.pathRoot, menuStructure.items, 0);
+			} else {
+				// main context menu
+				commandRegistry.addCommandGroup(this.editorContextMenuId, "orion.editorContextMenuGroup", 100, null, null, null, null, null, "dropdownSelection"); //$NON-NLS-1$ //$NON-NLS-2$
+				
+				var index = 1;
+				//TODO - non-nls is wrong, check accelerator conflicts etc.
+				commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.copy", index++, "orion.editorContextMenuGroup/orion.edit.copyGroup", false, new mKeyBinding.KeyBinding('c', true)); //$NON-NLS-1$ //$NON-NLS-2$
+				commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.cut", index++, "orion.editorContextMenuGroup/orion.edit.copyGroup", false, new mKeyBinding.KeyBinding('x', true)); //$NON-NLS-1$ //$NON-NLS-2$
+				commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.paste", index++, "orion.editorContextMenuGroup/orion.edit.copyGroup", false, new mKeyBinding.KeyBinding('v', true)); //$NON-NLS-1$ //$NON-NLS-2$
+				commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.undo", index++, "orion.editorContextMenuGroup/orion.edit.undoGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
+				commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.redo", index++, "orion.editorContextMenuGroup/orion.edit.undoGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
+				commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.find", index++,"orion.editorContextMenuGroup/orion.findGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
+				commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.gotoLine", index++, "orion.editorContextMenuGroup/orion.findGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
+				commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.quickSearch", index++, "orion.editorContextMenuGroup/orion.findGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
+				commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.openSearch", index++, "orion.editorContextMenuGroup/orion.findGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
+	
+				// 'Tools' cascade
+				commandRegistry.addCommandGroup(this.editorContextMenuId, "orion.editorContextMenuToolsGroup", 400, messages["Tools"], "orion.editorContextMenuGroup"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.reloadWithEncoding", 1000, "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup"); //$NON-NLS-1$ //$NON-NLS-2$
+				commandRegistry.registerCommandContribution(this.editorContextMenuId , "orion.edit.blame", 1, "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
+				commandRegistry.registerCommandContribution(this.editorContextMenuId , "orion.edit.diff", 2, "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup", false); //$NON-NLS-1$ //$NON-NLS-2$
+	
+				// 'Delimiters' cascade
+				commandRegistry.addCommandGroup(this.editorContextMenuId, "orion.editorContextMenuDelimitersGroup", 999, messages["Convert Line Delimiters"], "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.convert.crlf", index++, "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup/orion.editorContextMenuDelimitersGroup"); //$NON-NLS-1$ //$NON-NLS-2$
+				commandRegistry.registerCommandContribution(this.editorContextMenuId, "orion.edit.convert.lf", index++, "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup/orion.editorContextMenuDelimitersGroup"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
 
 			this._registerCommandGroups(this.editorContextMenuId, "orion.editorContextMenuGroup/orion.editorContextMenuToolsGroup"); //$NON-NLS-1$
 

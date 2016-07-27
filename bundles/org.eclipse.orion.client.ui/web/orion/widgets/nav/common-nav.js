@@ -17,6 +17,7 @@ define([
 	'orion/explorers/explorer-table',
 	'orion/explorers/navigatorRenderer',
 	'orion/keyBinding',
+	'orion/commandRegistry',
 	'orion/fileCommands',
 	'orion/projectCommands',
 	'orion/extensionCommands',
@@ -29,7 +30,7 @@ define([
 	'orion/metrics',
 	'orion/util'
 ], function(
-	messages, objects, lib, mExplorer, mNavigatorRenderer, mKeyBinding,
+	messages, objects, lib, mExplorer, mNavigatorRenderer, mKeyBinding, mCommandRegistry,
 	FileCommands, ProjectCommands, ExtensionCommands, mGlobalCommands, Selection, URITemplate, PageUtil, mContextMenu, mGeneralPreferences, mMetrics, util
 ) {
 	var _DEBUG = false;
@@ -288,85 +289,236 @@ define([
 			downFolder.scopeName = upFolder.scopeName = pasteSelections.scopeName = copySelections.scopeName = cutBinding.scopeName  = delBinding.scopeName = renameBinding.scopeName = messages.Navigator; //$NON-NLS-0$
 
 			// New actions
-			commandRegistry.registerCommandContribution(fileActionsScope, "eclipse.newFile", 1, "orion.menuBarFileGroup/orion.newContentGroup/orion.new.default"); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(fileActionsScope, "eclipse.newFolder", 2, "orion.menuBarFileGroup/orion.newContentGroup/orion.new.default", false, null/*, new mCommandRegistry.URLBinding("newFolder", "name")*/); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(fileActionsScope, "orion.new.project", 3, "orion.menuBarFileGroup/orion.newContentGroup/orion.new.default"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			if (!util.isElectron) {
-				commandRegistry.registerCommandContribution(fileActionsScope, "orion.new.linkProject", 4, "orion.menuBarFileGroup/orion.newContentGroup/orion.new.default"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			}
-
-			if (!util.isElectron) {
-				// Import actions
-				commandRegistry.registerCommandContribution(fileActionsScope, "orion.import", 1, "orion.menuBarFileGroup/orion.importGroup"); //$NON-NLS-1$ //$NON-NLS-0$
-				commandRegistry.registerCommandContribution(fileActionsScope, "orion.importZipURL", 2, "orion.menuBarFileGroup/orion.importGroup"); //$NON-NLS-1$ //$NON-NLS-0$
-				commandRegistry.registerCommandContribution(fileActionsScope, "orion.importSFTP", 3, "orion.menuBarFileGroup/orion.importGroup"); //$NON-NLS-1$ //$NON-NLS-0$
-
-				// Export actions
-				commandRegistry.registerCommandContribution(fileActionsScope, "eclipse.downloadSingleFile", 1, "orion.menuBarFileGroup/orion.exportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
-				commandRegistry.registerCommandContribution(fileActionsScope, "eclipse.downloadFile", 2, "orion.menuBarFileGroup/orion.exportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
-				commandRegistry.registerCommandContribution(fileActionsScope, "eclipse.exportSFTPCommand", 3, "orion.menuBarFileGroup/orion.exportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+			if (commandRegistry.useMenuStruct) {
+				var fileMenuStructure = {
+					scopeId: fileActionsScope,
+					pathRoot: "",
+					items: [
+						{ groupId: "orion.menuBarFileGroup", title: messages["File"], items: [
+							{ groupId: "orion.newContentGroup", title: messages["New"], items: [
+								{ commandId: "eclipse.newFile" },
+								{ commandId: "eclipse.newFolder" },
+								{ commandId: "orion.new.project" },
+								{ commandId: "orion.new.linkProject", filter: "Not Electron" },
+								{ groupId: "orion.projectsNewGroup", title: messages["Project"] },
+							] },
+							{ groupId: "orion.edit.saveGroup", items: [
+								{commandId: "orion.edit.openFolder", keyBinding: new mKeyBinding.KeyBinding('o', true) },
+								{commandId: "orion.edit.openRecent", keyBinding: new mKeyBinding.KeyBinding('r', true) },
+								{commandId: "orion.openResource", keyBinding: new mKeyBinding.KeyBinding('f', true) },
+								{commandId: "orion.edit.save", keyBinding: new mKeyBinding.KeyBinding('s', true), handler: commandRegistry._editorCommandHandler },
+							] },
+							{ groupId: "orion.importGroup", title: messages["Import"], filter: "Not Electron", items: [
+								{ commandId: "orion.import" },
+								{ commandId: "orion.importZipURL" },
+								{ commandId: "orion.importSFTP" },
+							] },
+							{ groupId: "orion.exportGroup", title: messages["Export"], filter: "Not Electron", items: [
+								{ commandId: "eclipse.downloadSingleFile" },
+								{ commandId: "eclipse.downloadFile" },
+								{ commandId: "eclipse.exportSFTPCommand" },
+							] },
+						] },
+					]
+				};
+				
+				commandRegistry.addMenu(fileMenuStructure);
+				commandRegistry.convertMenu(fileActionsScope, "", commandRegistry._menus[fileActionsScope].items, 0);
+			} else {
+				commandRegistry.registerCommandContribution(fileActionsScope, "eclipse.newFile", 1, "orion.menuBarFileGroup/orion.newContentGroup/orion.new.default"); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(fileActionsScope, "eclipse.newFolder", 2, "orion.menuBarFileGroup/orion.newContentGroup/orion.new.default", false, null/*, new mCommandRegistry.URLBinding("newFolder", "name")*/); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(fileActionsScope, "orion.new.project", 3, "orion.menuBarFileGroup/orion.newContentGroup/orion.new.default"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+	
+				if (!util.isElectron) {
+					commandRegistry.registerCommandContribution(fileActionsScope, "orion.new.linkProject", 4, "orion.menuBarFileGroup/orion.newContentGroup/orion.new.default"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				}
+	
+				if (!util.isElectron) {
+					// Import actions
+					commandRegistry.registerCommandContribution(fileActionsScope, "orion.import", 1, "orion.menuBarFileGroup/orion.importGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+					commandRegistry.registerCommandContribution(fileActionsScope, "orion.importZipURL", 2, "orion.menuBarFileGroup/orion.importGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+					commandRegistry.registerCommandContribution(fileActionsScope, "orion.importSFTP", 3, "orion.menuBarFileGroup/orion.importGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+	
+					// Export actions
+					commandRegistry.registerCommandContribution(fileActionsScope, "eclipse.downloadSingleFile", 1, "orion.menuBarFileGroup/orion.exportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+					commandRegistry.registerCommandContribution(fileActionsScope, "eclipse.downloadFile", 2, "orion.menuBarFileGroup/orion.exportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+					commandRegistry.registerCommandContribution(fileActionsScope, "eclipse.exportSFTPCommand", 3, "orion.menuBarFileGroup/orion.exportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+				}
 			}
 		
 			// Edit actions
-			commandRegistry.registerCommandContribution(editActionsScope, "eclipse.cut", 1, "orion.menuBarEditGroup/orion.clipboardGroup", false, cutBinding); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(editActionsScope, "eclipse.copySelections", 2, "orion.menuBarEditGroup/orion.clipboardGroup", false, copySelections); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(editActionsScope, "eclipse.pasteSelections", 3, "orion.menuBarEditGroup/orion.clipboardGroup", false, pasteSelections); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(editActionsScope, "eclipse.deleteFile", 4, "orion.menuBarEditGroup/orion.clipboardGroup", false, delBinding); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(editActionsScope, "eclipse.compareWith", 5, "orion.menuBarEditGroup/orion.compareGroup");  //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(editActionsScope, "eclipse.compareWithEachOther", 6, "orion.menuBarEditGroup/orion.compareGroup");  //$NON-NLS-1$ //$NON-NLS-0$
-			
-			commandRegistry.registerCommandContribution(editActionsScope, "eclipse.renameResource", 1, "orion.menuBarEditGroup/orion.edit.formatGroup", false, renameBinding); //$NON-NLS-1$ //$NON-NLS-0$
-			// View actions
-			if (!util.isElectron) {
-				commandRegistry.registerCommandContribution(viewActionsScope, "eclipse.downFolder", 1, "orion.menuBarViewGroup", false, downFolder); //$NON-NLS-1$ //$NON-NLS-0$
-				commandRegistry.registerCommandContribution(viewActionsScope, "eclipse.upFolder", 0, "orion.menuBarViewGroup", false, upFolder); //$NON-NLS-1$ //$NON-NLS-0$
+			if (!commandRegistry.useMenuStruct) {
+				commandRegistry.registerCommandContribution(editActionsScope, "eclipse.cut", 1, "orion.menuBarEditGroup/orion.clipboardGroup", false, cutBinding); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(editActionsScope, "eclipse.copySelections", 2, "orion.menuBarEditGroup/orion.clipboardGroup", false, copySelections); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(editActionsScope, "eclipse.pasteSelections", 3, "orion.menuBarEditGroup/orion.clipboardGroup", false, pasteSelections); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(editActionsScope, "eclipse.deleteFile", 4, "orion.menuBarEditGroup/orion.clipboardGroup", false, delBinding); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(editActionsScope, "eclipse.compareWith", 5, "orion.menuBarEditGroup/orion.compareGroup");  //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(editActionsScope, "eclipse.compareWithEachOther", 6, "orion.menuBarEditGroup/orion.compareGroup");  //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(editActionsScope, "eclipse.renameResource", 1, "orion.menuBarEditGroup/orion.edit.formatGroup", false, renameBinding); //$NON-NLS-1$ //$NON-NLS-0$
+			} else {
+				var editMenuStructure = {
+					scopeId: editActionsScope,
+					pathRoot: "",
+					items: [
+						{ groupId: "orion.menuBarEditGroup", title: messages["Edit"], items: [
+							{ groupId: "orion.edit.undoGroup", items: [
+								{ commandId: "orion.edit.undo", keyBinding: new mKeyBinding.KeyBinding('z', true), handler: commandRegistry._editorCommandHandler },
+								{ commandId: "orion.edit.redo", keyBinding: util.isMac ? new mKeyBinding.KeyBinding('z', true, true) : new mKeyBinding.KeyBinding('y', true), handler: commandRegistry._editorCommandHandler },
+							] },
+							{ groupId: "orion.findGroup", items: [
+								{commandId: "orion.edit.find", keyBinding: new mKeyBinding.KeyBinding('f', true), handler: commandRegistry._editorCommandHandler,
+											urlBinding: new mCommandRegistry.URLBinding("find", "find") },
+								{commandId: "orion.edit.gotoLine", keyBinding: new mKeyBinding.KeyBinding('l', !util.isMac, false, false, util.isMac), handler: commandRegistry._editorCommandHandler,
+											urlBinding: new mCommandRegistry.URLBinding("gotoLine", "line") },
+								{commandId: "orion.searchInFolder" },
+								{commandId: "orion.quickSearch", keyBinding: new mKeyBinding.KeyBinding('h', true) },
+								{commandId: "orion.openSearch", keyBinding: new mKeyBinding.KeyBinding('h', true, true) },
+							] },
+							{ groupId: "orion.formatGroup", items: [
+								{commandId: "eclipse.renameResource", keyBinding: renameBinding },
+								{commandId: "orion.edit.format", keyBinding: new mKeyBinding.KeyBinding('f', false, true, true), handler: commandRegistry._editorCommandHandler,
+											urlBinding: new mCommandRegistry.URLBinding("format", "format") },
+							] },
+							{ groupId: "orion.compareGroup", items: [
+								{commandId: "eclipse.compareWith" },
+								{commandId: "eclipse.compareWithEachOther" },
+							] },
+							{ groupId: "orion.clipboardGroup", items: [
+								{commandId: "eclipse.cut", keyBinding: cutBinding },
+								{commandId: "eclipse.copySelections", keyBinding: copySelections },
+								{commandId: "eclipse.pasteSelections", keyBinding: pasteSelections },
+								{commandId: "eclipse.deleteFile", keyBinding: delBinding },
+							] },
+						] },
+					]
+				};
+				
+				commandRegistry.addMenu(editMenuStructure);
+				commandRegistry.convertMenu(editActionsScope, "", commandRegistry._menus[editActionsScope].items, 0);
 			}
-
-			commandRegistry.addCommandGroup(viewActionsScope, "eclipse.openWith", 1000, messages["OpenWith"], "orion.menuBarViewGroup", null, null, null, "dropdownSelection"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.addCommandGroup(viewActionsScope, "eclipse.fileCommandExtensions", 1000, messages["OpenRelated"], "orion.menuBarViewGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+			
+			if (commandRegistry.useMenuStruct) {
+				var viewMenuStructure = {
+					scopeId: viewActionsScope,
+					pathRoot: "",
+					items: [
+						{ groupId: "orion.menuBarViewGroup", title: messages["View"], items: [
+							{ commandId: "eclipse.downFolder", keyBinding: downFolder, filter: "Not Electron" },
+							{ commandId: "eclipse.upFolder", keyBinding: upFolder, filter: "Not Electron" },
+							{ commandId: "orion.sidebar.viewmode" },
+							{ groupId: "orion.slideoutMenuGroup", title: messages["Slideout"] },
+							{ groupId: "eclipse.openWith", title: messages["OpenWith"] },
+							{ groupId: "eclipse.fileCommandExtensions", title: messages["OpenRelated"] },
+						] },
+					]};
+				
+				commandRegistry.addMenu(viewMenuStructure);
+				commandRegistry.convertMenu(viewActionsScope, "", commandRegistry._menus[viewActionsScope].items, 0);
+			} else {
+			// View actions
+				if (!util.isElectron) {
+					commandRegistry.registerCommandContribution(viewActionsScope, "eclipse.downFolder", 1, "orion.menuBarViewGroup", false, downFolder); //$NON-NLS-1$ //$NON-NLS-0$
+					commandRegistry.registerCommandContribution(viewActionsScope, "eclipse.upFolder", 0, "orion.menuBarViewGroup", false, upFolder); //$NON-NLS-1$ //$NON-NLS-0$
+				}
+	
+				commandRegistry.addCommandGroup(viewActionsScope, "eclipse.openWith", 1000, messages["OpenWith"], "orion.menuBarViewGroup", null, null, null, "dropdownSelection"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.addCommandGroup(viewActionsScope, "eclipse.fileCommandExtensions", 1000, messages["OpenRelated"], "orion.menuBarViewGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+			}
 			
 			// Context Menu
-			commandRegistry.addCommandGroup(contextMenuActionsScope, "orion.commonNavContextMenuGroup", 100, null, null, null, null, null, "dropdownSelection"); //$NON-NLS-1$ //$NON-NLS-0$
-			
-			// Context Menu new artifact actions
-			commandRegistry.addCommandGroup(contextMenuActionsScope, "orion.New", 0, messages["New"], "orion.commonNavContextMenuGroup/orion.newGroup", null, null, null, "dropdownSelection"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.newFile", 1, "orion.commonNavContextMenuGroup/orion.newGroup/orion.New"); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.newFolder", 2, "orion.commonNavContextMenuGroup/orion.newGroup/orion.New", false, null/*, new mCommandRegistry.URLBinding("newFolder", "name")*/); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(contextMenuActionsScope, "orion.new.project", 3, "orion.commonNavContextMenuGroup/orion.newGroup/orion.New"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			if (!util.isElectron) {
-				commandRegistry.registerCommandContribution(contextMenuActionsScope, "orion.new.linkProject", 4, "orion.commonNavContextMenuGroup/orion.newGroup/orion.New"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+			if (commandRegistry.useMenuStruct) {
+				var menuStructure = {
+					scopeId: contextMenuActionsScope,
+					pathRoot: "",
+					items: [
+						{ groupId: "orion.commonNavContextMenuGroup", items: [
+							{ groupId: "orion.newGroup", title: messages["New"], items: [
+								{ commandId: "eclipse.newFile" },
+								{ commandId: "eclipse.newFolder" },
+								{ commandId: "orion.new.project" },
+								{ commandId: "orion.new.linkProject", filter: "Not Electron" },  // non-Electron only
+								{ groupId: "orion.New", items: [
+									{ groupId: "orion.projectsNewGroup", title: messages["Project"] },
+								]}
+							] },
+							{ groupId: "orion.editGroup", items: [
+								{ commandId: "eclipse.cut" },
+								{ commandId: "eclipse.copySelections" },
+								{ commandId: "eclipse.pasteSelections" },
+								{ commandId: "eclipse.deleteFile" },
+								{ commandId: "eclipse.renameResource" },
+							] },
+							{ groupId: "orion.relatedActions", items: [
+								{ groupId: "orion.OpenWith", title: messages["OpenWith"] },
+								{ groupId: "orion.Extensions", title: messages["OpenRelated"] },
+								{ commandId: "eclipse.compareWith" },
+								{ commandId: "eclipse.compareWithEachOther" },
+							] },
+							{ groupId: "orion.ImportExport", items: [
+								{ groupId: "orion.ImportGroup", title: messages["Import"], filter: "Not Electron", items: [    // Web-IDE only
+									{ commandId: "orion.import" },
+									{ commandId: "orion.importZipURL" },
+									{ commandId: "orion.importSFTP" },
+								] },
+								{ groupId: "orion.ExportGroup", title: messages["Export"], filter: "Not Electron", items: [    // Web-IDE only
+									{ commandId: "eclipse.downloadSingleFile" },
+									{ commandId: "eclipse.downloadFile" },
+									{ commandId: "eclipse.exportSFTPCommand" },
+								] },
+							] },
+							{ commandId:  "orion.searchInFolder" },
+							{ commandId:  "orion.problemsInFolder" },
+						] },
+					]
+				};
+
+				// Add and register the initial menu structure
+				commandRegistry.addMenu(menuStructure);
+
+				commandRegistry.convertMenu(menuStructure.scopeId, menuStructure.pathRoot, menuStructure.items, 0);
+			} else {
+				commandRegistry.addCommandGroup(contextMenuActionsScope, "orion.commonNavContextMenuGroup", 100, null, null, null, null, null, "dropdownSelection"); //$NON-NLS-1$ //$NON-NLS-0$
+				
+				// Context Menu new artifact actions
+				commandRegistry.addCommandGroup(contextMenuActionsScope, "orion.New", 0, messages["New"], "orion.commonNavContextMenuGroup/orion.newGroup", null, null, null, "dropdownSelection"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.newFile", 1, "orion.commonNavContextMenuGroup/orion.newGroup/orion.New"); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.newFolder", 2, "orion.commonNavContextMenuGroup/orion.newGroup/orion.New", false, null/*, new mCommandRegistry.URLBinding("newFolder", "name")*/); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(contextMenuActionsScope, "orion.new.project", 3, "orion.commonNavContextMenuGroup/orion.newGroup/orion.New"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				if (!util.isElectron) {
+					commandRegistry.registerCommandContribution(contextMenuActionsScope, "orion.new.linkProject", 4, "orion.commonNavContextMenuGroup/orion.newGroup/orion.New"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				}
+				
+				// Context Menu edit group actions
+				commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.cut", 1, "orion.commonNavContextMenuGroup/orion.editGroup", false); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.copySelections", 2, "orion.commonNavContextMenuGroup/orion.editGroup", false); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.pasteSelections", 3, "orion.commonNavContextMenuGroup/orion.editGroup", false); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.deleteFile", 4, "orion.commonNavContextMenuGroup/orion.editGroup", false); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.renameResource", 5, "orion.commonNavContextMenuGroup/orion.editGroup", false); //$NON-NLS-1$ //$NON-NLS-0$
+				
+				// Context Menu related actions
+				commandRegistry.addCommandGroup(contextMenuActionsScope, "orion.OpenWith", 1001, messages["OpenWith"], "orion.commonNavContextMenuGroup/orion.relatedActions", null, null, null, "dropdownSelection"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.addCommandGroup(contextMenuActionsScope, "orion.Extensions", 1002, messages["OpenRelated"], "orion.commonNavContextMenuGroup/orion.relatedActions", null, null, null, "dropdownSelection"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.compareWith", 6, "orion.commonNavContextMenuGroup/orion.relatedActions");  //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.compareWithEachOther", 7, "orion.commonNavContextMenuGroup/orion.relatedActions");  //$NON-NLS-1$ //$NON-NLS-0$
+				
+				if (!util.isElectron) {
+					// Context Menu import/export actions
+					commandRegistry.addCommandGroup(contextMenuActionsScope, "orion.ImportGroup", 1003, messages["Import"], "orion.commonNavContextMenuGroup/orion.ImportExport", null, null, null, "dropdownSelection"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$			
+					commandRegistry.addCommandGroup(contextMenuActionsScope, "orion.ExportGroup", 1004, messages["Export"], "orion.commonNavContextMenuGroup/orion.ImportExport", null, null, null, "dropdownSelection"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$						
+					commandRegistry.registerCommandContribution(contextMenuActionsScope, "orion.import", 1, "orion.commonNavContextMenuGroup/orion.ImportExport/orion.ImportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+					commandRegistry.registerCommandContribution(contextMenuActionsScope, "orion.importZipURL", 2, "orion.commonNavContextMenuGroup/orion.ImportExport/orion.ImportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+					commandRegistry.registerCommandContribution(contextMenuActionsScope, "orion.importSFTP", 3, "orion.commonNavContextMenuGroup/orion.ImportExport/orion.ImportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+					commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.downloadSingleFile", 1, "orion.commonNavContextMenuGroup/orion.ImportExport/orion.ExportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+					commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.downloadFile", 2, "orion.commonNavContextMenuGroup/orion.ImportExport/orion.ExportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+					commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.exportSFTPCommand", 3, "orion.commonNavContextMenuGroup/orion.ImportExport/orion.ExportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+				}
+				
+				// Context Menu search action
+				commandRegistry.registerCommandContribution(contextMenuActionsScope, "orion.searchInFolder", 1, "orion.commonNavContextMenuGroup"); //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(contextMenuActionsScope, "orion.problemsInFolder", 2, "orion.commonNavContextMenuGroup"); //$NON-NLS-0$
 			}
-			
-			// Context Menu edit group actions
-			commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.cut", 1, "orion.commonNavContextMenuGroup/orion.editGroup", false); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.copySelections", 2, "orion.commonNavContextMenuGroup/orion.editGroup", false); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.pasteSelections", 3, "orion.commonNavContextMenuGroup/orion.editGroup", false); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.deleteFile", 4, "orion.commonNavContextMenuGroup/orion.editGroup", false); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.renameResource", 5, "orion.commonNavContextMenuGroup/orion.editGroup", false); //$NON-NLS-1$ //$NON-NLS-0$
-			
-			// Context Menu related actions
-			commandRegistry.addCommandGroup(contextMenuActionsScope, "orion.OpenWith", 1001, messages["OpenWith"], "orion.commonNavContextMenuGroup/orion.relatedActions", null, null, null, "dropdownSelection"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.addCommandGroup(contextMenuActionsScope, "orion.Extensions", 1002, messages["OpenRelated"], "orion.commonNavContextMenuGroup/orion.relatedActions", null, null, null, "dropdownSelection"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.compareWith", 6, "orion.commonNavContextMenuGroup/orion.relatedActions");  //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.compareWithEachOther", 7, "orion.commonNavContextMenuGroup/orion.relatedActions");  //$NON-NLS-1$ //$NON-NLS-0$
-			
-			if (!util.isElectron) {
-				// Context Menu import/export actions
-				commandRegistry.addCommandGroup(contextMenuActionsScope, "orion.ImportGroup", 1003, messages["Import"], "orion.commonNavContextMenuGroup/orion.ImportExport", null, null, null, "dropdownSelection"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$			
-				commandRegistry.addCommandGroup(contextMenuActionsScope, "orion.ExportGroup", 1004, messages["Export"], "orion.commonNavContextMenuGroup/orion.ImportExport", null, null, null, "dropdownSelection"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$						
-				commandRegistry.registerCommandContribution(contextMenuActionsScope, "orion.import", 1, "orion.commonNavContextMenuGroup/orion.ImportExport/orion.ImportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
-				commandRegistry.registerCommandContribution(contextMenuActionsScope, "orion.importZipURL", 2, "orion.commonNavContextMenuGroup/orion.ImportExport/orion.ImportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
-				commandRegistry.registerCommandContribution(contextMenuActionsScope, "orion.importSFTP", 3, "orion.commonNavContextMenuGroup/orion.ImportExport/orion.ImportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
-				commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.downloadSingleFile", 1, "orion.commonNavContextMenuGroup/orion.ImportExport/orion.ExportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
-				commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.downloadFile", 2, "orion.commonNavContextMenuGroup/orion.ImportExport/orion.ExportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
-				commandRegistry.registerCommandContribution(contextMenuActionsScope, "eclipse.exportSFTPCommand", 3, "orion.commonNavContextMenuGroup/orion.ImportExport/orion.ExportGroup"); //$NON-NLS-1$ //$NON-NLS-0$
-			}
-			
-			// Context Menu search action
-			commandRegistry.registerCommandContribution(contextMenuActionsScope, "orion.searchInFolder", 1, "orion.commonNavContextMenuGroup"); //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(contextMenuActionsScope, "orion.problemsInFolder", 2, "orion.commonNavContextMenuGroup"); //$NON-NLS-0$
-			
-			
+				
+				
 			// Retrieve and register extension commands
 			ExtensionCommands.getOpenWithCommands(commandRegistry).forEach(function(command){
 				commandRegistry.registerCommandContribution(viewActionsScope, command.id, 1, "orion.menuBarViewGroup/eclipse.openWith"); //$NON-NLS-0$
@@ -383,8 +535,10 @@ define([
 			return this.preferences.get("/common-nav").then(function(prefs) { //$NON-NLS-0$
 				var show = prefs["showNewProjectCommands"]; //$NON-NLS-0$
 				if (show === undefined || show) {
-					commandRegistry.addCommandGroup(fileActionsScope, "orion.projectsNewGroup", 100, messages["Project"], "orion.menuBarFileGroup/orion.newContentGroup"); //$NON-NLS-1$ //$NON-NLS-0$
-					commandRegistry.addCommandGroup(contextMenuActionsScope, "orion.projectsNewGroup", 100, messages["Project"], "orion.commonNavContextMenuGroup/orion.newGroup/orion.New"); //$NON-NLS-1$ //$NON-NLS-0$
+					if (!commandRegistry.useMenuStruct) {
+						commandRegistry.addCommandGroup(fileActionsScope, "orion.projectsNewGroup", 100, messages["Project"], "orion.menuBarFileGroup/orion.newContentGroup"); //$NON-NLS-1$ //$NON-NLS-0$
+						commandRegistry.addCommandGroup(contextMenuActionsScope, "orion.projectsNewGroup", 100, messages["Project"], "orion.commonNavContextMenuGroup/orion.newGroup/orion.New"); //$NON-NLS-1$ //$NON-NLS-0$
+					}
 					var position = 0;
 					ProjectCommands.getCreateProjectCommands(commandRegistry).forEach(function(command){
 						if (!util.isElectron) {

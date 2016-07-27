@@ -23,8 +23,9 @@ define([
 	'text!orion/webui/submenutriggerbutton.html',
 	'orion/metrics',
 	'orion/Deferred',
-	'orion/EventTarget'
-], function(Commands, mKeyBinding, mNavUtils, i18nUtil, PageUtil, UIUtil, lib, mDropdown, mTooltip, SubMenuButtonFragment, mMetrics, mDeferred, mEventTarget) {
+	'orion/EventTarget',
+	'orion/util'
+], function(Commands, mKeyBinding, mNavUtils, i18nUtil, PageUtil, UIUtil, lib, mDropdown, mTooltip, SubMenuButtonFragment, mMetrics, mDeferred, mEventTarget, util) {
 
 	/**
 	 * Constructs a new command registry with the given options.
@@ -47,6 +48,9 @@ define([
 			this._selectionService = options.selection;
 			var self = this;
 			Commands.setKeyBindingProvider(function() { return self._activeBindings; });
+
+			// Dark Launch new menu behavior
+			this.useMenuStruct = "true" === localStorage.getItem("useMenuStruct");			
 
 			// Make the CommandRegistry an EventTarget. This is somewhat different from the normal pattern
 			// so that we can override the normal 'addEventTarget' processing (see below)
@@ -907,6 +911,112 @@ define([
 			delete parentTable[commandId];
 			
 			parentTable.sortedContributions = null;
+		},
+		
+		_getItemById: function(id, curItem) {
+			if (!curItem.items)
+				return null;
+				
+			// Is it one of our children ?
+			var foundItem = null;
+			for (var i = 0; i < curItem.items.length; i++) {
+				var theItem = curItem.items[i];
+
+				// is this the item ?
+				var itemId = theItem.groupId ? theItem.groupId : theItem.commandId;
+				if (itemId && itemId === id) {
+					return { item: theItem, parent: curItem };
+				}
+				
+				// Check this item's children
+				foundItem = this._getItemById(id, theItem);
+				if (foundItem)
+					break;
+			}
+			return foundItem;
+		},
+		
+		convertMenu: function(scopeId, curPath, items, curPos) {
+			if (!items) return;
+			
+			for (var i = 0; i < items.length; i++) {
+				var item = items[i];
+				
+				if (item.filter) {
+					if (item.filter === "Not Electron" && util.isElectron) {
+						continue;
+					}
+				}
+				if (item.groupId) {
+					var saveCurPath = curPath;
+					if (item.title) {
+						if (!item.selectionClass)
+							item.selectionClass = "dropdownSelection";
+					}
+					curPath += '/' + item.groupId;
+					this.addCommandGroup(scopeId, item.groupId, item.pos ? item.pos : ++curPos, item.title, saveCurPath, item.emptyGroupMessage,
+						item.imageClass, item.tooltip, item.selectionClass, item.defaultActionId, item.extraClasses);
+						
+					curPos += this.convertMenu(scopeId, curPath, item.items, curPos);
+					curPath = saveCurPath;
+				} else if (item.commandId) {
+					this.registerCommandContribution(scopeId, item.commandId, item.pos ? item.pos : ++curPos, curPath,
+						item.bindingOnly, item.keyBinding, item.urlBinding, item.handler);
+				}
+			}
+			return items.length;
+		},
+		
+		extendMenu: function (contribution, isPending) {
+			var theMenu = this._menus[contribution.scopeId];
+			var relTo = this._getItemById(contribution.relToId, theMenu);
+			if (relTo) {
+				// Ensure that groups have an 'items' element
+				if (relTo.item.groupId && ("start" === contribution.relToModifier || "end" === contribution.relToModifier)) {
+					relTo.item.items = relTo.item.items ? relTo.item.items : [];
+					if ("start" === contribution.relToModifier) {
+						relTo.item.items = contribution.items.concat(relTo.item.items);
+					} else if ("end" === contribution.relToModifier) {
+						relTo.item.items = relTo.item.items.concat(contribution.items);
+					}
+				} else {
+					var items = relTo.parent.items;
+					var index = items.indexOf(relTo.item);
+					if ("after" === contribution.relToModifier)
+						index++;
+
+					var left = items.slice(0, index);
+					var right = items.slice(index);
+					relTo.parent.items = left.concat(contribution.items, right);
+				}
+
+				// OK, we've successfully added more items, re-check the 'pending' contributions
+				if (!isPending) {
+					var done = false;
+					while (!done) {
+						var curPending = theMenu.pendingContributions;
+						theMenu.pendingContributions = [];
+						
+						for (var i = 0; i < curPending.length; i++) {
+							// NOTE: setting 'isPending' to true prevents recursing when successfully applying a pending contribution
+							this._mergeMenuContribution(curPending[i], true);
+						}
+						
+						// If none on the pending contributions were applied we're 'done'
+						done = curPending.length === theMenu.pendingContributions.length;
+					}
+				}
+			} else {
+				theMenu.pendingContributions = theMenu.pendingContributions.concat([contribution]);
+			}
+		},
+		
+		addMenu: function(menuStructure) {
+			if (!this._menus) this._menus = [];
+			if (!this._menus[menuStructure.scopeId]) {
+				// Define a new menu / tb
+				this._menus[menuStructure.scopeId] = { items: menuStructure.items, pendingContributions: [] };
+			}
 		},
 
 		/**
