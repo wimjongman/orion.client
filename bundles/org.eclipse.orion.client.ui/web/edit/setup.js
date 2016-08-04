@@ -15,6 +15,7 @@ define([
 	'i18n!orion/edit/nls/messages',
 	'orion/sidebar',
 	'orion/inputManager',
+	'edit/menuStructure',
 	'orion/commands',
 	'orion/globalCommands',
 	'orion/editor/textModelFactory',
@@ -52,7 +53,7 @@ define([
 	'orion/bidiUtils',
 	'orion/customGlobalCommands'
 ], function(
-	messages, Sidebar, mInputManager, mCommands, mGlobalCommands,
+	messages, Sidebar, mInputManager, mMenuManager, mCommands, mGlobalCommands,
 	mTextModelFactory, mUndoStack,
 	mFolderView, mEditorView, mPluginEditorView , mMarkdownView, mMarkdownEditor,
 	mCommandRegistry, mContentTypes, mFileClient, mFileCommands, mEditorCommands, mSelection, mStatus, mProgress, mOperationsClient, mOutliner, mDialogs, mExtensionCommands, ProjectCommands, mSearchClient,
@@ -111,7 +112,7 @@ objects.mixin(MenuBar.prototype, {
 		var viewActionsScope = this.viewActionsScope;
 		var toolsActionsScope = this.toolsActionsScope;		
 
-		if (!commandRegistry.useMenuStruct) {
+		if ("true" !== localStorage.getItem("useMenuStruct")) {
 			commandRegistry.addCommandGroup(fileActionsScope, "orion.menuBarFileGroup", 1000, messages["File"], null, messages["noActions"], null, null, "dropdownSelection"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 			commandRegistry.addCommandGroup(fileActionsScope, "orion.newContentGroup", 0, messages["New"], "orion.menuBarFileGroup", null, null, null, "dropdownSelection"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 			commandRegistry.addCommandGroup(fileActionsScope, "orion.importGroup", 100, messages["Import"], "orion.menuBarFileGroup", null, null, null, "dropdownSelection"); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
@@ -127,6 +128,8 @@ objects.mixin(MenuBar.prototype, {
 		var fileClient = this.fileClient;
 		var editorCommands = this.editorCommands;
 		return editorCommands.createCommands().then(function() {
+			mMenuManager.initMenus(commandRegistry, editorCommands);
+			
 			editorCommands.registerCommands();
 			editorCommands.registerContextMenuCommands();
 			return mFileCommands.createFileCommands(serviceRegistry, commandRegistry, fileClient).then(function() {

@@ -258,7 +258,7 @@ define([
 		registerCommands: function() {
 			var commandRegistry = this.commandService;
 
-			if (!commandRegistry.useMenuStruct  || this.saveToolbarId !== "fileActions") {
+			if ("true" !== localStorage.getItem("useMenuStruct") || this.saveToolbarId !== "fileActions") {
 				commandRegistry.registerCommandContribution(this.saveToolbarId || this.toolbarId, "orion.edit.openFolder", 1, this.saveToolbarId ? "orion.menuBarFileGroup/orion.edit.saveGroup" : null, false, new mKeyBinding.KeyBinding('o', true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandRegistry.registerCommandContribution(this.saveToolbarId || this.toolbarId, "orion.edit.openRecent", 3, this.saveToolbarId ? "orion.menuBarFileGroup/orion.edit.saveGroup" : null, false, new mKeyBinding.KeyBinding('r', true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandRegistry.registerCommandContribution(this.saveToolbarId || this.toolbarId, "orion.openResource", 1, this.saveToolbarId ? "orion.menuBarFileGroup/orion.edit.saveGroup" : null, false, new mKeyBinding.KeyBinding('f', true, true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
@@ -272,7 +272,7 @@ define([
 			commandRegistry.registerCommandContribution(this.toolbarId , "orion.edit.blame", 2, "orion.menuBarToolsGroup", false, new mKeyBinding.KeyBinding('b', true, true), new mCommandRegistry.URLBinding("blame", "blame"), this); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-5$
 			commandRegistry.registerCommandContribution(this.toolbarId , "orion.edit.diff", 3, "orion.menuBarToolsGroup", false, new mKeyBinding.KeyBinding('d', true, true), new mCommandRegistry.URLBinding("diff", "diff"), this); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-5$
 			
-			if (!commandRegistry.useMenuStruct || this.editToolbarId !== "editActions") {
+			if ("true" !== localStorage.getItem("useMenuStruct") || this.editToolbarId !== "editActions") {
 				commandRegistry.registerCommandContribution(this.editToolbarId || this.toolbarId, "orion.edit.undo", 400, this.editToolbarId ? "orion.menuBarEditGroup/orion.edit.undoGroup" : null, !this.editToolbarId, new mKeyBinding.KeyBinding('z', true), null, this); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-3$
 				commandRegistry.registerCommandContribution(this.editToolbarId || this.toolbarId, "orion.edit.redo", 401, this.editToolbarId ? "orion.menuBarEditGroup/orion.edit.undoGroup" : null, !this.editToolbarId, util.isMac ? new mKeyBinding.KeyBinding('z', true, true) : new mKeyBinding.KeyBinding('y', true), null, this); //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-4$
 				commandRegistry.registerCommandContribution(this.editToolbarId || this.pageNavId, "orion.edit.gotoLine", 3, this.editToolbarId ? "orion.menuBarEditGroup/orion.findGroup" : null, !this.editToolbarId, new mKeyBinding.KeyBinding('l', !util.isMac, false, false, util.isMac), new mCommandRegistry.URLBinding("gotoLine", "line"), this); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-5$
@@ -282,24 +282,8 @@ define([
 				commandRegistry._editorCommandHandler = this;
 			}
 
-			if (commandRegistry.useMenuStruct) {
-				var toolsMenuStructure = {
-					scopeId: this.toolbarId,
-					pathRoot: "",
-					items: [
-						{ groupId: "orion.menuBarToolsGroup", title: messages["Tools"], items: [
-							{ groupId: "orion.editorMenuBarMenuDelimitersGroup", title: messages["Convert Line Delimiters"], pos: 2000, items: [
-								{ commandId: "orion.edit.convert.crlf", handler: this },
-								{ commandId: "orion.edit.convert.lf", handler: this },
-							] },
-							{ commandId: "orion.edit.reloadWithEncoding", pos: 2001 },
-						] },
-					]};
-				
-				commandRegistry.addMenu(toolsMenuStructure);
-				commandRegistry.convertMenu(this.toolbarId, "", commandRegistry._menus[this.toolbarId].items, 0);
-			} else {
-			// 'Delimiters' cascade
+			if ("true" !== localStorage.getItem("useMenuStruct")) {
+				// 'Delimiters' cascade
 				var index = 0;
 				commandRegistry.addCommandGroup(this.toolbarId, "orion.editorMenuBarMenuDelimitersGroup", 999, messages["Convert Line Delimiters"], "orion.menuBarToolsGroup"); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				commandRegistry.registerCommandContribution(this.toolbarId, "orion.edit.convert.crlf", index++, "orion.menuBarToolsGroup/orion.editorMenuBarMenuDelimitersGroup", false, null, null, this); //$NON-NLS-1$ //$NON-NLS-2$
@@ -335,47 +319,7 @@ define([
 		},
 		registerContextMenuCommands: function() {
 			var commandRegistry = this.commandService;
-			if (commandRegistry.useMenuStruct) {
-				var menuStructure = {
-					scopeId: "editorContextMenuActions",
-					pathRoot: "",
-					items: [
-						{ groupId: "orion.editorContextMenuGroup", items: [
-							{ groupId: "orion.edit.copyGroup", items: [
-								{ commandId: "orion.edit.copy" },
-								{ commandId: "orion.edit.cut" },
-								{ commandId: "orion.edit.paste" },
-							] },
-							{ groupId: "orion..edit.undoGroup", items: [
-								{ commandId: "orion.edit.undo" },
-								{ commandId: "orion.edit.redo" },
-							] },
-							{ groupId: "orion.edit.findGroup", items: [
-								{ commandId: "orion.edit.find" },
-								{ commandId: "orion.edit.gotoLine" },
-								{ commandId: "orion.quickSearch" },
-								{ commandId: "orion.openSearch" },
-								{ contribution: "getEditorCMEXtensions"}
-							] },
-							{ groupId: "orion.editorContextMenuToolsGroup", title: messages["Tools"], items: [
-								{ commandId: "orion.edit.blame" },
-								{ commandId: "orion.edit.diff" },
-								{ groupId: "orion.editorContextMenuDelimitersGroup", title: messages["Convert Line Delimiters"], pos: 900, items: [
-									{ commandId: "orion.edit.convert.crlf" },
-									{ commandId: "orion.edit.convert.lf" },
-								] },
-								{ commandId: "orion.edit.reloadWithEncoding", pos: 1000 },  // Need the 'pos' to allow entensions to go before these elements
-							] },
-						] },
-					]
-				};
-
-				// Add and register the initial menu structure
-				commandRegistry.addMenu(menuStructure);
-
-				// Convert the menu to old-style command contributions and groups
-				this.commandService.convertMenu(menuStructure.scopeId, menuStructure.pathRoot, menuStructure.items, 0);
-			} else {
+			if ("true" !== localStorage.getItem("useMenuStruct")) {
 				// main context menu
 				commandRegistry.addCommandGroup(this.editorContextMenuId, "orion.editorContextMenuGroup", 100, null, null, null, null, null, "dropdownSelection"); //$NON-NLS-1$ //$NON-NLS-2$
 				
@@ -532,8 +476,8 @@ define([
 				tooltip: messages.LocalEditorSettings,
 				id: "orion.edit.settings", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler.editor || that.editor;
-					return editor && editor.installed && data.handler.localSettings;
+					var editor = data.handler && data.handler.editor || that.editor;
+					return editor && editor.installed && data.handler && data.handler.localSettings;
 				},
 				callback: function(data) {
 					var localSettings = this.localSettings || that.localSettings;
@@ -580,7 +524,7 @@ define([
 				name: messages["Windows (CR/LF)"],
 				id: "orion.edit.convert.crlf", //$NON-NLS-1$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler.editor || that.editor;
+					var editor = data.handler && data.handler.editor || that.editor;
 					return editor && editor.installed;
 				},
 				callback: function() {
@@ -593,7 +537,7 @@ define([
 				name: messages["Unix (LF)"],
 				id: "orion.edit.convert.lf", //$NON-NLS-1$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler.editor || that.editor;
+					var editor = data.handler && data.handler.editor || that.editor;
 					return editor && editor.installed;
 				},
 				callback: function() {
@@ -613,7 +557,7 @@ define([
 					name: messages.Copy,
 					id: "orion.edit.copy", //$NON-NLS-0$
 					visibleWhen: /** @callback */ function(items, data) {
-						var editor = data.handler.editor || that.editor;
+						var editor = data.handler && data.handler.editor || that.editor;
 						return editor && editor.installed;
 					},
 					callback: function() {
@@ -631,7 +575,7 @@ define([
 					name: messages.Cut,
 					id: "orion.edit.cut", //$NON-NLS-0$
 					visibleWhen: /** @callback */ function(items, data) {
-						var editor = data.handler.editor || that.editor;
+						var editor = data.handler && data.handler.editor || that.editor;
 						return editor && editor.installed;
 					},
 					callback: function() {
@@ -649,7 +593,7 @@ define([
 					name: messages.Paste,
 					id: "orion.edit.paste", //$NON-NLS-0$
 					visibleWhen: /** @callback */ function(items, data) {
-						var editor = data.handler.editor || that.editor;
+						var editor = data.handler && data.handler.editor || that.editor;
 						return editor && editor.installed;
 					},
 					callback: function() {
@@ -670,7 +614,7 @@ define([
 				name: messages.Undo,
 				id: "orion.edit.undo", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler.editor || that.editor;
+					var editor = data.handler && data.handler.editor || that.editor;
 					return editor && editor.installed;
 				},
 				callback: function() {
@@ -684,7 +628,7 @@ define([
 				name: messages.Redo,
 				id: "orion.edit.redo", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler.editor || that.editor;
+					var editor = data.handler && data.handler.editor || that.editor;
 					return editor && editor.installed;
 				},
 				callback: function() {
@@ -702,8 +646,8 @@ define([
 				imageClass : "core-sprite-save", //$NON-NLS-0$
 				id: "orion.edit.save", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var inputManager = data.handler.inputManager || that.inputManager;
-					var editor = data.handler.editor || that.editor || (inputManager && inputManager.getEditor());
+					var inputManager = data.handler && data.handler.inputManager || that.inputManager;
+					var editor = data.handler && data.handler.editor || that.editor || inputManager && inputManager.getEditor();
 					if (!editor || !editor.installed || !inputManager || !inputManager.isSaveEnabled()) {
 						return false;
 					}
@@ -840,7 +784,7 @@ define([
 				tooltip: messages.gotoLineTooltip,
 				id: "orion.edit.gotoLine", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler.editor || that.editor;
+					var editor = data.handler &&  data.handler.editor || that.editor;
 					return editor && editor.installed;
 				},
 				parameters: lineParameter,
@@ -872,8 +816,8 @@ define([
 				[new mCommandRegistry.CommandParameter('find', 'text', 'Find:')], //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				{clientCollect: true},
 				function(data) {
-					var editor = data.handler.editor || that.editor;
-					var textSearcher = data.handler.textSearcher || that.textSearcher;
+					var editor = data.handler && data.handler.editor || that.editor;
+					var textSearcher = data.handler && data.handler.textSearcher || that.textSearcher;
 					var selection = editor.getSelection();
 					var searchString = "";
 					if (selection.end > selection.start) {
@@ -891,8 +835,8 @@ define([
 				tooltip: messages.Find,
 				id: "orion.edit.find", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler.editor || that.editor;
-					var textSearcher = data.handler.textSearcher || that.textSearcher;
+					var editor = data.handler && data.handler.editor || that.editor;
+					var textSearcher = data.handler && data.handler.textSearcher || that.textSearcher;
 					return editor && editor.installed && textSearcher;
 				},
 				parameters: findParameter,
@@ -952,8 +896,8 @@ define([
 				id: "orion.edit.blame", //$NON-NLS-0$
 				parameters: new mCommandRegistry.ParametersDescription([new mCommandRegistry.CommandParameter('blame', 'boolean')], {clientCollect: true}), //$NON-NLS-1$ //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler.editor || that.editor;
-					var blamer = data.handler.blamer || that.blamer;
+					var editor = data.handler && data.handler.editor || that.editor;
+					var blamer = data.handler && data.handler.blamer || that.blamer;
 					return editor && editor.installed && blamer && blamer.isVisible();
 				},
 				callback: function(data) {
@@ -991,12 +935,12 @@ define([
 				id: "orion.edit.format", //$NON-NLS-0$
 				parameters: new mCommandRegistry.ParametersDescription([new mCommandRegistry.CommandParameter('formatter', 'boolean')], {clientCollect: true}), //$NON-NLS-1$ //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var inputManager = data.handler.inputManager || that.inputManager;
+					var inputManager = data.handler && data.handler.inputManager || that.inputManager;
 					if (inputManager && inputManager.getReadOnly()) {
 						return false;
 					}
-					var editor = data.handler.editor || that.editor;
-					var formatter = data.handler.formatter || that.formatter;
+					var editor = data.handler && data.handler.editor || that.editor;
+					var formatter = data.handler && data.handler.formatter || that.formatter;
 					return editor && editor.installed && formatter && formatter.isVisible();
 				},
 				callback: function(data) {
@@ -1016,8 +960,8 @@ define([
 				tooltip: messages.DiffTooltip,
 				id: "orion.edit.diff", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler.editor || that.editor;
-					var differ = data.handler.differ || that.differ;
+					var editor = data.handler && data.handler.editor || that.editor;
+					var differ = data.handler && data.handler.differ || that.differ;
 					return editor && editor.installed && differ && differ.isVisible();
 				},
 				callback: function() {
@@ -1042,7 +986,7 @@ define([
 				tooltip: messages.showTooltipTooltip,
 				id: "orion.edit.showTooltip", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler.editor || that.editor;
+					var editor = data.handler && data.handler.editor || that.editor;
 					return editor && editor.installed;
 				},
 				callback: function() {
@@ -1111,8 +1055,8 @@ define([
 			var makeCommand = function(info, service, options) {
 				var commandVisibleWhen = options.visibleWhen;
 				options.visibleWhen = function(items, data) {
-					var editor = data.handler.editor || that.editor;
-					var inputManager = data.handler.inputManager || that.inputManager;
+					var editor = data.handler && data.handler.editor || that.editor;
+					var inputManager = data.handler && data.handler.inputManager || that.inputManager;
 					if (!editor || !editor.installed || !inputManager) {
 						return false;
 					}

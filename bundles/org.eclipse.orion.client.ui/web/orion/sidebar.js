@@ -210,7 +210,7 @@ define(['orion/objects', 'orion/commands', 'orion/outliner', 'orion/webui/little
 				choiceCallback: this.viewModeMenuCallback.bind(this)
 			});
 			this.commandRegistry.addCommand(changeViewModeCommand);
-			if (!util.isElectron && !this.commandRegistry.useMenuStruct) {
+			if (!util.isElectron && "true" !== localStorage.getItem("useMenuStruct")) {
 				this.commandRegistry.registerCommandContribution(this.switcherNode.id, "orion.sidebar.viewmode", 2, "orion.menuBarViewGroup"); //$NON-NLS-1$ //$NON-NLS-0$
 			}
 		},
@@ -264,7 +264,7 @@ define(['orion/objects', 'orion/commands', 'orion/outliner', 'orion/webui/little
 			this._slideout = new mSlideout.Slideout(this.toolbarNode.parentNode);
 			
 			// add Slideout menu group to View menu
-			if (!this.commandRegistry.useMenuStruct) {
+			if ("true" !== localStorage.getItem("useMenuStruct")) {
 				this.commandRegistry.addCommandGroup(this.switcherNode.id, 
 					"orion.slideoutMenuGroup", //$NON-NLS-0$
 					3, 
@@ -447,7 +447,7 @@ define(['orion/objects', 'orion/commands', 'orion/outliner', 'orion/webui/little
 			this.commandRegistry.addCommand(openSearchCommand);
 			this.commandRegistry.addCommand(quickSearchCommand);
 			
-			if (!this.commandRegistry.useMenuStruct) {
+			if ("true" !== localStorage.getItem("useMenuStruct")) {
 				this.commandRegistry.registerCommandContribution(this.editScope, "orion.searchInFolder", 99, "orion.menuBarEditGroup/orion.findGroup");  //$NON-NLS-1$ //$NON-NLS-2$
 				this.commandRegistry.registerCommandContribution(this.editScope, "orion.quickSearch", 100, "orion.menuBarEditGroup/orion.findGroup", false, new mKeyBinding.KeyBinding('h', true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-3$
 				this.commandRegistry.registerCommandContribution(this.editScope, "orion.openSearch", 101, "orion.menuBarEditGroup/orion.findGroup", false, new mKeyBinding.KeyBinding('h', true, true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-3$

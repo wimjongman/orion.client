@@ -49,9 +49,6 @@ define([
 			var self = this;
 			Commands.setKeyBindingProvider(function() { return self._activeBindings; });
 
-			// Dark Launch new menu behavior
-			this.useMenuStruct = "true" === localStorage.getItem("useMenuStruct");			
-
 			// Make the CommandRegistry an EventTarget. This is somewhat different from the normal pattern
 			// so that we can override the normal 'addEventTarget' processing (see below)
 			mEventTarget.attach(CommandRegistry.prototype);
@@ -960,6 +957,18 @@ define([
 					curPos += this.convertMenu(scopeId, curPath, item.items, curPos);
 					curPath = saveCurPath;
 				} else if (item.commandId) {
+					if (item.keyBinding) {
+						var mod1 = item.keyBinding.mods.indexOf("1") >= 0;
+						var mod2 = item.keyBinding.mods.indexOf("2") >= 0;
+						var mod3 = item.keyBinding.mods.indexOf("3") >= 0;
+						var mod4 = item.keyBinding.mods.indexOf("4") >= 0;
+						
+						item.keyBinding = new mKeyBinding.KeyBinding(item.keyBinding.key, mod1, mod2, mod3, mod4);
+					}
+					if (item.urlBinding) {
+						var params = item.urlBinding.split('/');
+						item.urlBinding = new URLBinding(params[0], params[1]);
+					}
 					this.registerCommandContribution(scopeId, item.commandId, item.pos ? item.pos : ++curPos, curPath,
 						item.bindingOnly, item.keyBinding, item.urlBinding, item.handler);
 				}
