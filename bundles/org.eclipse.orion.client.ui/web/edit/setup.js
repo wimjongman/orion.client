@@ -128,7 +128,7 @@ objects.mixin(MenuBar.prototype, {
 		var fileClient = this.fileClient;
 		var editorCommands = this.editorCommands;
 		return editorCommands.createCommands().then(function() {
-			mMenuManager.initMenus(commandRegistry, editorCommands);
+			mMenuManager.initMenus(commandRegistry);
 			
 			editorCommands.registerCommands();
 			editorCommands.registerContextMenuCommands();

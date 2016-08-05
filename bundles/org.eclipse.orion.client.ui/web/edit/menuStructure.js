@@ -16,7 +16,7 @@ define([
 ], function(
 	messages, util
 ) {
-	var initMenus = function (cr, ec) {
+	var initMenus = function (commandRegistry) {
 		if ("true" !== localStorage.getItem("useMenuStruct"))
 			return;
 		
@@ -33,10 +33,10 @@ define([
 						{ groupId: "orion.projectsNewGroup", title: messages["Project"] },
 					] },
 					{ groupId: "orion.edit.saveGroup", items: [
-						{commandId: "orion.edit.openFolder", keyBinding: { key: "o", mods: "1" } },
-						{commandId: "orion.edit.openRecent", keyBinding: { key: "r", mods: "1" } },
-						{commandId: "orion.openResource", keyBinding: { key: "f", mods: "1" } },
-						{commandId: "orion.edit.save", keyBinding: { key: "s", mods: "1" }, handler: ec },
+						{ commandId: "orion.edit.openFolder", keyBinding: { key: "o", mods: "1" } },
+						{ commandId: "orion.edit.openRecent", keyBinding: { key: "r", mods: "1" } },
+						{ commandId: "orion.openResource", keyBinding: { key: "f", mods: "1" } },
+						{ commandId: "orion.edit.save", keyBinding: { key: "s", mods: "1" } },
 					] },
 					{ groupId: "orion.importGroup", title: messages["Import"], filter: "Not Electron", items: [
 						{ commandId: "orion.import" },
@@ -58,12 +58,12 @@ define([
 			items: [
 				{ groupId: "orion.menuBarEditGroup", title: messages["Edit"], items: [
 					{ groupId: "orion.edit.undoGroup", items: [
-						{ commandId: "orion.edit.undo", keyBinding: { key: "z", mods: "1" }, handler: ec },
-						{ commandId: "orion.edit.redo", keyBinding: util.isMac ? { key: "z", mods: "12" } : { key: "y", mods: "1" }, handler: ec },
+						{ commandId: "orion.edit.undo", keyBinding: { key: "z", mods: "1" } },
+						{ commandId: "orion.edit.redo", keyBinding: util.isMac ? { key: "z", mods: "12" } : { key: "y", mods: "1" } },
 					] },
 					{ groupId: "orion.findGroup", items: [
-						{commandId: "orion.edit.find", keyBinding: { key: "f", mods: "1" }, handler: ec, 	urlBinding: "find/find" },
-						{commandId: "orion.edit.gotoLine", keyBinding: util.isMac ? { key: "1", mods: "4" } : { key: "1", mods: "1" }, handler: ec,
+						{commandId: "orion.edit.find", keyBinding: { key: "f", mods: "1" }, urlBinding: "find/find" },
+						{commandId: "orion.edit.gotoLine", keyBinding: util.isMac ? { key: "1", mods: "4" } : { key: "1", mods: "1" },
 									urlBinding: "gotoLine/line" },
 						{commandId: "orion.searchInFolder" },
 						{commandId: "orion.quickSearch", keyBinding: { key: "h", mods: "1" } },
@@ -71,7 +71,7 @@ define([
 					] },
 					{ groupId: "orion.formatGroup", items: [
 						{commandId: "eclipse.renameResource", keyBinding: { key: 113, mods: "" } },
-						{commandId: "orion.edit.format", keyBinding: { key: "f", mods: "23" }, handler: ec,
+						{commandId: "orion.edit.format", keyBinding: { key: "f", mods: "23" },
 									urlBinding: "format/format" },
 					] },
 					{ groupId: "orion.compareGroup", items: [
@@ -136,7 +136,7 @@ define([
 						{ commandId: "orion.openSearch" },
 					] },
 					{ groupId: "orion.edit.format", items: [
-						{commandId: "orion.edit.format", keyBinding: { key: "f", mods: "23" }, handler: ec,
+						{commandId: "orion.edit.format", keyBinding: { key: "f", mods: "23" },
 									urlBinding: "format/format" },
 					]},
 					{ groupId: "orion.editorContextMenuToolsGroup", title: messages["Tools"], items: [
@@ -197,23 +197,23 @@ define([
 			]
 		};
 		
-		cr.addMenu(fileMenuStructure);
-		cr.convertMenu(fileMenuStructure.scopeId, "", cr._menus[fileMenuStructure.scopeId].items, 0);
+		commandRegistry.addMenu(fileMenuStructure);
+		commandRegistry.convertMenu(fileMenuStructure.scopeId, "", commandRegistry._menus[fileMenuStructure.scopeId].items, 0);
 
-		cr.addMenu(editMenuStructure);
-		cr.convertMenu(editMenuStructure.scopeId, "", cr._menus[editMenuStructure.scopeId].items, 0);
+		commandRegistry.addMenu(editMenuStructure);
+		commandRegistry.convertMenu(editMenuStructure.scopeId, "", commandRegistry._menus[editMenuStructure.scopeId].items, 0);
 
-		cr.addMenu(viewMenuStructure);
-		cr.convertMenu(viewMenuStructure.scopeId, "", cr._menus[viewMenuStructure.scopeId].items, 0);
+		commandRegistry.addMenu(viewMenuStructure);
+		commandRegistry.convertMenu(viewMenuStructure.scopeId, "", commandRegistry._menus[viewMenuStructure.scopeId].items, 0);
 
-		cr.addMenu(toolsMenuStructure);
-		cr.convertMenu(toolsMenuStructure.scopeId, "", cr._menus[toolsMenuStructure.scopeId].items, 0);
+		commandRegistry.addMenu(toolsMenuStructure);
+		commandRegistry.convertMenu(toolsMenuStructure.scopeId, "", commandRegistry._menus[toolsMenuStructure.scopeId].items, 0);
 
-		cr.addMenu(editorContextMenuStructure);
-		cr.convertMenu(editorContextMenuStructure.scopeId, "", cr._menus[editorContextMenuStructure.scopeId].items, 0);
+		commandRegistry.addMenu(editorContextMenuStructure);
+		commandRegistry.convertMenu(editorContextMenuStructure.scopeId, "", commandRegistry._menus[editorContextMenuStructure.scopeId].items, 0);
 
-		cr.addMenu(navContextMenuStructure);
-		cr.convertMenu(navContextMenuStructure.scopeId, "", cr._menus[navContextMenuStructure.scopeId].items, 0);
+		commandRegistry.addMenu(navContextMenuStructure);
+		commandRegistry.convertMenu(navContextMenuStructure.scopeId, "", commandRegistry._menus[navContextMenuStructure.scopeId].items, 0);
 	}
 	
 	return { initMenus : initMenus };

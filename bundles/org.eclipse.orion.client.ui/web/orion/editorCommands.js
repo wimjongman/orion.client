@@ -476,11 +476,11 @@ define([
 				tooltip: messages.LocalEditorSettings,
 				id: "orion.edit.settings", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler && data.handler.editor || that.editor;
-					return editor && editor.installed && data.handler && data.handler.localSettings;
+					var editor = that.editor;
+					return editor && editor.installed && that.localSettings;
 				},
 				callback: function(data) {
-					var localSettings = this.localSettings || that.localSettings;
+					var localSettings = that.localSettings;
 					var dropDown = settingsCommand.settingsDropDown;
 					if (!dropDown || dropDown.isDestroyed()) {
 						dropDown = settingsCommand.settingsDropDown = new DropDownMenu(data.domNode.parentNode, data.domNode, {
@@ -524,7 +524,7 @@ define([
 				name: messages["Windows (CR/LF)"],
 				id: "orion.edit.convert.crlf", //$NON-NLS-1$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler && data.handler.editor || that.editor;
+					var editor = that.editor;
 					return editor && editor.installed;
 				},
 				callback: function() {
@@ -537,7 +537,7 @@ define([
 				name: messages["Unix (LF)"],
 				id: "orion.edit.convert.lf", //$NON-NLS-1$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler && data.handler.editor || that.editor;
+					var editor = that.editor;
 					return editor && editor.installed;
 				},
 				callback: function() {
@@ -557,11 +557,11 @@ define([
 					name: messages.Copy,
 					id: "orion.edit.copy", //$NON-NLS-0$
 					visibleWhen: /** @callback */ function(items, data) {
-						var editor = data.handler && data.handler.editor || that.editor;
+						var editor = that.editor;
 						return editor && editor.installed;
 					},
 					callback: function() {
-						var editor = this.editor || that.editor;
+						var editor = that.editor;
 						if (editor && editor.getTextView && editor.getTextView()) {
 							var textView = editor.getTextView();
 							textView.copy();
@@ -575,11 +575,11 @@ define([
 					name: messages.Cut,
 					id: "orion.edit.cut", //$NON-NLS-0$
 					visibleWhen: /** @callback */ function(items, data) {
-						var editor = data.handler && data.handler.editor || that.editor;
+						var editor = that.editor;
 						return editor && editor.installed;
 					},
 					callback: function() {
-						var editor = this.editor || that.editor;
+						var editor = that.editor;
 						if (editor && editor.getTextView && editor.getTextView()) {
 							var textView = editor.getTextView();
 							textView.cut();
@@ -593,11 +593,11 @@ define([
 					name: messages.Paste,
 					id: "orion.edit.paste", //$NON-NLS-0$
 					visibleWhen: /** @callback */ function(items, data) {
-						var editor = data.handler && data.handler.editor || that.editor;
+						var editor = that.editor;
 						return editor && editor.installed;
 					},
 					callback: function() {
-						var editor = this.editor || that.editor;
+						var editor = that.editor;
 						if (editor && editor.getTextView && editor.getTextView()) {
 							var textView = editor.getTextView();
 							textView.paste();
@@ -614,11 +614,11 @@ define([
 				name: messages.Undo,
 				id: "orion.edit.undo", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler && data.handler.editor || that.editor;
+					var editor = that.editor;
 					return editor && editor.installed;
 				},
 				callback: function() {
-					var editor = this.editor || that.editor;
+					var editor = that.editor;
 					editor.getUndoStack().undo();
 				}
 			});
@@ -628,11 +628,11 @@ define([
 				name: messages.Redo,
 				id: "orion.edit.redo", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler && data.handler.editor || that.editor;
+					var editor = that.editor;
 					return editor && editor.installed;
 				},
 				callback: function() {
-					var editor = this.editor || that.editor;
+					var editor = that.editor;
 					editor.getUndoStack().redo();
 				}
 			});
@@ -646,15 +646,15 @@ define([
 				imageClass : "core-sprite-save", //$NON-NLS-0$
 				id: "orion.edit.save", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var inputManager = data.handler && data.handler.inputManager || that.inputManager;
-					var editor = data.handler && data.handler.editor || that.editor || inputManager && inputManager.getEditor();
+					var inputManager = that.inputManager;
+					var editor = that.editor;
 					if (!editor || !editor.installed || !inputManager || !inputManager.isSaveEnabled()) {
 						return false;
 					}
 					return true;
 				},
 				callback: function() {
-					var inputManager = this.inputManager || that.inputManager;
+					var inputManager = that.inputManager;
 					inputManager.save();
 				}
 			});
@@ -773,7 +773,7 @@ define([
 				[new mCommandRegistry.CommandParameter('line', 'number', messages.gotoLinePrompt)], //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				{hasOptionalParameters: false},
 				function(data) {
-					var editor = data.handler.editor || that.editor;
+					var editor = that.editor;
 					var line = editor.getModel().getLineAtOffset(editor.getCaretOffset()) + 1;
 					return [new mCommandRegistry.CommandParameter('line', 'number', messages.gotoLinePrompt, line.toString())]; //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				}
@@ -784,13 +784,13 @@ define([
 				tooltip: messages.gotoLineTooltip,
 				id: "orion.edit.gotoLine", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler &&  data.handler.editor || that.editor;
+					var editor = that.editor;
 					return editor && editor.installed;
 				},
 				parameters: lineParameter,
 				callback: function(data) {
 					var line;
-					var editor = this.editor || that.editor;
+					var editor = that.editor;
 					var model = editor.getModel();
 					if (data.parameters && data.parameters.valueFor('line')) { //$NON-NLS-0$
 						line = data.parameters.valueFor('line'); //$NON-NLS-0$
@@ -816,8 +816,8 @@ define([
 				[new mCommandRegistry.CommandParameter('find', 'text', 'Find:')], //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 				{clientCollect: true},
 				function(data) {
-					var editor = data.handler && data.handler.editor || that.editor;
-					var textSearcher = data.handler && data.handler.textSearcher || that.textSearcher;
+					var editor = that.editor;
+					var textSearcher = that.textSearcher;
 					var selection = editor.getSelection();
 					var searchString = "";
 					if (selection.end > selection.start) {
@@ -835,8 +835,8 @@ define([
 				tooltip: messages.Find,
 				id: "orion.edit.find", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler && data.handler.editor || that.editor;
-					var textSearcher = data.handler && data.handler.textSearcher || that.textSearcher;
+					var editor = that.editor;
+					var textSearcher = that.textSearcher;
 					return editor && editor.installed && textSearcher;
 				},
 				parameters: findParameter,
@@ -845,7 +845,7 @@ define([
 					if (node && node.classList.contains("replaceCompareDivVisible")) { //$NON-NLS-0$
 						return false; //TODO is there a better way of preventing the command from being executed?
 					}
-					var editor = this.editor || that.editor;
+					var editor = that.editor;
 					var textSearcher = this.textSearcher || that.textSearcher;
 					if (findCommand.textSearcher && findCommand.textSearcher !== textSearcher) {
 						findCommand.textSearcher.hide();
@@ -896,14 +896,14 @@ define([
 				id: "orion.edit.blame", //$NON-NLS-0$
 				parameters: new mCommandRegistry.ParametersDescription([new mCommandRegistry.CommandParameter('blame', 'boolean')], {clientCollect: true}), //$NON-NLS-1$ //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler && data.handler.editor || that.editor;
-					var blamer = data.handler && data.handler.blamer || that.blamer;
+					var editor = that.editor;
+					var blamer = that.blamer;
 					return editor && editor.installed && blamer && blamer.isVisible();
 				},
 				callback: function(data) {
 					var visible = false;
-					var editor = this.editor || that.editor;
-					var blamer = this.blamer || that.blamer;
+					var editor = that.editor;
+					var blamer = that.blamer;
 					var annotations = editor.getAnnotationModel().getAnnotations();
 					while (annotations.hasNext()) {
 						var annotation = annotations.next();
@@ -935,17 +935,17 @@ define([
 				id: "orion.edit.format", //$NON-NLS-0$
 				parameters: new mCommandRegistry.ParametersDescription([new mCommandRegistry.CommandParameter('formatter', 'boolean')], {clientCollect: true}), //$NON-NLS-1$ //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var inputManager = data.handler && data.handler.inputManager || that.inputManager;
+					var inputManager = that.inputManager;
 					if (inputManager && inputManager.getReadOnly()) {
 						return false;
 					}
-					var editor = data.handler && data.handler.editor || that.editor;
-					var formatter = data.handler && data.handler.formatter || that.formatter;
+					var editor = that.editor;
+					var formatter = that.formatter;
 					return editor && editor.installed && formatter && formatter.isVisible();
 				},
 				callback: function(data) {
-					var editor = this.editor || that.editor;
-					var formatter = this.formatter || that.formatter;
+					var editor = that.editor;
+					var formatter = that.formatter;
 					formatter.doFormat();
 					editor.focus();
 				}
@@ -960,13 +960,13 @@ define([
 				tooltip: messages.DiffTooltip,
 				id: "orion.edit.diff", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler && data.handler.editor || that.editor;
-					var differ = data.handler && data.handler.differ || that.differ;
+					var editor = that.editor;
+					var differ = that.differ;
 					return editor && editor.installed && differ && differ.isVisible();
 				},
 				callback: function() {
-					var editor = this.editor || that.editor;
-					var differ = this.differ || that.differ;
+					var editor = that.editor;
+					var differ = that.differ;
 					differ.toggleEnabled();
 					var editorPreferences = this.editorPreferences;
 					editorPreferences.getPrefs(function(pref){
@@ -986,11 +986,11 @@ define([
 				tooltip: messages.showTooltipTooltip,
 				id: "orion.edit.showTooltip", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var editor = data.handler && data.handler.editor || that.editor;
+					var editor = that.editor;
 					return editor && editor.installed;
 				},
 				callback: function() {
-					var editor = this.editor || that.editor;
+					var editor = that.editor;
 					var tooltip = editor.getTooltip();
 					var tv = editor.getTextView();
 					var offset = tv.getCaretOffset();
@@ -1055,22 +1055,22 @@ define([
 			var makeCommand = function(info, service, options) {
 				var commandVisibleWhen = options.visibleWhen;
 				options.visibleWhen = function(items, data) {
-					var editor = data.handler && data.handler.editor || that.editor;
-					var inputManager = data.handler && data.handler.inputManager || that.inputManager;
+					var editor = that.editor;
+					var inputManager = that.inputManager;
 					if (!editor || !editor.installed || !inputManager) {
 						return false;
 					}
 					if (info.editor && editor.id && info.editor !== editor.id) {
 						return false;
 					}
-					if (that.inputManager.getReadOnly()) {
+					if (inputManager.getReadOnly()) {
 						return false;
 					}
 					return !commandVisibleWhen || commandVisibleWhen(items);
 				};
 				options.callback = function(data) {
-					var editor = this.editor || that.editor;
-					var inputManager = this.inputManager || that.inputManager;
+					var editor = that.editor;
+					var inputManager = that.inputManager;
 					//TODO should all text editors have selection?
 					var selection = editor.getSelection ? editor.getSelection() : {start: 0, end: 0};
 					var model = editor.getModel();
