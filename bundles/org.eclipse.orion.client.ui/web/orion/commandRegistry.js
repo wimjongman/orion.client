@@ -293,18 +293,20 @@ define([
 					buttonParent.appendChild(button);
 					button.appendChild(document.createTextNode(noString)); //$NON-NLS-0$
 					button.className = "dismissButton"; //$NON-NLS-0$
-					input.addEventListener("keydown", function(event){	
-						if (event.keyCode === lib.KEY.ENTER)	{
-							onYes(event);
-							event.preventDefault();
-							event.stopPropagation();
-						} else if (event.keyCode === lib.KEY.ESCAPE) {
-							onNo(event);
-						}	
-					}, false);
-					var defaultFocusNode = yesButton;
-					if(focusOn === "input"){
-						defaultFocusNode = input;
+					if (input) {
+						input.addEventListener("keydown", function(event){	
+							if (event.keyCode === lib.KEY.ENTER)	{
+								onYes(event);
+								event.preventDefault();
+								event.stopPropagation();
+							} else if (event.keyCode === lib.KEY.ESCAPE) {
+								onNo(event);
+							}	
+						}, false);
+						var defaultFocusNode = yesButton;
+						if(focusOn === "input"){
+							defaultFocusNode = input;
+						}
 					}
 					return defaultFocusNode;
 				};
