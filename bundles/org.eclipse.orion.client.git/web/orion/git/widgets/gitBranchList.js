@@ -313,17 +313,20 @@ define([
 			if (!section) return;
 			var actionsNodeScope = this.sectionActionScodeId || section.actionsNode.id;
 			var commandRegistry = this.commandService;
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.orion.git.applyStash", 100); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.orion.git.dropStash", 1000); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.removeBranch", 1000); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.removeRemoteBranch", 1000); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.removeRemote", 1000); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.removeTag", 1000); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.checkoutTag", 100); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.checkoutBranch", 100); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.orion.git.fetchRemote", 100); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.checkoutPullRequest", 100); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.openGithubPullRequest", 1000); //$NON-NLS-1$ //$NON-NLS-0$
+			if ("true" !== localStorage.getItem("useMenuStruct")) {
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.orion.git.applyStash", 100); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.orion.git.dropStash", 1000); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.removeBranch", 1000); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.removeRemoteBranch", 1000); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.removeRemote", 1000); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.removeTag", 1000); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.checkoutTag", 100); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.checkoutBranch", 100); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.orion.git.fetchRemote", 100); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.checkoutPullRequest", 100); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.openGithubPullRequest", 1000); //$NON-NLS-1$ //$NON-NLS-0$
+			}
+
 			if (root.Type === "RemoteRoot") { //$NON-NLS-0$
 				commandRegistry.registerCommandContribution(actionsNodeScope, "eclipse.addBranch", 200); //$NON-NLS-0$
 				commandRegistry.registerCommandContribution(actionsNodeScope, "eclipse.addRemote", 100); //$NON-NLS-0$

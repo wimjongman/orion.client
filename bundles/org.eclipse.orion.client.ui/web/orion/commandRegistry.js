@@ -951,9 +951,14 @@ define([
 							item.selectionClass = "dropdownSelection";
 					}
 					curPath += '/' + item.groupId;
-					this.addCommandGroup(scopeId, item.groupId, item.pos ? item.pos : ++curPos, item.title, saveCurPath, item.emptyGroupMessage,
-						item.imageClass, item.tooltip, item.selectionClass, item.defaultActionId, item.extraClasses);
-						
+					++curPos;
+					
+					if (!item.converted) {
+						this.addCommandGroup(scopeId, item.groupId, item.pos ? item.pos : curPos, item.title, saveCurPath, item.emptyGroupMessage,
+							item.imageClass, item.tooltip, item.selectionClass, item.defaultActionId, item.extraClasses);
+						item.converted = true;
+					}
+					
 					curPos += this.convertMenu(scopeId, curPath, item.items, curPos);
 					curPath = saveCurPath;
 				} else if (item.commandId) {
@@ -969,8 +974,15 @@ define([
 						var params = item.urlBinding.split('/');
 						item.urlBinding = new URLBinding(params[0], params[1]);
 					}
-					this.registerCommandContribution(scopeId, item.commandId, item.pos ? item.pos : ++curPos, curPath,
-						item.bindingOnly, item.keyBinding, item.urlBinding, item.handler);
+					
+					++curPos
+
+					if (!item.converted) {
+						item.converted = true;
+						this.registerCommandContribution(scopeId, item.commandId, item.pos ? item.pos : curPos, curPath,
+							item.bindingOnly, item.keyBinding, item.urlBinding, item.handler);
+					}
+
 				}
 			}
 			return items.length;
@@ -1025,7 +1037,13 @@ define([
 			if (!this._menus[menuStructure.scopeId]) {
 				// Define a new menu / tb
 				this._menus[menuStructure.scopeId] = { items: menuStructure.items, pendingContributions: [] };
+			} else {
+				// If the menu exists then just extend it
+				var theMenu = this._menus[menuStructure.scopeId];
+				theMenu.items = theMenu.items.concat(menuStructure.items);
 			}
+			
+			this.convertMenu(menuStructure.scopeId, "", menuStructure.items, 0);
 		},
 
 		/**

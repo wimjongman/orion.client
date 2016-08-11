@@ -197,23 +197,13 @@ define([
 			]
 		};
 		
+		// Register the menus
 		commandRegistry.addMenu(fileMenuStructure);
-		commandRegistry.convertMenu(fileMenuStructure.scopeId, "", commandRegistry._menus[fileMenuStructure.scopeId].items, 0);
-
 		commandRegistry.addMenu(editMenuStructure);
-		commandRegistry.convertMenu(editMenuStructure.scopeId, "", commandRegistry._menus[editMenuStructure.scopeId].items, 0);
-
 		commandRegistry.addMenu(viewMenuStructure);
-		commandRegistry.convertMenu(viewMenuStructure.scopeId, "", commandRegistry._menus[viewMenuStructure.scopeId].items, 0);
-
 		commandRegistry.addMenu(toolsMenuStructure);
-		commandRegistry.convertMenu(toolsMenuStructure.scopeId, "", commandRegistry._menus[toolsMenuStructure.scopeId].items, 0);
-
 		commandRegistry.addMenu(editorContextMenuStructure);
-		commandRegistry.convertMenu(editorContextMenuStructure.scopeId, "", commandRegistry._menus[editorContextMenuStructure.scopeId].items, 0);
-
 		commandRegistry.addMenu(navContextMenuStructure);
-		commandRegistry.convertMenu(navContextMenuStructure.scopeId, "", commandRegistry._menus[navContextMenuStructure.scopeId].items, 0);
 	}
 	
 	return { initMenus : initMenus };

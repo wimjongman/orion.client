@@ -303,12 +303,15 @@ define([
 			if (!section) return;
 			var commandRegistry = this.commandService;
 			var actionsNodeScope = this.sectionActionScodeId || section.actionsNode.id;
-//			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.orion.git.pull", 100); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.git.addSubmodule", 100); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.git.syncSubmodules", 200); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.git.updateSubmodules", 300); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.git.deleteSubmodule", 400); //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.git.deleteClone", 500); //$NON-NLS-1$ //$NON-NLS-0$
+
+			if ("true" !== localStorage.getItem("useMenuStruct")) {
+	//			commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.orion.git.pull", 100); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.git.addSubmodule", 100); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.git.syncSubmodules", 200); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.git.updateSubmodules", 300); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.git.deleteSubmodule", 400); //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("itemLevelCommands", "eclipse.git.deleteClone", 500); //$NON-NLS-1$ //$NON-NLS-0$
+			}
 			
 			if (this.singleRepository) {
 				commandRegistry.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.popStash", 100); //$NON-NLS-1$ //$NON-NLS-0$

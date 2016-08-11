@@ -713,48 +713,14 @@ define([
 					}
 				});
 				commandRegistry.addCommand(toggleSidePanelCommand);
-				commandRegistry.registerCommandContribution("pageActions", "orion.toggleSidePane", 1, null, true, new KeyBinding.KeyBinding('l', util.isMac ? false : true, true, false, util.isMac ? true : false)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				if ("true" !== localStorage.getItem("useMenuStruct")) {
+					commandRegistry.registerCommandContribution("pageActions", "orion.toggleSidePane", 1, null, true, new KeyBinding.KeyBinding('l', util.isMac ? false : true, true, false, util.isMac ? true : false)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				}
 			}
 		}
 
 		// Assemble global commands, those that could be available from any page due to header content or common key bindings.
 
-		// open resource
-		var showingResourceDialog = false;
-		var openResourceDialog = function (searcher, serviceRegistry, commandRegistry) {
-			if (showingResourceDialog) {
-				return;
-			}
-			var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
-			var prefs = serviceRegistry.getService("orion.core.preference"); //$NON-NLS-0$
-			var dialog = new openResource.OpenResourceDialog({
-				searcher: searcher,
-				progress: progress,
-				prefService: prefs,
-				serviceRegistry: serviceRegistry,
-				commandRegistry: commandRegistry,
-				searchRenderer: searcher.defaultRenderer,
-				onHide: function () {
-					showingResourceDialog = false;
-				}
-			});
-			window.setTimeout(function () {
-				showingResourceDialog = true;
-				dialog.show();
-			}, 0);
-		};
-
-		var openResourceCommand = new mCommands.Command({
-			name: messages["FindFile"],
-			tooltip: messages["ChooseFileOpenEditor"],
-			id: "orion.openResource", //$NON-NLS-0$
-			callback: function (data) {
-				openResourceDialog(searcher, serviceRegistry, commandRegistry);
-			}
-		});
-
-		commandRegistry.addCommand(openResourceCommand);
-		commandRegistry.registerCommandContribution("globalActions", "orion.openResource", 100, null, true, new KeyBinding.KeyBinding('f', true, true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 		var noBanner = false;
 		var toggleBannerFunc = function () {
 			if (noBanner) {
@@ -791,6 +757,42 @@ define([
 			noBanner = true;
 			if (noTrim !== "bannerOnly") this.sideMenu.hide();
 		} else {
+			// open resource
+			var showingResourceDialog = false;
+			var openResourceDialog = function (searcher, serviceRegistry, commandRegistry) {
+				if (showingResourceDialog) {
+					return;
+				}
+				var progress = serviceRegistry.getService("orion.page.progress"); //$NON-NLS-0$
+				var prefs = serviceRegistry.getService("orion.core.preference"); //$NON-NLS-0$
+				var dialog = new openResource.OpenResourceDialog({
+					searcher: searcher,
+					progress: progress,
+					prefService: prefs,
+					serviceRegistry: serviceRegistry,
+					commandRegistry: commandRegistry,
+					searchRenderer: searcher.defaultRenderer,
+					onHide: function () {
+						showingResourceDialog = false;
+					}
+				});
+				window.setTimeout(function () {
+					showingResourceDialog = true;
+					dialog.show();
+				}, 0);
+			};
+	
+			var openResourceCommand = new mCommands.Command({
+				name: messages["FindFile"],
+				tooltip: messages["ChooseFileOpenEditor"],
+				id: "orion.openResource", //$NON-NLS-0$
+				callback: function (data) {
+					openResourceDialog(searcher, serviceRegistry, commandRegistry);
+				}
+			});
+	
+			commandRegistry.addCommand(openResourceCommand);
+
 			// Toggle trim command
 			var toggleBanner = new mCommands.Command({
 				name: messages["Toggle banner and footer"],
@@ -799,7 +801,6 @@ define([
 				callback: toggleBannerFunc
 			});
 			commandRegistry.addCommand(toggleBanner);
-			commandRegistry.registerCommandContribution("globalActions", "orion.toggleTrim", 100, null, true, new KeyBinding.KeyBinding("m", true, true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 
 			// Open configuration page, Ctrl+Shift+F1
 			var configDetailsCommand = new mCommands.Command({
@@ -812,7 +813,6 @@ define([
 			});
 
 			commandRegistry.addCommand(configDetailsCommand);
-			commandRegistry.registerCommandContribution("globalActions", "orion.configDetailsPage", 100, null, true, new KeyBinding.KeyBinding(112, true, true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 
 			// Background Operations Page, Ctrl+Shift+O
 			var operationsCommand = new mCommands.Command({
@@ -825,7 +825,6 @@ define([
 			});
 
 			commandRegistry.addCommand(operationsCommand);
-			commandRegistry.registerCommandContribution("globalActions", "orion.backgroundOperations", 100, null, true, new KeyBinding.KeyBinding('o', true, true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
 
 			// Key assist
 			keyAssist = new mKeyAssist.KeyAssistPanel({
@@ -845,13 +844,31 @@ define([
 				}
 			});
 			commandRegistry.addCommand(keyAssistCommand);
-			commandRegistry.registerCommandContribution("globalActions", "orion.keyAssist", 100, null, true, new KeyBinding.KeyBinding(191, false, true)); //$NON-NLS-1$ //$NON-NLS-0$
 
-			renderGlobalCommands(commandRegistry);
-
+			if ("true" !== localStorage.getItem("useMenuStruct")) {
+				commandRegistry.registerCommandContribution("globalActions", "orion.openResource", 100, null, true, new KeyBinding.KeyBinding("f", true, true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("globalActions", "orion.toggleTrim", 100, null, true, new KeyBinding.KeyBinding("m", true, true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("globalActions", "orion.configDetailsPage", 100, null, true, new KeyBinding.KeyBinding(112, true, true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("globalActions", "orion.backgroundOperations", 100, null, true, new KeyBinding.KeyBinding("o", true, true)); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				commandRegistry.registerCommandContribution("globalActions", "orion.keyAssist", 100, null, true, new KeyBinding.KeyBinding(191, false, true)); //$NON-NLS-1$ //$NON-NLS-0$
+			} else {
+				var globalCommandsStructure = {
+					scopeId: "globalActions",
+					pathRoot: "",
+					items: [
+						{ commandId: "orion.openResource", bindingOnly: true, keyBinding: { key: "f", mods: "12" }  },
+						{ commandId: "orion.toggleTrim", bindingOnly: true, keyBinding: { key: "m", mods: "12" }  },
+						{ commandId: "orion.configDetailsPage", bindingOnly: true, keyBinding: { key: 112, mods: "12" }  },
+						{ commandId: "orion.backgroundOperations", bindingOnly: true, keyBinding: { key: "o", mods: "12" }  },
+						{ commandId: "orion.keyAssist", bindingOnly: true, keyBinding: { key: 191, mods: "2" }  },
+					]};
+				
+				commandRegistry.addMenu(globalCommandsStructure);
+			}
+	
+			renderGlobalCommands(commandRegistry);	
 			generateUserInfo(serviceRegistry, keyAssistCommand.callback);
 		}
-
 
 		// now that footer containing progress pane is added
 		startProgressService(serviceRegistry);

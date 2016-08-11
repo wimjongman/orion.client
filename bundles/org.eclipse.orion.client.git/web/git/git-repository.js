@@ -29,7 +29,8 @@ define([
 	'orion/git/gitClient',
 	'orion/ssh/sshTools',
 	'orion/fileUtils',
-	'orion/links'
+	'orion/links',
+	"git/gitMenuStructure"
 ], function(
 	mBrowserCompatibility,
 	messages,
@@ -49,7 +50,8 @@ define([
 	mGitClient,
 	mSshTools,
 	mFileUtils,
-	mLinks
+	mLinks,
+	mMenuStructure
 ) {
 
 mBootstrap.startup().then(function(core) {
@@ -89,6 +91,8 @@ mBootstrap.startup().then(function(core) {
 	mGitCommands.createGitClonesCommands(serviceRegistry, commandRegistry, explorer, "pageActions", "selectionTools", fileClient); //$NON-NLS-1$ //$NON-NLS-0$
 	mGitCommands.createGitStatusCommands(serviceRegistry, commandRegistry, explorer);
 	mGitCommands.createSharedCommands(serviceRegistry, commandRegistry, explorer, "pageActions", "selectionTools", fileClient); //$NON-NLS-1$ //$NON-NLS-0$
+	
+	mMenuStructure.initMenus(commandRegistry);
 	
 	var params = PageUtil.matchResourceParameters();
 	if (params["createProject.name"] === undefined) { //$NON-NLS-0$
