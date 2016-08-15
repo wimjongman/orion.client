@@ -595,10 +595,13 @@ define([
 			var selectionNodeScope = this.section.actionsNode.id;
 			
 			var commandRegistry = this.commandService;
-			var explorerSelectionScope = this.prefix === "all" || this.prefix === "diff" ? this.explorerSelectionScope : actionsNodeScope; //$NON-NLS-1$ //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(explorerSelectionScope, "orion.explorer.expandAll", 200); //$NON-NLS-0$
-			commandRegistry.registerCommandContribution(explorerSelectionScope, "orion.explorer.collapseAll", 300); //$NON-NLS-0$
+			var explorerSelectionScope = this.explorerSelectionScope;
 			
+			if ("true" !== localStorage.getItem("useMenuStruct")) {
+				commandRegistry.registerCommandContribution(explorerSelectionScope, "orion.explorer.expandAll", 200); //$NON-NLS-0$
+				commandRegistry.registerCommandContribution(explorerSelectionScope, "orion.explorer.collapseAll", 300); //$NON-NLS-0$
+			}
+
 			var node;
 			node = lib.node(actionsNodeScope);
 			if (node) {

@@ -780,8 +780,12 @@ define([
 			actionsArea.className = "layoutRight commandList"; //$NON-NLS-0$
 			actionsArea.id = "commitFilterActions"; //$NON-NLS-0$
 			filterActions.appendChild(actionsArea);
-			this.commandService.registerCommandContribution(actionsArea.id, "eclipse.orion.git.commit.clearFilter", 300); //$NON-NLS-0$
-			this.commandService.registerCommandContribution(actionsArea.id, "eclipse.orion.git.commit.performFilter", 400); //$NON-NLS-0$
+			
+			if ("true" !== localStorage.getItem("useMenuStruct")) {
+				this.commandService.registerCommandContribution(actionsArea.id, "eclipse.orion.git.commit.clearFilter", 300); //$NON-NLS-0$
+				this.commandService.registerCommandContribution(actionsArea.id, "eclipse.orion.git.commit.performFilter", 400); //$NON-NLS-0$
+			}
+
 			this.commandService.renderCommands(actionsArea.id, actionsArea, {
 				filter: doFilter,
 				clear: doClear
@@ -950,6 +954,9 @@ define([
 					model.graph = that.graph = !that.graph;
 					data.handler.changedItem();
 				},
+				visibleWhen: function(items, invocation) {
+					return !that.model.isRebasing();
+				},
 				imageClass:"git-sprite-train-track",
 				tooltip: messages["ToggleGraph"],
 				spriteClass: "gitCommandSprite", //$NON-NLS-0$
@@ -1017,10 +1024,13 @@ define([
 			}
 
 			if (model.isRebasing()) {
-				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commit.toggleFilter", 100, null, false, new KeyBinding.KeyBinding('h', true, true)); //$NON-NLS-1$ //$NON-NLS-0$
-				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseContinueCommand", 200); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseSkipPatchCommand", 300); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseAbortCommand", 400); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				if ("true" !== localStorage.getItem("useMenuStruct")) {
+					commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commit.toggleFilter", 100, null, false, new KeyBinding.KeyBinding('h', true, true)); //$NON-NLS-1$ //$NON-NLS-0$
+					commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseContinueCommand", 200); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+					commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseSkipPatchCommand", 300); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+					commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.rebaseAbortCommand", 400); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+				}
+
 				commandService.renderCommands(actionsNodeScope, actionsNodeScope, repository.status, this, "tool"); //$NON-NLS-0$
 				return;
 			}
@@ -1028,11 +1038,12 @@ define([
 			var activeBranch = model.getActiveBranch();
 			var targetRef = model.getTargetReference();
 			
-			commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commit.toggleFilter", 20, null, false, new KeyBinding.KeyBinding('h', true, true)); //$NON-NLS-1$ //$NON-NLS-0$
-			commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commit.graph", 50); //$NON-NLS-0$
-			commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commit.simpleLog", 70); //$NON-NLS-0$
-			commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.sync", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-
+			if ("true" !== localStorage.getItem("useMenuStruct")) {
+				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commit.toggleFilter", 20, null, false, new KeyBinding.KeyBinding('h', true, true)); //$NON-NLS-1$ //$NON-NLS-0$
+				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commit.graph", 50); //$NON-NLS-0$
+				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.commit.simpleLog", 70); //$NON-NLS-0$
+				commandService.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.sync", 100); //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+			}
 				
 			if (currentBranch && !this.model.simpleLog && targetRef && !model.isCherryPicking() && !model.isMerging()) {
 				var incomingActionScope = this.incomingActionScope;

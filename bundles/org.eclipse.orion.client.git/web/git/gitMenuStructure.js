@@ -45,11 +45,51 @@ define([
 				]},
 			]};
 
+		var dropdownRepositoryActionsStructure = {
+			scopeId: "dropdownRepositoryActionsNode",
+			pathRoot: "",
+			items: [
+				{ groupId: "eclipse.gitGroup",  items: [
+					{ commandId: "eclipse.cloneGitRepository", urlBinding: "cloneGitRepository/url" },
+					{ commandId: "eclipse.initGitRepository" },
+					{ commandId: "eclipse.createGitProject", bindingOnly: true, urlBinding: "createProjectContext/name" },
+				]},
+			]};
+
 		var gitPageActionsStructure = {
 			scopeId: "pageActions",
 			pathRoot: "",
 			items: [
 				{ commandId: "orion.toggleSidePane", bindingOnly: true, keyBinding: { key: "l", mods: util.isMac ? "24" : "12" } },
+			]};
+
+		var gitCommitsSectionActionsStructure = {
+			scopeId: "commitsSectionActionArea",
+			pathRoot: "",
+			items: [
+				{ commandId: "eclipse.orion.git.commit.toggleFilter", keyBinding: { key: "h", mods: "12" } },
+				{ commandId: "eclipse.orion.git.rebaseContinueCommand" },
+				{ commandId: "eclipse.orion.git.rebaseSkipPatchCommand" },
+				{ commandId: "eclipse.orion.git.eclipse.orion.git.rebaseAbortCommand" },
+				{ commandId: "eclipse.orion.git.commit.graph" },
+				{ commandId: "eclipse.orion.git.commit.simpleLog" },
+				{ commandId: "eclipse.orion.git.sync" },
+			]};
+
+		var gitFilterActionsStructure = {
+			scopeId: "commitFilterActions",
+			pathRoot: "",
+			items: [
+				{ commandId: "eclipse.orion.git.commit.clearFilter" },
+				{ commandId: "eclipse.orion.git.commit.performFilter" },
+			]};
+
+		var gitExplorerSelectionStructure = {
+			scopeId: "explorerSelection",
+			pathRoot: "",
+			items: [
+				{ commandId: "orion.explorer.expandAll" },
+				{ commandId: "orion.explorer.collapseAll" },
 			]};
 
 		var gitItemCommandsStructure = {
@@ -92,11 +132,17 @@ define([
 			]};
 					
 		// Register the menus
+		console.log("==================== Start Menu Registration ====================");
 		commandRegistry.addMenu(gitIncomingActionsStructure);
 		commandRegistry.addMenu(gitOutgoingActionsStructure);
+		commandRegistry.addMenu(dropdownRepositoryActionsStructure);
 		commandRegistry.addMenu(gitPageActionsStructure);
+		commandRegistry.addMenu(gitCommitsSectionActionsStructure);
+		commandRegistry.addMenu(gitFilterActionsStructure);
+		commandRegistry.addMenu(gitExplorerSelectionStructure);
 		commandRegistry.addMenu(gitItemCommandsStructure);
-	}
+		console.log("==================== End Menu Registration ====================");
+	};
 	
 	return { initMenus : initMenus };
 
