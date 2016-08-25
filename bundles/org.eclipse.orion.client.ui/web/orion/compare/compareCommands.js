@@ -197,9 +197,11 @@ exports.CompareCommandFactory = (function() {
 			if(toggleCommandSpanId) {
 				commandService.registerCommandContribution(toggleCommandSpanId, "orion.compare.toggleInline2Way", 108); //$NON-NLS-0$
 			} else if(commandSpanId) {
+				commandService.registerCommandContribution(commandSpanId, "orion.compare.toggleInline2Way", 108); //$NON-NLS-0$
+			}
+			if(commandSpanId) {
 				if ("true" !== localStorage.getItem("useMenuStruct")) {
 					//Render all other commands
-					commandService.registerCommandContribution(commandSpanId, "orion.compare.toggleInline2Way", 108); //$NON-NLS-0$
 					commandService.registerCommandContribution(commandSpanId, "orion.compare.copyToLeft", 110, null, false, new mKeyBinding.KeyBinding(37/*left arrow key*/, true, false, true)); //$NON-NLS-0$
 					commandService.registerCommandContribution(commandSpanId, "orion.compare.copyToRight", 111, null, false, new mKeyBinding.KeyBinding(39/*left arrow key*/, true, false, true)); //$NON-NLS-0$
 					commandService.registerCommandContribution(commandSpanId, "orion.compare.nextDiff", 112, null, false, new mKeyBinding.KeyBinding(40/*down arrow key*/, true)); //$NON-NLS-0$
