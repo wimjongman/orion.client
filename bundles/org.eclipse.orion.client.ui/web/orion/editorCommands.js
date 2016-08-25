@@ -646,8 +646,8 @@ define([
 				imageClass : "core-sprite-save", //$NON-NLS-0$
 				id: "orion.edit.save", //$NON-NLS-0$
 				visibleWhen: /** @callback */ function(items, data) {
-					var inputManager = that.inputManager;
-					var editor = that.editor;
+					var inputManager = data.handler && data.handler.inputManager || that.inputManager;
+					var editor =  data.handler && data.handler.editor || that.editor;
 					if (!editor || !editor.installed || !inputManager || !inputManager.isSaveEnabled()) {
 						return false;
 					}

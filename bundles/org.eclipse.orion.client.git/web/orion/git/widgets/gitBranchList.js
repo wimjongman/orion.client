@@ -328,9 +328,12 @@ define([
 			}
 
 			if (root.Type === "RemoteRoot") { //$NON-NLS-0$
-				commandRegistry.registerCommandContribution(actionsNodeScope, "eclipse.addBranch", 200); //$NON-NLS-0$
-				commandRegistry.registerCommandContribution(actionsNodeScope, "eclipse.addRemote", 100); //$NON-NLS-0$
+				if ("true" !== localStorage.getItem("useMenuStruct") && actionsNodeScope === this.sectionActionScodeId) {
+					commandRegistry.registerCommandContribution(actionsNodeScope, "eclipse.addBranch", 200); //$NON-NLS-0$
+					commandRegistry.registerCommandContribution(actionsNodeScope, "eclipse.addRemote", 100); //$NON-NLS-0$
+				}
 				commandRegistry.renderCommands(actionsNodeScope, actionsNodeScope, root.repository, this, "button"); //$NON-NLS-0$
+
 			}
 		}
 	});

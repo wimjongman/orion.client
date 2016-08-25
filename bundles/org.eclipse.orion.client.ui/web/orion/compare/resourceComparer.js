@@ -261,9 +261,13 @@ exports.ResourceComparer = (function() {
 							inputManager: inputManager.manager,
 							textSearcher: localSearcher
 						};
-						commandRegistry.registerCommandContribution(inputManager.manager._actionBarId, "orion.edit.save", 2000, null, false, new mKeyBinding.KeyBinding('s', true), null); //$NON-NLS-1$ //$NON-NLS-0$
-						commandRegistry.registerCommandContribution("pageNavigationActions", "orion.edit.gotoLine", 0, null, true, new mKeyBinding.KeyBinding('l', !util.isMac, false, false, util.isMac), new mCommandRegistry.URLBinding("gotoLine", "line")); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
-						commandRegistry.registerCommandContribution("pageNavigationActions", "orion.edit.find", 0, null, true, new mKeyBinding.KeyBinding('f', true), new mCommandRegistry.URLBinding("find", "find")); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+						commandRegistry.registerCommandContribution(inputManager.manager._actionBarId, "orion.edit.save", 2000, null, false, new mKeyBinding.KeyBinding('s', true), null, handler); //$NON-NLS-1$ //$NON-NLS-0$
+
+						if ("true" !== localStorage.getItem("useMenuStruct")) {
+							commandRegistry.registerCommandContribution("pageNavigationActions", "orion.edit.gotoLine", 0, null, true, new mKeyBinding.KeyBinding('l', !util.isMac, false, false, util.isMac), new mCommandRegistry.URLBinding("gotoLine", "line")); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+							commandRegistry.registerCommandContribution("pageNavigationActions", "orion.edit.find", 0, null, true, new mKeyBinding.KeyBinding('f', true), new mCommandRegistry.URLBinding("find", "find")); //$NON-NLS-4$ //$NON-NLS-3$ //$NON-NLS-2$ //$NON-NLS-1$ //$NON-NLS-0$
+						}
+
 						editor.getTextView().addEventListener("Focus", function() { //$NON-NLS-0$
 							editorCommands.updateCommands(handler);
 						});
@@ -467,8 +471,10 @@ exports.ResourceComparer = (function() {
 				this._commandService.addCommand(openComparePageCommand);
 					
 				// Register command contributions
-				this._commandService.registerCommandContribution(commandSpanId, "orion.compare.openComparePage", 98); //$NON-NLS-0$
-				this._commandService.registerCommandContribution(commandSpanId, "orion.compare.generateLink", 99, null, false, new mKeyBinding.KeyBinding('l', true, true)); //$NON-NLS-1$ //$NON-NLS-0$
+				if ("true" !== localStorage.getItem("useMenuStruct")) {
+					this._commandService.registerCommandContribution(commandSpanId, "orion.compare.openComparePage", 98); //$NON-NLS-0$
+					this._commandService.registerCommandContribution(commandSpanId, "orion.compare.generateLink", 99, null, false, new mKeyBinding.KeyBinding('l', true, true)); //$NON-NLS-1$ //$NON-NLS-0$
+				}
 			}
 		},
 	    _getFilesContents: function(files){

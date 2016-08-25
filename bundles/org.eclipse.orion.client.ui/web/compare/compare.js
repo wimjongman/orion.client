@@ -11,8 +11,8 @@
 
 /*eslint-env browser, amd*/
 define(['orion/browserCompatibility', 'orion/bootstrap', 'orion/Deferred', 'orion/status', 'orion/progress', 'orion/operationsClient', 'orion/commandRegistry', 'orion/fileClient', 'orion/searchClient', 'orion/globalCommands',
-		'orion/compare/compareCommands', 'orion/compare/resourceComparer', 'orion/widgets/themes/ThemePreferences', 'orion/widgets/themes/editor/ThemeData', 'orion/compare/compareUtils', 'orion/contentTypes', 'orion/PageUtil', 'i18n!orion/compare/nls/messages'],
-		function(mBrowserCompatibility, mBootstrap, Deferred, mStatus, mProgress, mOperationsClient, mCommandRegistry, mFileClient, mSearchClient, mGlobalCommands, mCompareCommands, mResourceComparer, mThemePreferences, mThemeData, mCompareUtils, mContentTypes, PageUtil, messages) {
+		'orion/compare/compareCommands', 'orion/compare/compareMenuStructure', 'orion/compare/resourceComparer', 'orion/widgets/themes/ThemePreferences', 'orion/widgets/themes/editor/ThemeData', 'orion/compare/compareUtils', 'orion/contentTypes', 'orion/PageUtil', 'i18n!orion/compare/nls/messages'],
+		function(mBrowserCompatibility, mBootstrap, Deferred, mStatus, mProgress, mOperationsClient, mCommandRegistry, mFileClient, mSearchClient, mGlobalCommands, mCompareCommands, mCompareMenus, mResourceComparer, mThemePreferences, mThemeData, mCompareUtils, mContentTypes, PageUtil, messages) {
 	mBootstrap.startup().then(function(core) {
 		var serviceRegistry = core.serviceRegistry;
 		var preferences = core.preferences;
@@ -28,6 +28,9 @@ define(['orion/browserCompatibility', 'orion/bootstrap', 'orion/Deferred', 'orio
 		var progressService = new mProgress.ProgressService(serviceRegistry, operationsClient, commandService);
 		var themePreferences = new mThemePreferences.ThemePreferences(preferences, new mThemeData.ThemeData());
 		themePreferences.apply();
+
+		mCompareMenus.initMenus(commandService);
+
 		mGlobalCommands.generateBanner("orion-compare", serviceRegistry, commandService, preferences, searcher); //$NON-NLS-0$
 		mGlobalCommands.setPageTarget({
 			task: messages["Compare"],

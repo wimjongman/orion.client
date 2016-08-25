@@ -192,7 +192,10 @@ define([
 			}	
 
 			if (root.mode === "full"){ //$NON-NLS-0$
-				commandRegistry.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.addConfigEntryCommand", 1000); //$NON-NLS-0$
+				if ("true" !== localStorage.getItem("useMenuStruct") && actionsNodeScope === this.sectionActionScopeId) {
+					commandRegistry.registerCommandContribution(actionsNodeScope, "eclipse.orion.git.addConfigEntryCommand", 1000); //$NON-NLS-0$
+				}
+
 				commandRegistry.renderCommands(actionsNodeScope, actionsNodeScope, root.repository, this, "button"); //$NON-NLS-0$
 			}
 		}

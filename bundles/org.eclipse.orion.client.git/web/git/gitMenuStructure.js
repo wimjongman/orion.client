@@ -92,6 +92,76 @@ define([
 				{ commandId: "orion.explorer.collapseAll" },
 			]};
 
+		var gitBranchesActionsStructure = {
+			scopeId: "dropdownBranchesActionsNode",
+			pathRoot: "",
+			items: [
+				{ commandId: "eclipse.addBranch" },
+				{ commandId: "eclipse.addRemote" },
+			]};
+
+		var gitConfigActionsStructure = {
+			scopeId: "dropdownConfigActionsNode",
+			pathRoot: "",
+			items: [
+				{ commandId: "eclipse.orion.git.addConfigEntryCommand" },
+			]};
+
+		var gitStatusSectionActionsStructure = {
+			scopeId: "statusSectionActionArea",
+			pathRoot: "",
+			items: [
+				{ commandId: "eclipse.orion.git.showStagedPatchCommand" },
+				{ commandId: "eclipse.orion.git.checkoutStagedCommand" },
+				{ commandId: "eclipse.orion.git.precommitCommand" },
+			]};
+
+		var gitStatusSectionSelectionStructure = {
+			scopeId: "statusSectionSelectionArea",
+			pathRoot: "",
+			items: [
+				{ commandId: "eclipse.orion.git.popStash" },
+				{ commandId: "eclipse.orion.git.precreateStashCommand" },
+				{ commandId: "eclipse.orion.git.applyPatch" },
+			]};
+
+		var gitDiffSectionSelectionStructure = {
+			scopeId: "diffSectionSelectionArea",
+			pathRoot: "",
+			items: [
+				{ commandId: "eclipse.checkoutCommit" },
+				{ commandId: "eclipse.orion.git.undoCommit" },
+				{ commandId: "eclipse.orion.git.resetIndex" },
+				{ commandId: "eclipse.orion.git.addTag" },
+				{ commandId: "eclipse.orion.git.cherryPick" },
+				{ commandId: "eclipse.orion.git.revert" },
+				{ commandId: "eclipse.openGitCommit" },
+				{ commandId: "eclipse.orion.git.showCommitPatchCommand" },
+			]};
+
+		var gitCompareWidgetRightActionsStructure = {
+			scopeId: "compareWidgetRightActions",
+			pathRoot: "",
+			items: [
+				{ commandId: "orion.compare.openComparePage" },
+				{ commandId: "orion.compare.ignoreWhitespace" },
+				{ commandId: "orion.compare.generateLink" },
+				{ commandId: "orion.compare.copyToLeft", keyBinding: { key: 37, mods: "13"} },
+				{ commandId: "orion.compare.copyToRight", keyBinding: { key: 39, mods: "13"} },
+				{ commandId: "orion.compare.nextDiff", keyBinding: { key: 40, mods: "1"} },
+				{ commandId: "orion.compare.prevDiff", keyBinding: { key: 38, mods: "1"} },
+				{ commandId: "orion.compare.nextChange", bindingOnly: true, keyBinding: { key: 40, mods: "13"} },  // if(compareWidget.options.wordLevelNav) === false
+				{ commandId: "orion.compare.prevChange", bindingOnly: true, keyBinding: { key: 38, mods: "13"} },
+			]};
+
+		var gitCompareWidgetLeftActionsStructure = {
+			scopeId: "compareWidgetLeftActions",
+			pathRoot: "",
+			items: [
+				{ commandId: "orion.compare.toggleInline2Way" },  // compareCommands#198
+				{ commandId: "eclipse.orion.git.toggleMaximizeCommand" },
+			]};
+
 		var gitItemCommandsStructure = {
 			scopeId: "itemLevelCommands",
 			pathRoot: "",
@@ -140,6 +210,13 @@ define([
 		commandRegistry.addMenu(gitCommitsSectionActionsStructure);
 		commandRegistry.addMenu(gitFilterActionsStructure);
 		commandRegistry.addMenu(gitExplorerSelectionStructure);
+		commandRegistry.addMenu(gitBranchesActionsStructure);
+		commandRegistry.addMenu(gitConfigActionsStructure);
+		commandRegistry.addMenu(gitStatusSectionActionsStructure);
+		commandRegistry.addMenu(gitStatusSectionSelectionStructure);
+		commandRegistry.addMenu(gitDiffSectionSelectionStructure);
+		commandRegistry.addMenu(gitCompareWidgetLeftActionsStructure);
+		commandRegistry.addMenu(gitCompareWidgetRightActionsStructure);
 		commandRegistry.addMenu(gitItemCommandsStructure);
 		console.log("==================== End Menu Registration ====================");
 	};
