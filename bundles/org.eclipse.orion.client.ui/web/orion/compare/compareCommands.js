@@ -236,7 +236,11 @@ exports.CompareCommandFactory = (function() {
 					if(this.options.gridRenderer.additionalCmdRender){
 						if(this.options.gridRenderer.before){
 							this.options.gridRenderer.additionalCmdRender(this.options.gridRenderer.navGridHolder);
-							commandService.renderCommands(commandSpanId, commandSpanId, compareWidget, compareWidget, "tool", null, this.options.gridRenderer.navGridHolder); //$NON-NLS-0$
+							if ("true" !== localStorage.getItem("useMenuStruct")) {
+								commandService.renderCommands(commandSpanId, commandSpanId, compareWidget, compareWidget, "tool", null, this.options.gridRenderer.navGridHolder); //$NON-NLS-0$
+							} else {
+								commandService.renderCommands("compareWidgetRightActions", commandSpanId, compareWidget, compareWidget, "tool", null, this.options.gridRenderer.navGridHolder); //$NON-NLS-0$
+							}
 						} else {
 							commandService.renderCommands(commandSpanId, commandSpanId, compareWidget, compareWidget, "tool", null, this.options.gridRenderer.navGridHolder); //$NON-NLS-0$
 							this.options.gridRenderer.additionalCmdRender(this.options.gridRenderer.navGridHolder);

@@ -107,12 +107,23 @@ define([
 			pathRoot: "",
 			items: [
 				{ groupId: "orion.menuBarToolsGroup", title: messages["Tools"], items: [
+					{ commandId: "orion.keyAssist", keyBinding: { key: 191, mods: "23" } },
+					{ commandId: "orion.edit.showTooltip", keyBinding: { key: 113, mods: "" } },
+					{ commandId: "orion.edit.blame", keyBinding: { key: "b", mods: "12" } },
+					{ commandId: "orion.edit.diff", keyBinding: { key: "d", mods: "12" } },
 					{ groupId: "orion.editorMenuBarMenuDelimitersGroup", title: messages["Convert Line Delimiters"], pos: 2000, items: [
 						{ commandId: "orion.edit.convert.crlf", handler: this },
 						{ commandId: "orion.edit.convert.lf", handler: this },
 					] },
 					{ commandId: "orion.edit.reloadWithEncoding", pos: 2001 },
 				] },
+			]};
+
+		var settingsActionsStructure = {
+			scopeId: "settingsActions",
+			pathRoot: "",
+			items: [
+				{ commandId: "orion.edit.settings", keyBinding: { key: "s", mods: "12"}, handler: this },
 			]};
 
 		var editorContextMenuStructure = {
@@ -196,15 +207,61 @@ define([
 				] },
 			]
 		};
+
+		var problemsViewActionsStructure = {
+			scopeId: "problemsViewActions",
+			pathRoot: "",
+			items: [
+				{ commandId: "orion.problemsView.switchView" },
+				{ commandId: "orion.explorer.problems.expandAll" },
+				{ commandId: "orion.explorer.problems.collapseAll" },
+				{ commandId: "orion.problemsView.nextResult" },
+				{ commandId: "orion.problemsView.prevResult" },
+				{ commandId: "orion.problemsView.switchFullPath" },
+			]};
+
+		var problemsViewActionsRightStructure = {
+			scopeId: "problemsViewActionsRight",
+			pathRoot: "",
+			items: [
+				{ commandId: "orion.problemsView.refresh" },
+			]};
+
+		var searchPageActionsStructure = {
+			scopeId: "searchPageActions",
+			pathRoot: "",
+			items: [
+				{ commandId: "orion.globalSearch.switchView" },
+				{ commandId: "orion.globalSearch.toggleMatch.perfect" },
+				{ commandId: "orion.globalSearch.toggleMatch.possible" },
+				{ commandId: "orion.globalSearch.toggleMatch.non" },
+			]};
+
+		var searchPageActionsRightStructure = {
+			scopeId: "searchPageActionsRight",
+			pathRoot: "",
+			items: [
+				{ commandId: "orion.globalSearch.replaceAll" },
+				{ commandId: "orion.explorer.expandAll" },
+				{ commandId: "orion.explorer.collapseAll" },
+				{ commandId: "orion.search.nextResult" },
+				{ commandId: "orion.search.prevResult" },
+				{ commandId: "orion.search.switchFullPath" },
+			]};
 		
 		// Register the menus
 		commandRegistry.addMenu(fileMenuStructure);
 		commandRegistry.addMenu(editMenuStructure);
 		commandRegistry.addMenu(viewMenuStructure);
 		commandRegistry.addMenu(toolsMenuStructure);
+		commandRegistry.addMenu(settingsActionsStructure);
 		commandRegistry.addMenu(editorContextMenuStructure);
 		commandRegistry.addMenu(navContextMenuStructure);
-	}
+		commandRegistry.addMenu(problemsViewActionsStructure);
+		commandRegistry.addMenu(problemsViewActionsRightStructure);
+		commandRegistry.addMenu(searchPageActionsStructure);
+		commandRegistry.addMenu(searchPageActionsRightStructure);
+	};
 	
 	return { initMenus : initMenus };
 

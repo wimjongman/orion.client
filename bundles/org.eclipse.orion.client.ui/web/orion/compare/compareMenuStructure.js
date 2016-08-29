@@ -17,17 +17,6 @@ define([
 	var initMenus = function (commandRegistry) {
 		if ("true" !== localStorage.getItem("useMenuStruct"))
 			return;
-
-		var globalCommandsStructure = {
-			scopeId: "globalActions",
-			pathRoot: "",
-			items: [
-				{ commandId: "orion.openResource", bindingOnly: true, keyBinding: { key: "f", mods: "12" }  },
-				{ commandId: "orion.toggleTrim", bindingOnly: true, keyBinding: { key: "m", mods: "12" }  },
-				{ commandId: "orion.configDetailsPage", bindingOnly: true, keyBinding: { key: 112, mods: "12" }  },
-				{ commandId: "orion.backgroundOperations", bindingOnly: true, keyBinding: { key: "o", mods: "12" }  },
-				{ commandId: "orion.keyAssist", bindingOnly: true, keyBinding: { key: 191, mods: "2" }  },
-			]};
 				
 		var pageNavigationActionsActionsStructure = {
 			scopeId: "pageNavigationActions",
@@ -48,10 +37,7 @@ define([
 			]};
 
 		// Register the menus
-		console.log("==================== Start Menu Registration ====================");
-		//commandRegistry.addMenu(globalCommandsStructure);
 		commandRegistry.addMenu(pageNavigationActionsActionsStructure);
-		console.log("==================== End Menu Registration ====================");
 	};
 	
 	return { initMenus : initMenus };

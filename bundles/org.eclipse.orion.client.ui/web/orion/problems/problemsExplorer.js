@@ -361,14 +361,16 @@ define([
 	        mExplorer.createExplorerCommands(this.commandService, function(/*item*/) {
 	        	return this.getItemCount() > 0;
 	        }.bind(this), "orion.explorer.problems.expandAll", "orion.explorer.problems.collapseAll"); //$NON-NLS-1$ //$NON-NLS-2$
-	        
-	        this.commandService.registerCommandContribution("problemsViewActions", "orion.problemsView.switchView", 1); //$NON-NLS-1$ //$NON-NLS-2$
-	        this.commandService.registerCommandContribution("problemsViewActions", "orion.explorer.problems.expandAll", 2); //$NON-NLS-1$ //$NON-NLS-2$
-	        this.commandService.registerCommandContribution("problemsViewActions", "orion.explorer.problems.collapseAll", 3); //$NON-NLS-1$ //$NON-NLS-2$
-	        this.commandService.registerCommandContribution("problemsViewActions", "orion.problemsView.nextResult", 4); //$NON-NLS-1$ //$NON-NLS-2$
-	        this.commandService.registerCommandContribution("problemsViewActions", "orion.problemsView.prevResult", 5); //$NON-NLS-1$ //$NON-NLS-2$
-	        this.commandService.registerCommandContribution("problemsViewActions", "orion.problemsView.switchFullPath", 6); //$NON-NLS-1$ //$NON-NLS-2$
-	        this.commandService.registerCommandContribution("problemsViewActionsRight", "orion.problemsView.refresh", 7); //$NON-NLS-1$ //$NON-NLS-2$
+
+			if ("true" !== localStorage.getItem("useMenuStruct")) {	        
+		        this.commandService.registerCommandContribution("problemsViewActions", "orion.problemsView.switchView", 1); //$NON-NLS-1$ //$NON-NLS-2$
+		        this.commandService.registerCommandContribution("problemsViewActions", "orion.explorer.problems.expandAll", 2); //$NON-NLS-1$ //$NON-NLS-2$
+		        this.commandService.registerCommandContribution("problemsViewActions", "orion.explorer.problems.collapseAll", 3); //$NON-NLS-1$ //$NON-NLS-2$
+		        this.commandService.registerCommandContribution("problemsViewActions", "orion.problemsView.nextResult", 4); //$NON-NLS-1$ //$NON-NLS-2$
+		        this.commandService.registerCommandContribution("problemsViewActions", "orion.problemsView.prevResult", 5); //$NON-NLS-1$ //$NON-NLS-2$
+		        this.commandService.registerCommandContribution("problemsViewActions", "orion.problemsView.switchFullPath", 6); //$NON-NLS-1$ //$NON-NLS-2$
+		        this.commandService.registerCommandContribution("problemsViewActionsRight", "orion.problemsView.refresh", 7); //$NON-NLS-1$ //$NON-NLS-2$
+	        }
 	    },
 	    /** @callback */
 	    refreshCommands:function() {

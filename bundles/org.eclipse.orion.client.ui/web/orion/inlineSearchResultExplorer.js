@@ -663,16 +663,20 @@ function(messages, Deferred, lib, mContentTypes, i18nUtil, mExplorer, mCommands,
 			}
 			return !item._reporting && !emptyKeyword;
         });
-	    this._commandService.registerCommandContribution("searchPageActions", "orion.globalSearch.switchView", 0); //$NON-NLS-1$ //$NON-NLS-2$
-	    this._commandService.registerCommandContribution("searchPageActions", "orion.globalSearch.toggleMatch.perfect", 1); //$NON-NLS-1$ //$NON-NLS-2$
-	    this._commandService.registerCommandContribution("searchPageActions", "orion.globalSearch.toggleMatch.possible", 2); //$NON-NLS-1$ //$NON-NLS-2$
-	    this._commandService.registerCommandContribution("searchPageActions", "orion.globalSearch.toggleMatch.non", 3); //$NON-NLS-1$ //$NON-NLS-2$
-        this._commandService.registerCommandContribution("searchPageActionsRight", "orion.globalSearch.replaceAll", 11); //$NON-NLS-2$ //$NON-NLS-1$
-        this._commandService.registerCommandContribution("searchPageActionsRight", "orion.explorer.expandAll", 12); //$NON-NLS-1$ //$NON-NLS-2$
-        this._commandService.registerCommandContribution("searchPageActionsRight", "orion.explorer.collapseAll", 13); //$NON-NLS-1$ //$NON-NLS-2$
-        this._commandService.registerCommandContribution("searchPageActionsRight", "orion.search.nextResult", 14); //$NON-NLS-1$ //$NON-NLS-2$
-        this._commandService.registerCommandContribution("searchPageActionsRight", "orion.search.prevResult", 15); //$NON-NLS-1$ //$NON-NLS-2$
-        this._commandService.registerCommandContribution("searchPageActionsRight", "orion.search.switchFullPath", 16); //$NON-NLS-1$ //$NON-NLS-2$
+        
+		if ("true" !== localStorage.getItem("useMenuStruct")) {
+		    this._commandService.registerCommandContribution("searchPageActions", "orion.globalSearch.switchView", 0); //$NON-NLS-1$ //$NON-NLS-2$
+		    this._commandService.registerCommandContribution("searchPageActions", "orion.globalSearch.toggleMatch.perfect", 1); //$NON-NLS-1$ //$NON-NLS-2$
+		    this._commandService.registerCommandContribution("searchPageActions", "orion.globalSearch.toggleMatch.possible", 2); //$NON-NLS-1$ //$NON-NLS-2$
+		    this._commandService.registerCommandContribution("searchPageActions", "orion.globalSearch.toggleMatch.non", 3); //$NON-NLS-1$ //$NON-NLS-2$
+	        this._commandService.registerCommandContribution("searchPageActionsRight", "orion.globalSearch.replaceAll", 11); //$NON-NLS-2$ //$NON-NLS-1$
+	        this._commandService.registerCommandContribution("searchPageActionsRight", "orion.explorer.expandAll", 12); //$NON-NLS-1$ //$NON-NLS-2$
+	        this._commandService.registerCommandContribution("searchPageActionsRight", "orion.explorer.collapseAll", 13); //$NON-NLS-1$ //$NON-NLS-2$
+	        this._commandService.registerCommandContribution("searchPageActionsRight", "orion.search.nextResult", 14); //$NON-NLS-1$ //$NON-NLS-2$
+	        this._commandService.registerCommandContribution("searchPageActionsRight", "orion.search.prevResult", 15); //$NON-NLS-1$ //$NON-NLS-2$
+	        this._commandService.registerCommandContribution("searchPageActionsRight", "orion.search.switchFullPath", 16); //$NON-NLS-1$ //$NON-NLS-2$
+	    }
+
     };
 
     InlineSearchResultExplorer.prototype._fileExpanded = function(fileIndex, detailIndex) {
