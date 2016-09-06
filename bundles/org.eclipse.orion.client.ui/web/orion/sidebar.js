@@ -315,7 +315,9 @@ define(['orion/objects', 'orion/commands', 'orion/outliner', 'orion/webui/little
 			});
 			
 			this.commandRegistry.addCommand(problemsInFolderCommand);
-			this.commandRegistry.registerCommandContribution(this.toolsScope, "orion.problemsInFolder", 2, "orion.menuBarToolsGroup", false, new KeyBinding.KeyBinding('p', true, false, true));  //$NON-NLS-1$ //$NON-NLS-0$
+			if ("true" !== localStorage.getItem("useMenuStruct")) {
+				this.commandRegistry.registerCommandContribution(this.toolsScope, "orion.problemsInFolder", 2, "orion.menuBarToolsGroup", false, new KeyBinding.KeyBinding('p', true, false, true));  //$NON-NLS-1$ //$NON-NLS-0$
+			}
  		},
  		fillSearchPane: function(searchParams, searchResult) {
  			var mainSplitter = mGlobalCommands.getMainSplitter();

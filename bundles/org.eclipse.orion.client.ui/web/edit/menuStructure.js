@@ -108,6 +108,7 @@ define([
 			items: [
 				{ groupId: "orion.menuBarToolsGroup", title: messages["Tools"], items: [
 					{ commandId: "orion.keyAssist", keyBinding: { key: 191, mods: "23" } },
+					{ commandId: "orion.problemsInFolder", keyBinding: { key: "p", mods: "13" } },
 					{ commandId: "orion.edit.showTooltip", keyBinding: { key: 113, mods: "" } },
 					{ commandId: "orion.edit.blame", keyBinding: { key: "b", mods: "12" } },
 					{ commandId: "orion.edit.diff", keyBinding: { key: "d", mods: "12" } },
@@ -123,6 +124,7 @@ define([
 			scopeId: "settingsActions",
 			pathRoot: "",
 			items: [
+				{ commandId: "orion.edit.splitmode" },
 				{ commandId: "orion.edit.settings", keyBinding: { key: "s", mods: "12"}, handler: this },
 			]};
 

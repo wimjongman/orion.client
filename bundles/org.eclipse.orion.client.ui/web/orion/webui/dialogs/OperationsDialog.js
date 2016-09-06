@@ -42,7 +42,21 @@ function(messages, require, lib, popupdialog, mOperationsCommands) {
 		this._operationsDeferreds = [];
 		this._commandService = options.commandRegistry;
 		mOperationsCommands.createOperationsCommands(this._commandService);
-		this._commandService.registerCommandContribution("operationsDialogItems", "eclipse.cancelOperation", 1); //$NON-NLS-1$ //$NON-NLS-0$
+
+		if ("true" !== localStorage.getItem("useMenuStruct")) {
+			this._commandService.registerCommandContribution("operationsDialogItems", "eclipse.cancelOperation", 1); //$NON-NLS-1$ //$NON-NLS-0$
+		} else {
+			var commandRegistry = this._commandService;
+			var opsDlgCommandsStructure = {
+				scopeId: "operationsDialogItems",
+				pathRoot: "",
+				items: [
+					{ commandId: "eclipse.cancelOperation" },
+				]};
+			
+			commandRegistry.addMenu(opsDlgCommandsStructure);
+		}
+
 		this._initialize(options.triggerNode);
 	};
 	

@@ -1090,7 +1090,9 @@ objects.mixin(EditorSetup.prototype, {
 			}
 		});
 		this.commandRegistry.addCommand(changeSplitModeCommand);
-		this.commandRegistry.registerCommandContribution(toolbar, "orion.edit.splitmode", 0); //$NON-NLS-1$ //$NON-NLS-0$
+		if ("true" !== localStorage.getItem("useMenuStruct")) {
+			this.commandRegistry.registerCommandContribution(toolbar, "orion.edit.splitmode", 0); //$NON-NLS-1$ //$NON-NLS-0$
+		}
 	}
 });
 
