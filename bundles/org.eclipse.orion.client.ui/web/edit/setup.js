@@ -16,6 +16,7 @@ define([
 	'orion/sidebar',
 	'orion/inputManager',
 	'edit/menuStructure',
+	'edit/menuHack',
 	'orion/commands',
 	'orion/globalCommands',
 	'orion/editor/textModelFactory',
@@ -53,7 +54,7 @@ define([
 	'orion/bidiUtils',
 	'orion/customGlobalCommands'
 ], function(
-	messages, Sidebar, mInputManager, mMenuManager, mCommands, mGlobalCommands,
+	messages, Sidebar, mInputManager, mMenuManager, mMenuHack,  mCommands, mGlobalCommands,
 	mTextModelFactory, mUndoStack,
 	mFolderView, mEditorView, mPluginEditorView , mMarkdownView, mMarkdownEditor,
 	mCommandRegistry, mContentTypes, mFileClient, mFileCommands, mEditorCommands, mSelection, mStatus, mProgress, mOperationsClient, mOutliner, mDialogs, mExtensionCommands, ProjectCommands, mSearchClient,
@@ -129,6 +130,7 @@ objects.mixin(MenuBar.prototype, {
 		var editorCommands = this.editorCommands;
 		return editorCommands.createCommands().then(function() {
 			mMenuManager.initMenus(commandRegistry);
+			mMenuHack.initMenuhack(commandRegistry);
 			
 			editorCommands.registerCommands();
 			editorCommands.registerContextMenuCommands();
