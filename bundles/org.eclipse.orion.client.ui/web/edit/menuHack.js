@@ -108,7 +108,11 @@ define([
 		]
 	};
 
+	var mainMenu;
 	var focusItem;
+	
+	var isSeparator = function(menuItem) { return menuItem.classList.contains("dropdownSeparator");	};
+	var isMenuBar = function(menu) { return menu.classList.contains("commandList");	};
 	
 	var getSubMenu = function(curItem) {
 		var ulList = curItem.getElementsByTagName("ul");
@@ -119,24 +123,26 @@ define([
 	};
 	
 	var setSelectionFeedback = function(menuItem, showFeedback) {
-		var selClass = menuItem.parentNode.classList.contains("commandList") ? "dropdownSelection" : "dropdownMenuItemSelected";
+		var selClass = isMenuBar(menuItem.parentNode) ? "dropdownSelection" : "dropdownMenuItemSelected";
 		if (showFeedback) {
 			menuItem.children[0].classList.add(selClass);
 		} else {
 			menuItem.children[0].classList.remove(selClass);
 		}
 	};
+
+	var clearSelection = function(menu) {
+		for (var i = 0; i < menu.children.length; i++) {
+			if (!isSeparator(menu.children[i])) {
+				setSelectionFeedback(menu.children[i], false);
+			}
+		}
+	};
 	
 	var closeSubMenu = function(subMenu) {
 		subMenu.classList.remove("dropdownMenuOpen");
-		
-		// Clear any 'selected' state
-		for (var i = 0; i < subMenu.children.length; i++) {
-			var item = subMenu.children[i];
-			if (item.classList.contains("dropdownSeparator"))
-				continue;
-			setSelectionFeedback(item, false);
-		}
+		subMenu.parentNode.setAttribute("aria-expanded", "false");
+		clearSelection(subMenu);
 	};
 	
 	var openSubMenu = function(subMenu) {
@@ -146,16 +152,17 @@ define([
 			closeSubMenu(openSubMenus[i]);
 		}
 		
-		if (!subMenu.classList.contains("commandList")) {
+		if (!isMenuBar(subMenu)) {
 			subMenu.classList.add("dropdownMenuOpen");
 		}	
+		subMenu.parentNode.setAttribute("aria-expanded", "true");
 
 		// Make the owner of the sub menu 'selected'
 		setSelectionFeedback(subMenu.parentNode, true);
 	};
 	
 	var selectItem = function(menuItem, showSubMenu) {
-		if (!menuItem || menuItem.classList.contains("dropdownSeparator"))
+		if (!menuItem || isSeparator(menuItem))
 			return;
 
 		if (focusItem) {
@@ -198,82 +205,82 @@ define([
 
 	var nextItem = function(curItem) {
 		var nextCandidate = curItem.nextSibling ? curItem.nextSibling : curItem.parentNode.firstChild;
-		if (nextCandidate.classList.contains("dropdownSeparator"))
+		if (isSeparator(nextCandidate))
 			return nextItem(nextCandidate);
 		return nextCandidate;
 	};
 
 	var prevItem = function(curItem) {
 		var prevCandidate = curItem.previousSibling ? curItem.previousSibling : curItem.parentNode.lastChild;
-		if (prevCandidate.classList.contains("dropdownSeparator"))
+		if (isSeparator(prevCandidate))
 			return prevItem(prevCandidate);
 		return prevCandidate;
 	};
 	
 	var subMenuKeyHandler = function(keyEvent) {
-		var keys = {	tab: 9, enter: 13, esc: 27, space: 32, left: 37,  up: 38, right: 39, down: 40};
-
-		var keyHandled = false;
-		var curItem = focusItem;
-		switch(keyEvent.keyCode) {
-			case keys.right:
-				var subMenu = getSubMenu(curItem);
-				if (subMenu) {
-					selectItem(subMenu.firstChild);
-				}
-				keyHandled = true;
-				break;
-			case keys.esc:
-			case keys.left:
-				selectItem(focusItem.parentNode.parentNode);
-				keyHandled = true;
-				break;
-			case keys.up:
-				selectItem(prevItem(curItem));				
-				keyHandled = true;
-				break;
-			case keys.down:
-				selectItem(nextItem(curItem));				
-				keyHandled = true;
-				break;
-		}
-
-		if (keyHandled) {
+		if (keyEvent.keyCode === lib.KEY.RIGHT || keyEvent.keyCode === lib.KEY.LEFT || keyEvent.keyCode === lib.KEY.ESCAPE || keyEvent.keyCode === lib.KEY.UP || keyEvent.keyCode === lib.KEY.DOWN) {
+			switch(keyEvent.keyCode) {
+				case lib.KEY.RIGHT:
+					var subMenu = getSubMenu(focusItem);
+					if (subMenu) {
+						selectItem(subMenu.firstChild);
+					}
+					break;
+				case lib.KEY.ESCAPE:
+				case lib.KEY.LEFT:
+					selectItem(focusItem.parentNode.parentNode);
+					break;
+				case lib.KEY.UP:
+					selectItem(prevItem(focusItem));				
+					break;
+				case lib.KEY.DOWN:
+					selectItem(nextItem(focusItem));				
+					break;
+			}
+	
 			keyEvent.preventDefault();
 			keyEvent.stopPropagation();
 		}
 	};
 	
 	var menuBarKeyHandler = function(keyEvent) {
-		var keys = {	tab: 9, enter: 13, esc: 27, space: 32, left: 37,  up: 38, right: 39, down: 40};
-
-		var keyHandled = false;
-		var curItem = focusItem;
-		switch(keyEvent.keyCode) {
-			case keys.right:
-				selectItem(nextItem(curItem));
-				keyHandled = true;
-				break;
-			case keys.left:
-				selectItem(prevItem(curItem));
-				keyHandled = true;
-				break;
-			case keys.down:
-				var subMenu = getSubMenu(curItem);
-				if (subMenu) {
-					selectItem(subMenu.firstChild);
-				}
-				keyHandled = true;
-				break;
-		}
-
-		if (keyHandled) {
+		if (keyEvent.keyCode === lib.KEY.RIGHT || keyEvent.keyCode === lib.KEY.LEFT || keyEvent.keyCode === lib.KEY.DOWN) {
+			switch(keyEvent.keyCode) {
+				case lib.KEY.RIGHT:
+					selectItem(nextItem(focusItem));
+					break;
+				case lib.KEY.LEFT:
+					selectItem(prevItem(focusItem));
+					break;
+				case lib.KEY.DOWN:
+					var subMenu = getSubMenu(focusItem);
+					if (subMenu) {
+						selectItem(subMenu.firstChild);
+					}
+					break;
+			}
 			keyEvent.preventDefault();
 			keyEvent.stopPropagation();
 		}
 	};
 	
+	var cleanupForExit = function() {
+		// Close any open sub menus
+		var openSubMenus = mainMenu.getElementsByClassName("dropdownMenuOpen");
+		for (var i = openSubMenus.length-1; i >= 0; i--) {
+			closeSubMenu(openSubMenus[i]);
+		}
+		
+		// remove any selection hilighting from the main memu
+		for (var j = 0; j < mainMenu.children.length; j++) {
+			setSelectionFeedback(mainMenu.children[j], false);
+		}
+		
+		focusItem = undefined;
+	};
+	
 	// *********** Rendering code *************
+	
 	var appendDomElement = function(domParent, type, classList, text, role) {
 		var newElement = document.createElement(type);		
 		if (classList) {
@@ -290,10 +297,6 @@ define([
 		return newElement;
 	};
 	
-	var renderSeparator = function(domParent) {
-		appendDomElement(domParent, "li", "dropdownSeparator");
-	};
-	
 	var renderItems = function(domParent, curItem, commandRegistry) {
 		if (!curItem.items) return;
 		
@@ -303,8 +306,10 @@ define([
 			
 			if (item.groupId) {
 				if (item.title) {
-					item.domElement = appendDomElement(domParent, "li", "dropdownSubMenu");
-					var outerSpan = appendDomElement(item.domElement, "span", "dropdownTrigger dropdownMenuItem", null, "menuitem");
+					item.domElement = appendDomElement(domParent, "li", "dropdownSubMenu", null, "menuitem");
+					item.domElement.setAttribute("aria-haspopup", "true");
+					item.domElement.setAttribute('aria-expanded', "false");
+					var outerSpan = appendDomElement(item.domElement, "span", "dropdownTrigger dropdownMenuItem");
 					appendDomElement(outerSpan, "span", "dropdownCommandName", item.title);
 					appendDomElement(outerSpan, "span", "dropdownArrowRight core-sprite-closedarrow");
 					
@@ -312,15 +317,15 @@ define([
 					var subMenu = appendDomElement(item.domElement, "ul", "dropdownMenu", null, "menu");					
 					renderItems(subMenu, item, commandRegistry);
 				} else {
-					renderSeparator(domParent);
+					appendDomElement(domParent, "li", "dropdownSeparator");
 					renderItems(domParent, item, commandRegistry);
-					renderSeparator(domParent);
+					appendDomElement(domParent, "li", "dropdownSeparator");
 				}
 			} else if (item.commandId) {
-				item.domElement = appendDomElement(domParent, "li");
-				var outerSpan = appendDomElement(item.domElement, "span", "dropdownMenuItem", null, "menuitem");
+				item.domElement = appendDomElement(domParent, "li", null, null, "menuitem");
+				var cmdSpan = appendDomElement(item.domElement, "span", "dropdownMenuItem", null);
 				var cmd = commandRegistry._commandList[item.commandId];
-				appendDomElement(outerSpan, "span", "dropdownCommandName", cmd.name);
+				appendDomElement(cmdSpan, "span", "dropdownCommandName", cmd.name);
 				
 				if (item.keyBinding) {
 					var mod1 = item.keyBinding.mods.indexOf("1") >= 0;
@@ -330,30 +335,30 @@ define([
 					
 					var keyBinding = new mKeyBinding.KeyBinding(item.keyBinding.key, mod1, mod2, mod3, mod4);
 					var bindingString = UIUtils.getUserKeyString(keyBinding);
-					appendDomElement(outerSpan, "span", "dropdownKeyBinding", bindingString);
+					appendDomElement(cmdSpan, "span", "dropdownKeyBinding", bindingString);
 				}
-				item.domElement.addEventListener("mouseover", function(e) {
-					selectItem(e.currentTarget);
-				}, false);
 			} else if (item.menuId) {
-				item.domElement = appendDomElement(domParent, "li");
+				item.domElement = appendDomElement(domParent, "li", null, null, "menuitem");
+				item.domElement.setAttribute("aria-haspopup", "true");
+				item.domElement.setAttribute('aria-expanded', "false");
 				var menuButton = appendDomElement(item.domElement, "button", "dropdownTrigger orionButton commandButton", item.title);
 				menuButton.addEventListener("focus", function(e) {
 					selectItem(e.currentTarget.parentNode);
 				});
 
 				// Now create the sub-menu
-				var subMenu = appendDomElement(item.domElement, "ul", "dropdownMenu", null, "menu");				
-				renderItems(subMenu, item, commandRegistry);
+				var mainSubMenu = appendDomElement(item.domElement, "ul", "dropdownMenu", null, "menu");				
+				renderItems(mainSubMenu, item, commandRegistry);
 				
 				item.domElement.addEventListener("click", function(e) {
+					clearSelection(mainMenu);
 					selectItem(e.currentTarget, true);
 				}, false);
 			}
 			
 			if (item.domElement) {
 				item.domElement.tabIndex = -1;
-				if (item.domElement.parentNode.classList.contains("commandList")) {
+				if (isMenuBar(item.domElement.parentNode)) {
 					item.domElement.addEventListener("keydown", function(e) {
 						menuBarKeyHandler(e);
 					});
@@ -362,8 +367,7 @@ define([
 						subMenuKeyHandler(e);
 					});
 					item.domElement.addEventListener("mouseenter", function(e) {
-						var item = e.currentTarget;
-						selectItem(item, true);
+						selectItem(e.currentTarget, true);
 					}, false);
 				}
 			}
@@ -406,7 +410,8 @@ define([
 					hackDiv.style.position = "absolute";
 					hackDiv.style.zIndex = 500;
 				}
-				var mainMenu = appendDomElement(hackDiv, "ul", "commandList layoutLeft pageActions", null, "menu");
+				mainMenu = appendDomElement(hackDiv, "ul", "commandList layoutLeft pageActions", null, "menu");
+				lib.addAutoDismiss([mainMenu], cleanupForExit);
 				mainMenu.id = "mainMenu";
 	
 				renderItems(mainMenu, mainMenuStructure, commandRegistry);
