@@ -107,35 +107,8 @@ define([
 			] },
 		]
 	};
-	
-	var appendDomElement = function(domParent, type, classList, text, role) {
-		var newElement = document.createElement(type);		
-		if (classList) {
-			var classes = classList.split(" ");
-			for (var i = 0; i < classes.length; i++) {				
-				newElement.classList.add(classes[i]);
-			}
-		}
-		if (text)	
-			newElement.textContent = text;			
-		if (role)	
-			newElement.setAttribute("role", role);		
-		domParent.appendChild(newElement);
-		return newElement;
-	};
-	
-	var renderSeparator = function(domParent) {
-		appendDomElement(domParent, "li", "dropdownSeparator");
-	};
 
-	var curInfo = [];
-	var getInfoIndex = function(menuItem) {
-		for (var i = 0; i < curInfo.length; i++) {
-			if (curInfo[i].menu === menuItem.parentNode)
-				return i;
-		}
-		return -1;
-	};
+	var focusItem;
 	
 	var getSubMenu = function(curItem) {
 		var ulList = curItem.getElementsByTagName("ul");
@@ -145,9 +118,13 @@ define([
 		return null;
 	};
 	
-	var openSubMenu = function(subMenu, itemToSelect) {
-		subMenu.classList.add("dropdownMenuOpen");
-		curInfo.push({menu: subMenu, selected: itemToSelect});
+	var setSelectionFeedback = function(menuItem, showFeedback) {
+		var selClass = menuItem.parentNode.classList.contains("commandList") ? "dropdownSelection" : "dropdownMenuItemSelected";
+		if (showFeedback) {
+			menuItem.children[0].classList.add(selClass);
+		} else {
+			menuItem.children[0].classList.remove(selClass);
+		}
 	};
 	
 	var closeSubMenu = function(subMenu) {
@@ -158,53 +135,44 @@ define([
 			var item = subMenu.children[i];
 			if (item.classList.contains("dropdownSeparator"))
 				continue;
-			subMenu.children[i].children[0].classList.remove("dropdownMenuItemSelected");
+			setSelectionFeedback(item, false);
 		}
-		
-		//Assumes that the closing menu is the last one in the curInfo arrya
-		curInfo = curInfo.slice(-1);
 	};
 	
-	var selectItem = function(menuItem, openMenuOnSelection) {
-		if (menuItem.classList.contains("dropdownSeparator"))
+	var openSubMenu = function(subMenu) {
+		// Close any open sub menus at this level or below
+		var openSubMenus = subMenu.parentNode.getElementsByClassName("dropdownMenuOpen");
+		for (var i = openSubMenus.length-1; i >= 0; i--) {
+			closeSubMenu(openSubMenus[i]);
+		}
+		
+		if (!subMenu.classList.contains("commandList")) {
+			subMenu.classList.add("dropdownMenuOpen");
+		}	
+
+		// Make the owner of the sub menu 'selected'
+		setSelectionFeedback(subMenu.parentNode, true);
+	};
+	
+	var selectItem = function(menuItem, showSubMenu) {
+		if (!menuItem || menuItem.classList.contains("dropdownSeparator"))
 			return;
-			
-		if (curInfo.length === 0) {
-			curInfo.push({menu: menuItem.parentNode, selected: undefined});
+
+		if (focusItem) {
+			setSelectionFeedback(focusItem, false);
 		}
 		
-		var infoIndex = getInfoIndex(menuItem);  // which of the open menus is this item in ?
-		console.log("infoIndex: " + infoIndex);
-		
-		// The menu for this item isn't open yet, open it...
-		if (infoIndex === -1) {
-			openSubMenu(menuItem.parentNode, menuItem);
-			infoIndex = getInfoIndex(menuItem);
-		}
-		
-		if (menuItem === document.activeElement)
-			return;
-		
-		var selClass = infoIndex === 0 ? "dropdownSelection" : "dropdownMenuItemSelected";
-		if (curInfo[infoIndex].selected) {
-			curInfo[infoIndex].selected.children[0].classList.remove(selClass);
-		}
-		
-		menuItem.children[0].classList.add(selClass);
-		curInfo[infoIndex].selected = menuItem;
+		// Ensure that the menu we're in is showing
+		openSubMenu(menuItem.parentNode);
+		setSelectionFeedback(menuItem, true);
+
 		menuItem.focus();
+		focusItem = menuItem;
 		
-		// Close any menus below this one
-		while (infoIndex < (curInfo.length-1)) {
-			closeSubMenu(curInfo[curInfo.length-1].menu);
-		}
-		
-		// Open a new menu if needed
 		var subMenu = getSubMenu(menuItem);
-		if (openMenuOnSelection && subMenu) {
+		if (showSubMenu && subMenu) {
 			openSubMenu(subMenu);
 		}
-		
 	};
 	
 //	var updateItems = function(curItem, commandRegistry) {
@@ -246,7 +214,7 @@ define([
 		var keys = {	tab: 9, enter: 13, esc: 27, space: 32, left: 37,  up: 38, right: 39, down: 40};
 
 		var keyHandled = false;
-		var curItem = document.activeElement;
+		var curItem = focusItem;
 		switch(keyEvent.keyCode) {
 			case keys.right:
 				var subMenu = getSubMenu(curItem);
@@ -255,10 +223,9 @@ define([
 				}
 				keyHandled = true;
 				break;
+			case keys.esc:
 			case keys.left:
-				if (curInfo.length > 1) {
-					selectItem(curInfo[curInfo.length-2].selected);
-				}
+				selectItem(focusItem.parentNode.parentNode);
 				keyHandled = true;
 				break;
 			case keys.up:
@@ -267,12 +234,6 @@ define([
 				break;
 			case keys.down:
 				selectItem(nextItem(curItem));				
-				keyHandled = true;
-				break;
-			case keys.esc:
-				if (curInfo.length > 1) {
-					selectItem(curInfo[curInfo.length-2].selected);
-				}
 				keyHandled = true;
 				break;
 		}
@@ -287,7 +248,7 @@ define([
 		var keys = {	tab: 9, enter: 13, esc: 27, space: 32, left: 37,  up: 38, right: 39, down: 40};
 
 		var keyHandled = false;
-		var curItem = document.activeElement;
+		var curItem = focusItem;
 		switch(keyEvent.keyCode) {
 			case keys.right:
 				selectItem(nextItem(curItem));
@@ -312,6 +273,27 @@ define([
 		}
 	};
 	
+	// *********** Rendering code *************
+	var appendDomElement = function(domParent, type, classList, text, role) {
+		var newElement = document.createElement(type);		
+		if (classList) {
+			var classes = classList.split(" ");
+			for (var i = 0; i < classes.length; i++) {				
+				newElement.classList.add(classes[i]);
+			}
+		}
+		if (text)	
+			newElement.textContent = text;			
+		if (role)	
+			newElement.setAttribute("role", role);		
+		domParent.appendChild(newElement);
+		return newElement;
+	};
+	
+	var renderSeparator = function(domParent) {
+		appendDomElement(domParent, "li", "dropdownSeparator");
+	};
+	
 	var renderItems = function(domParent, curItem, commandRegistry) {
 		if (!curItem.items) return;
 		
@@ -327,12 +309,7 @@ define([
 					appendDomElement(outerSpan, "span", "dropdownArrowRight core-sprite-closedarrow");
 					
 					// Now create the sub-menu
-					var subMenu = appendDomElement(outerSpan, "ul", "dropdownMenu", null, "menu");
-					
-					item.domElement.addEventListener("mouseover", function(e) {
-						selectItem(e.currentTarget);
-					}, false);
-					
+					var subMenu = appendDomElement(item.domElement, "ul", "dropdownMenu", null, "menu");					
 					renderItems(subMenu, item, commandRegistry);
 				} else {
 					renderSeparator(domParent);
@@ -360,7 +337,10 @@ define([
 				}, false);
 			} else if (item.menuId) {
 				item.domElement = appendDomElement(domParent, "li");
-				appendDomElement(item.domElement, "button", "dropdownTrigger orionButton commandButton", item.title);
+				var menuButton = appendDomElement(item.domElement, "button", "dropdownTrigger orionButton commandButton", item.title);
+				menuButton.addEventListener("focus", function(e) {
+					selectItem(e.currentTarget.parentNode);
+				});
 
 				// Now create the sub-menu
 				var subMenu = appendDomElement(item.domElement, "ul", "dropdownMenu", null, "menu");				
@@ -373,11 +353,6 @@ define([
 			
 			if (item.domElement) {
 				item.domElement.tabIndex = -1;
-				item.domElement.addEventListener("mouseover", function(e) {
-					var item = e.currentTarget;
-					// Only the menu bar has 'buttons'
-					selectItem(item, item.getElementsByTagName("button").length === 0);
-				}, false);
 				if (item.domElement.parentNode.classList.contains("commandList")) {
 					item.domElement.addEventListener("keydown", function(e) {
 						menuBarKeyHandler(e);
@@ -386,6 +361,10 @@ define([
 					item.domElement.addEventListener("keydown", function(e) {
 						subMenuKeyHandler(e);
 					});
+					item.domElement.addEventListener("mouseenter", function(e) {
+						var item = e.currentTarget;
+						selectItem(item, true);
+					}, false);
 				}
 			}
 		}
@@ -416,8 +395,8 @@ define([
 					while(hackDiv.firstChild){
 					    hackDiv.removeChild(hackDiv.firstChild);
 					}
-					curInfo = undefined;
 				} else {
+					focusItem = undefined;
 					hackDiv =  appendDomElement(lib.node("rightPane"), "div", "mainToolbar");
 					hackDiv.id = "HackDiv";
 					hackDiv.style.left = "500px";
