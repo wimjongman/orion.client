@@ -174,7 +174,7 @@ define([
 			return p(type, options);
 		}
 	
-		describe("Cross-file Tests", function() {
+		describe.skip("Cross-file Tests", function() {
 			this.timeout(200000);
 			before('Message the server for warm up on cross file tests', function(done) {
 				CUProvider.setUseCache(false);
