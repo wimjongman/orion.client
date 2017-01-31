@@ -225,6 +225,7 @@ define([
 			var inputManager = this.inputManager;
 			inputManager.setAutoLoadEnabled(prefs.autoLoad);
 			inputManager.setAutoSaveTimeout(prefs.autoSave ? prefs.autoSaveTimeout : -1);
+			inputManager.setAutoSyntaxCheck(this.refreshSyntaxCheck, prefs.autoSave ? -1 : 250); // Only auto check syntax when autosave is off
 			inputManager.setFormatOnSave(prefs.formatOnSave ? prefs.formatOnSave : false);
 			if(this.differ) {
 				inputManager.setSaveDiffsEnabled(prefs.saveDiffs);
