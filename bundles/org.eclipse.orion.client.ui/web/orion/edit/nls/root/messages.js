@@ -112,5 +112,7 @@ define({
 	"GotoDefinition" : "Open Declaration",
 	"GotoDefinitionTooltip" : "Go to the declaration",
 	"References" : "Search References",
-	"ReferencesTooltip" : "Search for all references"
+	"ReferencesTooltip" : "Search for all references",
+	"Cancel":"Cancel",
+	"Do not Save":"Don't Save"
 });
