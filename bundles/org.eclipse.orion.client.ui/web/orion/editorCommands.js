@@ -672,12 +672,8 @@ define([
 					window.__electron.remote.dialog.showOpenDialog({properties: ['openDirectory']}, function(result) {
 						if (!result) return;
 						that.fileClient.changeWorkspace(result[0]).then(function() {
-							return that.updateWorkspacePrefs(result[0]);
-						}).then(function(){
 							delete sessionStorage.lastFile;
-							window.location.hash = "";
-							window.location.reload();
-						})				
+						});			
 					});
 				}
 			});
@@ -686,7 +682,7 @@ define([
 		_createOpenRecentCommand: function() {
 			var that = this;		
 			if(this.preferences){
-				this.preferences.get("/workspace").then(function(prefs) {
+				this.preferences.get("/workspace",undefined, {noCache:true}).then(function(prefs) {
 					return prefs.recentWorkspaces;
 				}).then(function(recentworkspaces){
 					var openRecentCommand = new mCommands.Command({
@@ -702,12 +698,8 @@ define([
 									name: folderLocation,
 									callback: function() {
 										that.fileClient.changeWorkspace(folderLocation).then(function() {
-											return that.updateWorkspacePrefs(folderLocation);
-										}).then(function(){
 											delete sessionStorage.lastFile;
-											window.location.hash = "";
-											window.location.reload();
-										})	
+										});
 									}
 								};
 							});
