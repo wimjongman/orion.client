@@ -836,6 +836,9 @@ define([
 									var handlers = {
 										error: function(event) {
 											var errorMessage = messages["UploadingFileErr"] + file.name;
+											if (event && event.Message) {
+												errorMessage += " [" + event.Message + "]";
+											}
 											if (statusService) {
 												statusService.setProgressResult({
 													Severity: "Error",
@@ -1010,6 +1013,9 @@ define([
 						}.bind(this),
 						error: function(event) {
 							var errorMessage = messages["UploadingFileErr"] + file.name;
+							if (event && event.Message) {
+								errorMessage += " [" + event.Message + "]";
+							}
 							if (statusService) {
 								statusService.setProgressResult({
 									Severity: "Error",
