@@ -311,6 +311,47 @@ objects.mixin(TabWidget.prototype, {
 		this.commandRegistry.renderCommands(this.tabWidgetDropdownNode.id, this.tabWidgetDropdownNode.id, this, this, "button");
 		this.registerAdditionalCommands();
 	},
+	getMetadataByLocation_: function(location) {
+		var metadata = null
+		for (var i = this.fileList.length; i--;) {
+			if (this.fileList[i].metadata.Location === location) {
+				metadata = this.fileList[i].metadata;
+				break;
+			}
+		}
+		return metadata;
+	},
+	closeTab: function(metadata, isDirty) {
+		if (!this.editorTabs.hasOwnProperty(metadata.Location)) {
+			return;
+		}
+		var editorTab = this.editorTabs[metadata.Location];
+		var editorTabNode = editorTab.editorTabNode;
+		var href = editorTab.href;
+
+		var tabClose = function() {
+			this.removeTab(metadata);
+			var evt = {
+				type: "TabClosed",
+				resource: metadata.Location
+			};
+			this.dispatchEvent(evt);
+		}.bind(this);
+
+		if (isDirty) {
+			if (this.selectedFile.href !== href) {
+				this.setWindowLocation(href);
+			}
+		}
+
+		var closingEvent = {
+			type: "TabClosing",
+			isDirty: isDirty,
+			editorTab: editorTabNode,
+			callback: tabClose
+		};
+		this.dispatchEvent(closingEvent);
+	},
 	setWindowLocation: function(href) {
 		window.location = href;
 	},
@@ -496,32 +537,10 @@ objects.mixin(TabWidget.prototype, {
 		closeButton.textContent = "\u2715";
 		closeButton.addEventListener("click", function(e) {
 			e.stopPropagation();
-
-			var tabClose = function() {
-				this.removeTab(metadata);
-				var evt = {
-					type: "TabClosed",
-					resource: metadata.Location
-				};
-				this.dispatchEvent(evt);
-			}.bind(this);
-
 			var isDirty = dirtyIndicator.style.display !== "none";
-
-			if (isDirty) {
-				if (this.selectedFile.href !== href) {
-					this.setWindowLocation(href);
-				}
-			}
-			var closingEvent = {
-				type: "TabClosing",
-				isDirty: isDirty,
-				editorTab: editorTab,
-				callback: tabClose
-			};
-
-			this.dispatchEvent(closingEvent);
+			this.closeTab(metadata, isDirty);
 		}.bind(this));
+
 		editorTab.appendChild(closeButton);
 		
 		var fileNodeTooltip = new mTooltip.Tooltip({
@@ -595,7 +614,8 @@ objects.mixin(TabWidget.prototype, {
 			fileNameNode: curFileNode,
 			breadcrumb: breadcrumb,
 			closeButtonNode: closeButton,
-			fileNodeToolTip: fileNodeTooltip
+			fileNodeToolTip: fileNodeTooltip,
+			href: href
 		};
 	},
 	getDraggedNode: function() {
@@ -755,7 +775,6 @@ function EditorViewer(options) {
 	this.problemsServiceID = "orion.core.marker" + this.id; //$NON-NLS-0$
 	this.editContextServiceID = "orion.edit.context" + this.id; //$NON-NLS-0$
 	this.editModelContextServiceID = "orion.edit.model.context" + this.id; //$NON-NLS-0$
-
 	this.shown = true;
 
 	var domNode = this.domNode = document.createElement("div"); //$NON-NLS-0$
@@ -869,8 +888,8 @@ objects.mixin(EditorViewer.prototype, {
 		inputManager.addEventListener("InputChanged", function(evt) { //$NON-NLS-0$
 			var metadata = evt.metadata;
 			if (metadata) {
-				sessionStorage.lastFile = PageUtil.hash();
 				var tabHref = evt.location.href;
+				sessionStorage.lastFile = PageUtil.hash();
 				if (!sessionStorage.lastFile) {
 					tabHref = uriTemplate.expand({resource: metadata.Location});
 				}
@@ -918,35 +937,52 @@ objects.mixin(EditorViewer.prototype, {
 			}
 		}.bind(this));
 		var fileClient = this.fileClient;
-		this.fileClient.addEventListener("Changed", function(evnt) {
-			var metadata = inputManager.getFileMetadata();
-			if (!metadata) return;
-			if (evnt.deleted) {
-				evnt.deleted.some(function(item) {
-					if (metadata.Location.indexOf(item.deleteLocation) === 0) {
-						var newLocation;
-						if (metadata.Parents) {
-							metadata.Parents.some(function(p) {
-								if (p.Location.indexOf(item.deleteLocation) !== 0) {
-									newLocation = p.Location;
-									return true;
-								}
-							});
+
+		this.fileClient.addEventListener("Changed", function(evt) {
+			var that = this;
+			var selectedMetadata = inputManager.getFileMetadata();
+			if (evt.deleted) {
+				evt.deleted.forEach(function(item) {
+					var deleteLocation = item.deleteLocation;
+					if (selectedMetadata.Location.indexOf(deleteLocation) === 0 || that.tabWidget.editorTabs.hasOwnProperty(deleteLocation)) {
+						var metadata = that.tabWidget.getMetadataByLocation_(deleteLocation) || selectedMetadata;
+						if (that.tabWidget.fileList.length < 2) {
+							var newLocation;
+							if (metadata.Parents) {
+								metadata.Parents.some(function(p) {
+									if (p.Location.indexOf(item.deleteLocation) !== 0) {
+										newLocation = p.Location;
+										return true;
+									}
+								});
+							}
+							inputManager.addEventListener("InputChanged", this.loadComplete = function() {
+								inputManager.removeEventListener("InputChanged", this.loadComplete);
+								that.tabWidget.closeTab(metadata, false);
+							}.bind(this));
+							inputManager.setInput(newLocation || fileClient.fileServiceRootURL(metadata.Location));
+						} else {
+							that.tabWidget.closeTab(metadata, false);
 						}
-						inputManager.setInput(newLocation || fileClient.fileServiceRootURL(metadata.Location));
-						return true;
+					}
+				});
+			} else if (evt.hasOwnProperty("moved")) {
+				evt.moved.forEach(function(item) {
+					var sourceLocation = item.source;
+					var metadata = that.tabWidget.getMetadataByLocation_(sourceLocation) || selectedMetadata;
+					if (selectedMetadata.Location.indexOf(sourceLocation) === 0) {
+						inputManager.addEventListener("InputChanged", this.loadComplete = function() {
+							inputManager.removeEventListener("InputChanged", this.loadComplete);
+							that.tabWidget.closeTab(metadata, false);
+						}.bind(this));
+						inputManager.setInput(item.result && item.result.Location || fileClient.fileServiceRootURL(selectedMetadata.Location));
+					} else if (that.tabWidget.editorTabs.hasOwnProperty(sourceLocation)) {
+						that.tabWidget.closeTab(metadata, false);
 					}
 				});
 			}
-			if (evnt.moved) {
-				evnt.moved.some(function(item) {
-					if (metadata.Location.indexOf(item.source) === 0) {
-						inputManager.setInput(item.result && item.result.Location || fileClient.fileServiceRootURL(metadata.Location));
-						return true;
-					}
-				});
-			}
-		});
+		}.bind(this));
+
 		this.selection.addEventListener("selectionChanged", function(evt) { //$NON-NLS-0$
 			inputManager.setInput(evt.selection);
 		});
