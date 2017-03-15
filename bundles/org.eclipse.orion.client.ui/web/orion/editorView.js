@@ -291,10 +291,11 @@ define([
 			var inputManager = this.inputManager;
 			if (textView && inputManager) {
 				var metadata = inputManager.getFileMetadata();
+				var storage = util.isElectron ? localStorage : sessionStorage;
 				if (metadata) {
 					evt.session = {
 						get: function() {
-							return sessionStorage.editorViewSection ? JSON.parse(sessionStorage.editorViewSection) : {}; 
+							return storage.editorViewSection ? JSON.parse(storage.editorViewSection) : {}; 
 						},
 						apply: function(animate) {
 							if (!metadata.Location) return;
@@ -303,6 +304,9 @@ define([
 							if (locationSession && locationSession.ETag === metadata.ETag) {
 								editor.setSelections(locationSession.selections);
 								textView.setTopIndex(locationSession.topIndex, animate ? function() {} : undefined);
+							}else if(util.isElectron){
+								delete session[metadata.Location];
+								storage.editorViewSection = JSON.stringify(session);
 							}
 						},
 						save: function() {
@@ -313,7 +317,7 @@ define([
 								topIndex: textView.getTopIndex(),
 								selections: editor.getSelections().map(function(s) { return s.getOrientedSelection(); })
 							};
-							sessionStorage.editorViewSection = JSON.stringify(session);
+							storage.editorViewSection = JSON.stringify(session);
 						}
 					};
 				}
