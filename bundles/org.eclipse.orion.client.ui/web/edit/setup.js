@@ -889,10 +889,10 @@ objects.mixin(EditorViewer.prototype, {
 			var metadata = evt.metadata;
 			if (metadata) {
 				var tabHref = evt.location.href;
-				sessionStorage.lastFile = PageUtil.hash();
-				if (!sessionStorage.lastFile) {
+				if (sessionStorage.lastFile === PageUtil.hash()) {
 					tabHref = uriTemplate.expand({resource: metadata.Location});
 				}
+				sessionStorage.lastFile = PageUtil.hash();
 				this.tabWidget.addTab(metadata, tabHref);
 			} else {
 				delete sessionStorage.lastFile;
