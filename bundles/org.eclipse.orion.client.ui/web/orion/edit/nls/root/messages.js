@@ -6,6 +6,9 @@
  * (http://www.eclipse.org/legal/epl-v10.html), and the Eclipse Distribution 
  * License v1.0 (http://www.eclipse.org/org/documents/edl-v10.html). 
  * 
+ * Contributors:
+ *     IBM Corporation - initial API and implementation
+ *     Casey Flynn - Google Inc.
  ******************************************************************************/
 /*eslint-env browser, amd*/
 define({
@@ -57,6 +60,7 @@ define({
 	"SplitHorizontal": "Split Horizontal",
 	"SplitPipInPip": "Picture in Picture",
 	"SplitModeTooltip": "Change split editor mode",
+	"AllTabsDropDown": "Open Tabs",
 	"SidePanel": "Side Panel",
 	"SidePanelTooltip": "Choose what to show in the side panel.",
 	"Slideout": "Slideout",
@@ -115,5 +119,8 @@ define({
 	"Cancel":"Cancel",
 	"Do not Save":"Don't Save",
 	"Yes":"Yes",
-	"No":"No"
+	"No":"No",
+	"selectNextTab": "Select Next Editor Tab",
+	"selectPreviousTab": "Select Previous Editor Tab",
+	"showTabDropdown": "Display Open Editor Tabs"	
 });
