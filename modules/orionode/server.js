@@ -108,8 +108,6 @@ function startServer(cb) {
 			var io = socketio.listen(server, { 'log level': 1, path: (listenContextPath ? contextPath : '' ) + '/socket.io' });
 			ttyShell.install({ io: io, app: orion, fileRoot: contextPath + '/file', workspaceDir: workspaceDir });
 
-			languageServer.install({ io: io, workspaceDir: workspaceDir }); //TODO no good for multiuser
-
 			server.on('listening', function() {
 				configParams.port = port;
 				logger.info(util.format('Listening on port %d...', port));
@@ -149,6 +147,7 @@ function startServer(cb) {
 					gracefulShutdown();
 				}
 			});
+			languageServer.install({ io: io, workspaceDir: workspaceDir, metastore: orion.locals.metastore }); //TODO no good for multiuser
 		} catch (e) {
 			logger.error(e && e.stack);
 		}

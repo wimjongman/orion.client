@@ -16,6 +16,7 @@ var rimraf = require('rimraf');
 var api = require('./api');
 var net = require('net');
 var fs = require('fs');
+var fileUtil = require('./fileUtil');
 
 var IN_PORT = 8123;
 var OUT_PORT = 8124;
@@ -252,9 +253,10 @@ exports.install = function(options) {
 				console.log('sendToServer socket connected');
 
 				sock.on('data', function(data) {
-					var textDocument = data.params && data.params.textDocument && data.params.textDocument;
+					var textDocument = data.params && data.params.textDocument;
 					if (textDocument && textDocument.uri) {
-						textDocument.uri = workspaceUrl + textDocument.uri.replace(/^\/file/, '');
+						var workspaceFile = fileUtil.getFile2(options.metastore, textDocument.uri.replace(/^\/file/, ''));
+						textDocument.uri = workspaceUrl + workspaceFile.path.slice(workspaceFile.workspaceDir.length);
 					}
 					var s = JSON.stringify(data);
 					if (!ready) {
