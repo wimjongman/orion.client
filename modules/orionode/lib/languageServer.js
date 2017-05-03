@@ -131,7 +131,7 @@ function fixURI(p, workspaceUrl) {
 	}
 	if (p.uri) {
 		var s = p.uri.slice(workspaceUrl.length);
-		p.uri = api.join('/file', s.charAt(0) === '/' ? s.slice(1) : s);
+		p.uri = api.join('/file/orionode', s.charAt(0) === '/' ? s.slice(1) : s);
 	}
 }
 

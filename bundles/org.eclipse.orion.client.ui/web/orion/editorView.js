@@ -592,7 +592,7 @@ define([
 				// get the lsp service matching the current content type
 				var lspLanguageServer = languageServerRegistry.getServerByContentType(inputManager.getContentType());
 				if (lspLanguageServer) {
-					lspLanguageServer.didSave(evnt.inputManager.getLocation());
+					lspLanguageServer.didSave(evnt.inputManager.getFileMetadata().Location);
 				}
 			});
 
@@ -609,11 +609,11 @@ define([
 					if (evt.uri) {
 						var metaData = inputManager.getFileMetadata();
 						if (metaData && metaData.Location === evt.uri) {
-							if (Array.isArray(evt.problems) && evt.problems.length !== 0) {
+							if (Array.isArray(evt.problems)) {
 								editor.showProblems(evt.problems);
 							}
 						}
-					} else if (Array.isArray(evt.problems) && evt.problems.length !== 0) {
+					} else if (Array.isArray(evt.problems)) {
 						editor.showProblems(evt.problems);
 					}
 				});
