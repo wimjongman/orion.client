@@ -34,11 +34,12 @@ define([
 	'orion/objects',
 	'orion/bidiUtils',
 	'orion/util',
+	'orion/urlModifer',
 	'orion/URL-shim'
 ], function(
 	messages, require, EventTarget, Deferred, i18nUtil, lib, mCommands, mCommandRegistry, mGitUtil, GitPreferenceStorage,
 	GitConfigPreference, mCloneGitRepository, mApplyPatch, URITemplate, mGitCommonLogic, mGitPushLogic, 
-	mGitStashLogic, mGitCommitLogic, objects, bidiUtils, util) {
+	mGitStashLogic, mGitCommitLogic, objects, bidiUtils, util, urlModifer) {
 
 /**
  * @namespace The global container for eclipse APIs.
@@ -2229,7 +2230,7 @@ var exports = {};
 					url += data.items.Diffs.Children[i].NewPath;
 				}
 			}
-			window.open(url);
+			window.open(urlModifer(url));
 		};
 			
 		var showStagedPatchCommand = new mCommands.Command({

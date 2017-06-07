@@ -19,8 +19,9 @@ define([
 	'orion/URITemplate',
 	'orion/contentTypes',
 	'orion/webui/littlelib',
-	'orion/bidiUtils'
-], function(messages, Deferred, mExplorer, mNavUtils, mExtensionCommands, objects, URITemplate, mContentTypes, lib, bidiUtils) {
+	'orion/bidiUtils',
+	'orion/urlModifier'
+], function(messages, Deferred, mExplorer, mNavUtils, mExtensionCommands, objects, URITemplate, mContentTypes, lib, bidiUtils, urlModifier) {
 		
 	var max_more_info_column_length = 60;
 	/* Internal */
@@ -88,7 +89,7 @@ define([
 			link = document.createElement("a"); //$NON-NLS-0$
 			link.className = "navlinkonpage"; //$NON-NLS-0$
 			var template = !folderPageURL ? uriTemplate : new URITemplate(folderPageURL + "#{,resource,params*}"); //$NON-NLS-0$
-			link.href = template.expand({resource: item.ChildrenLocation});
+			link.href = urlModifier(template.expand({resource: item.ChildrenLocation}));
 			if(item.Name){
 				link.appendChild(document.createTextNode(linkName));
 			}
@@ -124,7 +125,7 @@ define([
 			}
 			var openWithCommand = mExtensionCommands.getOpenWithCommand(commandService, item, openWithCommands);
 			if (openWithCommand && typeof(openWithCommand.hrefCallback) === 'function') {
-				href = openWithCommand.hrefCallback({items: item});
+				href = urlModifier(openWithCommand.hrefCallback({items: item}));
 			}
 			Deferred.when(contentTypeService.getFileContentType(item), function(contentType) {
 				var iconElement;

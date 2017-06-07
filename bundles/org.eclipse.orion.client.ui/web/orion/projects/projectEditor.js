@@ -21,8 +21,8 @@ define([
 	'orion/PageLinks',
 	'orion/explorers/explorer',
 	'orion/section',
-	'orion/webui/tooltip'
-], function(messages, i18nUtil, util, URITemplate, lib, Deferred, objects, mProjectCommands, PageLinks, mExplorer, mSection, mTooltip) {
+	'orion/urlModifier'
+], function(messages, i18nUtil, util, URITemplate, lib, Deferred, objects, mProjectCommands, PageLinks, mExplorer, mSection, urlModifier) {
 
 	var ID_COUNT = 0;
 
@@ -93,7 +93,7 @@ define([
 				urlSelector.tabIndex = item.no;	//this is the same as the urlInput's tab index but they will never be visible at the same time
 
 				var urlLink = document.createElement("a");
-				urlLink.href = item.value || "";
+				urlLink.href = urlModifier(item.value || "");
 				urlLink.appendChild(document.createTextNode(item.value || ""));
 				urlLink.tabIndex = item.no+1;
 
@@ -196,12 +196,12 @@ define([
 			td.width = "20%";
 			return td;
 		}
-		if(col_no===1){
+		if (col_no === 1){
 			var td = document.createElement("td");
-			if(item.Href){
+			if (item.Href) {
 				var a = document.createElement("a");
 				var uriTemplate = new URITemplate(item.Href);
-				a.href = uriTemplate.expand({OrionHome : PageLinks.getOrionHome()});
+				a.href = urlModifier(uriTemplate.expand({OrionHome : PageLinks.getOrionHome()}));
 				a.appendChild(document.createTextNode(item.Value || " "));
 				td.appendChild(a);
 			} else {
@@ -267,33 +267,32 @@ define([
 	};
 
 	DependenciesRenderer.prototype.getCellElement = function(col_no, item, tableRow){
-		if(col_no===0) {
+		if (col_no === 0) {
 			var td = document.createElement("td");
 
-			if(item.Location){
+			if (item.Location) {
 				td.className = "navColumnNoIcon";
 				var a = document.createElement("a");
-				a.href = editTemplate.expand({resource: item.Location}); //$NON-NLS-0$
+				a.href = urlModifier(editTemplate.expand({resource: item.Location})); //$NON-NLS-0$
 				a.appendChild(document.createTextNode(item.Dependency.Name));
 				td.appendChild(a);
 			} else {
 				var name = item.Dependency.Name;
-				if(item.disconnected){
+				if (item.disconnected) {
 					name = i18nUtil.formatMessage(messages.Disconnected, name);
 				}
 				td.appendChild(document.createTextNode(name));
 			}
 			return td;
 		}
-		if(col_no===1){
+		if (col_no === 1) {
 			var actionsColumn = this.getActionsColumn(item, tableRow, null, null, true);
-		actionsColumn.style.textAlign = "right";
-		return actionsColumn;
+			actionsColumn.style.textAlign = "right";
+			return actionsColumn;
 		}
-
 	};
 
-	function ProjectEditor(options){
+	function ProjectEditor(options) {
 		this.idCount = ID_COUNT++;
 		this.serviceRegistry = options.serviceRegistry;
 		this.fileClient = options.fileClient;
@@ -415,7 +414,7 @@ define([
 							if(urlElement){
 								lib.empty(urlElement);
 								urlElement.appendChild(document.createTextNode(event.target.value) || "");
-								urlElement.href = event.target.value;
+								urlElement.href = urlModifier(event.target.value);
 								urlElement.classList.remove("discreetInputHidden"); //$NON-NLS-0$
 								if(urlElement.urlSelector){
 									urlElement.urlSelector.classList.remove("discreetInputHidden"); //$NON-NLS-0$

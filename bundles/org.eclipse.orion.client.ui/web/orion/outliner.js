@@ -22,8 +22,9 @@ define([
 	'orion/i18nUtil',
 	'orion/keyBinding',
 	'orion/globalCommands',
-	'orion/webui/Slideout'
-], function(objects, messages, Deferred, lib, mUIUtils, mExplorer, mCommands, URITemplate, EventTarget, i18nUtil, KeyBinding, mGlobalCommands, mSlideout) {
+	'orion/webui/Slideout',
+	'orion/urlModifier'
+], function(objects, messages, Deferred, lib, mUIUtils, mExplorer, mCommands, URITemplate, EventTarget, i18nUtil, KeyBinding, mGlobalCommands, mSlideout, urlModifier) {
 
 	var OUTLINE_TIMEOUT_MS = 2 * 60 * 1000; // determines how many milliseconds we will wait for the outline service to compute and return an outline before considering it timed out
 	
@@ -117,13 +118,13 @@ define([
 		if (selectionService) {
 			link.style.cursor = "pointer"; //$NON-NLS-0$
 			link.addEventListener("click", function(event) { //$NON-NLS-0$
-				this._followLink(event, href);
+				this._followLink(event, urlModifier(href));
 			}.bind(this), false);
 		} else {
 			// if there is no selection service, we rely on normal link following
-			link.href = href;	
+			link.href = urlModifier(href);
 		}
-		
+
 		return link;
 	};
 	

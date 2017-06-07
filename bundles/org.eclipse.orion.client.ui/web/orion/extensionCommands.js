@@ -10,8 +10,8 @@
  *     IBM Corporation - initial API and implementation
  *******************************************************************************/
 /*eslint-env browser, amd*/
-define(["orion/Deferred", "orion/commands", 	'orion/PageUtil', "orion/contentTypes", "orion/URITemplate", "orion/i18nUtil", "orion/PageLinks", "i18n!orion/edit/nls/messages", "orion/util", "orion/URL-shim"],
-	function(Deferred, mCommands, PageUtil, mContentTypes, URITemplate, i18nUtil, PageLinks, messages, util){
+define(["orion/Deferred", "orion/commands", 'orion/PageUtil', "orion/contentTypes", "orion/URITemplate", "orion/i18nUtil", "orion/PageLinks", "i18n!orion/edit/nls/messages", "orion/util", "orion/URL-shim"],
+	function(Deferred, mCommands, PageUtil, mContentTypes, URITemplate, i18nUtil, PageLinks, messages, util) {
 
 	/**
 	 * Utility methods
@@ -437,12 +437,6 @@ define(["orion/Deferred", "orion/commands", 	'orion/PageUtil', "orion/contentTyp
 					commandOptions.hrefCallback = function(data){
 						var item = Array.isArray(data.items) ? data.items[0] : data.items;
 						var href = validator.getURI.bind(validator)(item);
-						// Preserve the query params of the current location to keep context
-						var url = new URL(href);
-						if (!url.search) {
-							url.search = window.location.search;
-						}
-						href = url.href;
 						if (data.command && data.command.isEditor) {
 							data.domNode.addEventListener("click", function(evt) {
 								if(item.Location) {

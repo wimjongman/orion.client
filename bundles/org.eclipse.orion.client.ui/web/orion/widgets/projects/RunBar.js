@@ -20,8 +20,9 @@ define([
 	'orion/metrics',
 	'orion/webui/dialogs/ConfirmDialog',
 	'orion/URITemplate',
-	'orion/PageLinks'
-], function(objects, messages, RunBarTemplate, lib, i18nUtil, mRichDropdown, mTooltip, mMetrics, mConfirmDialog, URITemplate, PageLinks) {
+	'orion/PageLinks',
+	'orion/urlModifier'
+], function(objects, messages, RunBarTemplate, lib, i18nUtil, mRichDropdown, mTooltip, mMetrics, mConfirmDialog, URITemplate, PageLinks, urlModifier) {
 	
 	var METRICS_LABEL_PREFIX = "RunBar"; //$NON-NLS-0$
 	var REDEPLOY_RUNNING_APP_WITHOUT_CONFIRMING = "doNotConfirmRedeployRunningApp"; //$NON-NLS-0$
@@ -751,7 +752,7 @@ define([
 		},
 		
 		_enableLink: function(linkNode, href) {
-			linkNode.href = href;
+			linkNode.href = urlModifier(href);
 			this._enableControl(linkNode);
 		},
 		

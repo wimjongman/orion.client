@@ -20,8 +20,9 @@ define([
 	'text!orion/webui/dropdowntriggerbuttonwitharrow.html',
 	'text!orion/webui/checkedmenuitem.html',
 	'orion/webui/tooltip',
-	'orion/metrics'
-], function(messages, i18nUtil, lib, mCommandsProxy, Dropdown, DropdownButtonFragment, DropdownButtonWithArrowFragment, CheckedMenuItemFragment, Tooltip, mMetrics) {
+	'orion/metrics',
+	'orion/urlModifier'
+], function(messages, i18nUtil, lib, mCommandsProxy, Dropdown, DropdownButtonFragment, DropdownButtonWithArrowFragment, CheckedMenuItemFragment, Tooltip, mMetrics, urlModifier) {
 		/**
 		 * @name orion.commands.NO_IMAGE
 		 * @description Image data for 16x16 transparent png.
@@ -60,7 +61,7 @@ define([
 			if (invocation) {
 				var command = binding.command;
 				if (typeof(command.hrefCallback) === 'function') {
-					var href = command.hrefCallback.call(invocation.handler || window, invocation);
+					var href = urlModifier(command.hrefCallback.call(invocation.handler || window, invocation));
 					if (href.then){
 						href.then(function(l){
 							window.open(l);
@@ -361,8 +362,8 @@ define([
 				element.className = "commandLink"; //$NON-NLS-0$
 				element.appendChild(document.createTextNode(command.name));
 			}
-			var href = command.hrefCallback.call(commandInvocation.handler, commandInvocation);
-			if (href.then){
+			var href = urlModifier(command.hrefCallback.call(commandInvocation.handler, commandInvocation));
+			if (href.then) {
 				href.then(function(l){
 					element.href = l;
 				});
@@ -371,7 +372,7 @@ define([
 			} else {  // no href
 				element.href = "#"; //$NON-NLS-0$
 			}
-			if(command.hrefTarget){
+			if (command.hrefTarget) {
 				element.target = command.hrefTarget;
 			}
 		} else {
@@ -503,8 +504,8 @@ define([
 		if (typeof(command.hrefCallback) === 'function') {
 			li = Dropdown.createMenuItem(command.name, "a"); //$NON-NLS-0$
 			commandInvocation.domNode = element = li.firstElementChild;
-			var href = command.hrefCallback.call(commandInvocation.handler, commandInvocation);
-			if (href.then){
+			var href = urlModifier(command.hrefCallback.call(commandInvocation.handler, commandInvocation));
+			if (href.then) {
 				href.then(function(l){
 					element.href = l;
 				});
@@ -513,7 +514,7 @@ define([
 			} else {  // no href
 				element.href = "#"; //$NON-NLS-0$
 			}
-			if(command.hrefTarget){
+			if (command.hrefTarget) {
 				element.target = command.hrefTarget;
 			}
 			element.addEventListener("keydown", function(e) { //$NON-NLS-0$

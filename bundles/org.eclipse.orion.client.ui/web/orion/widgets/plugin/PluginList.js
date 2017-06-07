@@ -14,8 +14,8 @@
    to contain PluginEntry widgets */
 
 define(['i18n!orion/settings/nls/messages', 'orion/i18nUtil', 'require', 'orion/Deferred', 'orion/commands', 'orion/commandRegistry', 'orion/commonHTMLFragments', 'orion/objects', 'orion/webui/littlelib',
-		'orion/widgets/plugin/PluginEntry', 'orion/explorers/explorer'
-		], function(messages, i18nUtil, require, Deferred, mCommands, mCommandRegistry, mHTMLFragments, objects, lib, PluginEntry, mExplorer) {
+		'orion/widgets/plugin/PluginEntry', 'orion/explorers/explorer', 'orion/urlModifier'
+		], function(messages, i18nUtil, require, Deferred, mCommands, mCommandRegistry, mHTMLFragments, objects, lib, PluginEntry, mExplorer, urlModifier) {
 
 	var Explorer = mExplorer.Explorer;
 	var SelectionRenderer = mExplorer.SelectionRenderer;
@@ -349,7 +349,7 @@ define(['i18n!orion/settings/nls/messages', 'orion/i18nUtil', 'require', 'orion/
 		},
 		
 		createPlugin: function( data ){
-			var path = require.toUrl("settings/maker.html"); //$NON-NLS-0$
+			var path = urlModifier(require.toUrl("settings/maker.html")); //$NON-NLS-0$
 			window.open( path, this.target );
 		},
 		

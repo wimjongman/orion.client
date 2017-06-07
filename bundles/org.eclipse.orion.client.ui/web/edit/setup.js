@@ -55,13 +55,14 @@ define([
 	'orion/customGlobalCommands',
 	'orion/generalPreferences',
 	'orion/breadcrumbs',
-	'orion/keyBinding'
+	'orion/keyBinding',
+	'orion/urlModifier'
 ], function(
 	messages, Sidebar, mInputManager, mCommands, mGlobalCommands,
 	mTextModelFactory, mUndoStack,
 	mFolderView, mEditorView, mPluginEditorView , mMarkdownView, mMarkdownEditor,
 	mCommandRegistry, mContentTypes, mFileClient, mFileCommands, mEditorCommands, mSelection, mStatus, mProgress, mOperationsClient, mOutliner, mDialogs, mExtensionCommands, ProjectCommands, mSearchClient,
-	EventTarget, URITemplate, i18nUtil, PageUtil, util, objects, lib, Deferred, mProjectClient, mSplitter, mTooltip, mContextMenu, bidiUtils, mCustomGlobalCommands, mGeneralPrefs, mBreadcrumbs, mKeyBinding
+	EventTarget, URITemplate, i18nUtil, PageUtil, util, objects, lib, Deferred, mProjectClient, mSplitter, mTooltip, mContextMenu, bidiUtils, mCustomGlobalCommands, mGeneralPrefs, mBreadcrumbs, mKeyBinding, urlModifier
 ) {
 
 var exports = {};
@@ -1547,9 +1548,9 @@ objects.mixin(EditorSetup.prototype, {
 	computeNavigationHref: function(item, options) {
 		var openWithCommand = mExtensionCommands.getOpenWithCommand(this.commandRegistry, item);
 		if (openWithCommand && typeof openWithCommand.hrefCallback === 'function') {
-			return openWithCommand.hrefCallback({items: objects.mixin({}, item, {params: options})});
+			return urlModifier(openWithCommand.hrefCallback({items: objects.mixin({}, item, {params: options})}));
 		}
-		if(options) {
+		if (options) {
 			return uriTemplate.expand({resource: item.Location, params: options});
 		}
 		return uriTemplate.expand({resource: item.Location});

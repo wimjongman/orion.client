@@ -16,8 +16,9 @@ define([
 	"orion/URITemplate",
 	"orion/i18nUtil",
 	"orion/objects",
+	"orion/urlModifier",
 	"orion/URL-shim"
-], function(require, Deferred, PageUtil, URITemplate, i18nUtil, objects) {
+], function(require, Deferred, PageUtil, URITemplate, i18nUtil, objects, urlModifier) {
 
 	/**
 	 * Returns the value of the <code>{OrionHome}</code> variable.
@@ -80,7 +81,7 @@ define([
 			var uriTemplate = new URITemplate(info.uriTemplate);
 			var expandedHref = uriTemplate.expand(locationObject);
 			expandedHref = PageUtil.validateURLScheme(expandedHref);
-			info.href = expandedHref;
+			info.href = urlModifier(expandedHref);
 
 			info.textContent = info.name || info.nameKey;
 			navLinkInfos.push(new Deferred().resolve(info));
@@ -179,7 +180,7 @@ define([
 
 	function _createLink(href, target, textContent) {
 		var a = document.createElement("a");
-		a.href = href;
+		a.href = urlModifier(href);
 		a.target = target;
 		a.classList.add("targetSelector");
 		a.textContent = textContent;
